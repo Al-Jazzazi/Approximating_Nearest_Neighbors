@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include "hnsw.h"
+#include "../HNSW/hnsw.h"
 
 using namespace std;
 

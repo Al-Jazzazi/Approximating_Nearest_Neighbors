@@ -7,7 +7,7 @@
 using namespace std;
 
 const bool LOAD_FROM_FILE = false;
-const string LOAD_DIR = "runs/";
+const string LOAD_DIR = "HNSW/runs/";
 const string LOAD_NAME = "random_graph";
 
 const bool PRINT_NEIGHBORS = false;

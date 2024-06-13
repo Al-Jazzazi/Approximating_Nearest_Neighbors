@@ -9,7 +9,7 @@
 using namespace std;
 
 // File name of fvecs file, including its path and excluding its extension
-const string filename = "../exports/glove/train";
+const string filename = "./exports/glove/train";
 const int num_nodes = 1183514;
 const int dim = 25;
 const int hopkins_sample_size = 1000;

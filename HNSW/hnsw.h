@@ -15,8 +15,8 @@ extern std::ofstream* debug_file;
 
 class Config {
 public:
-    const std::string load_file = "../exports/sift/sift_base.fvecs";
-    const std::string query_file = "../exports/sift/sift_query.fvecs";
+    const std::string load_file = "./exports/sift/sift_base.fvecs";
+    const std::string query_file = "./exports/sift/sift_query.fvecs";
     const std::string groundtruth_file = "";
     const std::string export_dir = "runs/";
 
@@ -33,7 +33,7 @@ public:
     bool single_entry_point = true;
 
     int dimensions = 128;
-    int num_nodes = 1000;
+    int num_nodes = 10000;
     int optimal_connections = 10;
     int max_connections = 30;
     int max_connections_0 = 30;

@@ -9,8 +9,8 @@
 using namespace std;
 
 // File name of fvecs file, including its path and excluding its extension
-const string dataset1 = "../exports/gist/gist_base";
-const string dataset2 = "../exports/gist/gist_learn";
+const string dataset1 = "./exports/gist/gist_base";
+const string dataset2 = "./exports/gist/gist_learn";
 const int size1 = 1000000;
 const int size2 = 500000;
 const int dim = 960;
