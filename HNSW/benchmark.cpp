@@ -7,8 +7,8 @@
 using namespace std;
 
 const bool LOAD_FROM_FILE = false;
-const string LOAD_DIR = "HNSW/runs/";
-const string LOAD_NAME = "random_graph";
+const string GRAPH_FILE = "exports/";
+const string INFO_FILE = "exports/";
 
 const bool PRINT_NEIGHBORS = false;
 const bool PRINT_MISSING = false;
@@ -93,7 +93,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
     if (EXPORT_RESULTS) {
         *results_file << "\nVarying " << parameter_name;
     }
-    long int construction_duration;
+
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
         if (EXPORT_RESULTS) {
@@ -115,65 +115,8 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         knn_search(config, actual_neighbors, nodes, queries);
 
         if (LOAD_FROM_FILE) {
-            // Get files to load from
-            const string graph_file_name = LOAD_DIR + LOAD_NAME + "_graph.bin";
-            const string info_file_name = LOAD_DIR + LOAD_NAME + "_info.txt";
-            ifstream graph_file(graph_file_name);
-            ifstream info_file(info_file_name);
-
-            if (!graph_file) {
-                cout << "File " << graph_file_name << " not found!" << endl;
-                break;
-            }
-            if (!info_file) {
-                cout << "File " << info_file_name << " not found!" << endl;
-                break;
-            }
-
-            int opt_con, max_con, max_con_0, ef_con;
-            int num_nodes;
-            int num_layers;
-            long long construct_layer0_dist_comps;
-            long long construct_upper_dist_comps;
-            double construct_duration;
-            info_file >> opt_con >> max_con >> max_con_0 >> ef_con;
-            info_file >> num_nodes;
-            info_file >> num_layers;
-            info_file >> construct_layer0_dist_comps;
-            info_file >> construct_upper_dist_comps;
-            info_file >> construct_duration;
-
-            // Check if number of nodes match
-            if (num_nodes != config->num_nodes) {
-                cout << "Mismatch between loaded and expected number of nodes" << endl;
-                break;
-            }
-
-            // Check if construction parameters match
-            if (opt_con != config->optimal_connections || max_con != config->max_connections ||
-                max_con_0 != config->max_connections_0 || ef_con != config->ef_construction) {
-                cout << "Mismatch between loaded and expected construction parameters" << endl;
-                break;
-            }
-
-            // Load graph from file
-            auto start = chrono::high_resolution_clock::now();
-
-            cout << "Loading graph with construction parameters: "
-                << config->optimal_connections << ", " << config->max_connections << ", "
-                << config->max_connections_0 << ", " << config->ef_construction << endl;
-
             hnsw = init_hnsw(config, nodes);
-            hnsw->layers = num_layers;
-            load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
-
-            auto end = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-            cout << "Load time: " << duration / 1000.0 << " seconds, ";
-            cout << "Construction time: " << construct_duration << " seconds, ";
-            cout << "Distance computations (layer 0): " << construct_layer0_dist_comps <<", ";
-            cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
-            construction_duration = duration;
+            load_hnsw_file(config, hnsw, nodes, GRAPH_FILE, INFO_FILE, true);
         } else {
             // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();
@@ -191,7 +134,6 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";
             cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
             cout << "Distance computations (top layers): " << upper_dist_comps << endl;
-            construction_duration = duration;
         }
         reinsert_nodes(config, hnsw);
 
@@ -270,8 +212,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
 
         if (EXPORT_RESULTS) {
             *results_file << search_dist_comp / config->num_queries << ", "
-            << recall << ", " << search_duration / config->num_queries << ", "
-            << construction_duration / 1000.0;
+            << recall << ", " << search_duration / config->num_queries;
         }
 
         delete hnsw;
@@ -317,9 +258,6 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
 
-    cout << "Construction parameters: opt_con, max_con, max_con_0, ef_con" << endl;
-    cout << "Search parameters: ef_search" << endl;
-
     // Initialize output file
     ofstream* results_file = NULL;
     if (EXPORT_RESULTS) {
@@ -359,6 +297,7 @@ int main() {
     delete[] queries;
     delete config;
 
+    // Print time elapsed
     now = time(0);
     cout << "Benchmark run ended at " << ctime(&now);
 }

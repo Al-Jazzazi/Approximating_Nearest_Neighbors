@@ -23,11 +23,11 @@ public:
     int graph_seed = 0;
     int query_seed = 100000;
     int insertion_seed = 1000000;
-    int reinsert_percent = 0.0;
 
     int gen_min = 0;
     int gen_max = 100000;
     int gen_decimals = 2;
+    float reinsert_percent = 0.0;
     
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -83,7 +83,8 @@ float calculate_l2_sq(float* a, float* b, int size, int layer);
 void load_fvecs(const std::string& file, const std::string& type, float** nodes, int num, int dim, bool has_groundtruth);
 void load_ivecs(const std::string& file, std::vector<std::vector<int>>& results, int num, int dim);
 
-// Loading nodes
+// Loading nodes and graph
+void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, const std::string& graph_file_name, const std::string& info_file_name, bool is_benchmarking = false);
 void load_hnsw_graph(HNSW* hnsw, std::ifstream& graph_file, float** nodes, int num_nodes, int num_layers);
 void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);

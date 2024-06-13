@@ -3,30 +3,31 @@ CXXFLAGS := -O2 -mavx
 
 SRCS := $(wildcard HNSW/*.cpp GraSP/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
-TARGETS := benchmark.out run_hnsw.out hnsw_save.out dataset_metrics.out dataset_comparison.out run_grasp.out
-_MAKE_DIRECTORIES := $(shell mkdir -p build)
+TARGETS := benchmark run_hnsw hnsw_save dataset_metrics dataset_comparison run_grasp
+BUILD_PATH := build
+MAKE_DIRECTORIES := $(shell mkdir -p build)
 
 .PHONY: all clean
 
 all: $(TARGETS)
 
-benchmark.out: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-run_hnsw.out: HNSW/run_hnsw.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+run_hnsw: HNSW/run_hnsw.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-hnsw_save.out: HNSW/hnsw_save.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+hnsw_save: HNSW/hnsw_save.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-dataset_metrics.out: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-dataset_comparison.out: HNSW/dataset_comparison.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+dataset_comparison: HNSW/dataset_comparison.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-run_grasp.out: GraSP/run_grasp.cpp HNSW/hnsw.cpp HNSW/hnsw.h
-	$(CXX) $(CXXFLAGS) -g -o build/$@ $^
+run_grasp: GraSP/run_grasp.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
 clean:
 	rm -f $(OBJS) $(TARGETS)

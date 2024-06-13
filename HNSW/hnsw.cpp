@@ -142,6 +142,71 @@ void load_ivecs(const string& file, vector<vector<int>>& results, int num, int n
     f.close();
 }
 
+// graph_file_name is the file path for the .bin graph file, and info_file_name
+// is the file path for a .txt graph information file
+void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, const string& graph_file_name, const string& info_file_name, bool is_benchmarking) {
+    // Check file and parameters
+    ifstream graph_file(graph_file_name);
+    ifstream info_file(info_file_name);
+    cout << "Loading saved graph from " << graph_file_name << endl;
+
+    if (!graph_file) {
+        cout << "File " << graph_file_name << " not found!" << endl;
+        return;
+    }
+    if (!info_file) {
+        cout << "File " << info_file_name << " not found!" << endl;
+        return;
+    }
+
+    int opt_con, max_con, max_con_0, ef_con;
+    int num_nodes;
+    int num_layers;
+    info_file >> opt_con >> max_con >> max_con_0 >> ef_con;
+    info_file >> num_nodes;
+    info_file >> num_layers;
+
+    // Check if number of nodes match
+    if (num_nodes != config->num_nodes) {
+        cout << "Mismatch between loaded and expected number of nodes" << endl;
+        return;
+    }
+
+    // Check if construction parameters match
+    if (opt_con != config->optimal_connections || max_con != config->max_connections ||
+        max_con_0 != config->max_connections_0 || ef_con != config->ef_construction) {
+        cout << "Mismatch between loaded and expected construction parameters" << endl;
+        return;
+    }
+
+    if (is_benchmarking) {
+        long long construct_layer0_dist_comps;
+        long long construct_upper_dist_comps;
+        double construct_duration;
+        info_file >> construct_layer0_dist_comps;
+        info_file >> construct_upper_dist_comps;
+        info_file >> construct_duration;
+
+        auto start = chrono::high_resolution_clock::now();
+        cout << "Loading graph with construction parameters: "
+            << config->optimal_connections << ", " << config->max_connections << ", "
+            << config->max_connections_0 << ", " << config->ef_construction << endl;
+        
+        hnsw->layers = num_layers;
+        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+        
+        auto end = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+        cout << "Load time: " << duration / 1000.0 << " seconds, ";
+        cout << "Construction time: " << construct_duration << " seconds, ";
+        cout << "Distance computations (layer 0): " << construct_layer0_dist_comps <<", ";
+        cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
+    } else {
+        hnsw->layers = num_layers;
+        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+    }
+}
+
 void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
     // Load node neighbors
     for (int i = 0; i < num_nodes; ++i) {
@@ -865,107 +930,3 @@ vector<int> get_layer(Config* config, HNSW* hnsw, int layer) {
     vector<int> result(nodes.begin(), nodes.end());
     return result;
 }
-
-// void vamana(Config* config, HNSW* hnsw, vector<DataNode>& nodes, long alpha, int L, int R) {
-//     cout << "Start of Vamana" << endl;
-//     size_t s = find_centroid(hnsw);
-//     cout << "The centroid is #" << s << endl;
-//     for (int i = 0; i < 2; i++) {
-//         long actual_alpha = (i == 0) ? 1 : alpha;
-//         vector<size_t> sigma;
-//         for (size_t i = 0; i < config->num_nodes; i++) {
-//             sigma.push_back(i);
-//         }
-//         unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-//         shuffle(sigma.begin(), sigma.end(), default_random_engine(seed));
-//         size_t count = 0;
-//         for (size_t i : sigma) {
-//             if (count % 1000 == 0) cout << "Num of node processed: " << count << endl;
-//             count++;
-//             vector<size_t> result = GreedySearch(graph, s, nodes[i], L);
-//             robust_prune(graph, i, result, actual_alpha, R);
-//             set<size_t> neighbors = graph.getNeighbors(nodes[i]);
-//             for (size_t j : neighbors) {
-//                 set<size_t> unionV = graph.getNode(j).outEdge;
-//                 vector<size_t> unionVec;
-//                 for (size_t i : unionV) {
-//                     unionVec.push_back(i);
-//                 }
-//                 unionV.insert(i);
-//                 if (unionV.size() > R) {
-//                     RobustPrune(graph, j, unionVec, actual_alpha, R);
-//                 } else {
-//                     graph.setEdge(j, unionV);
-//                 }
-//             }
-//         }
-//     }
-//     cout << "End of Vamana" << endl;
-// }
-
-// size_t find_centroid(Config* config, const Graph& g) {
-//     double* coord = new double[config->dimension];
-//     for (size_t j = 0; j < config->num_nodes; j++) {
-//         g.getNode(j).val.addCoord(coord);
-//     }
-//     for (size_t i = 0; i < DIMENSION; i++) {
-//         coord[i] /= TOTAL;
-//     }
-//     DataNode center = DataNode(coord);
-//     size_t closest = 0;
-//     float closest_dist = MAXFLOAT;
-//     for (size_t m = 0; m < TOTAL; m++) {
-//         float this_dist = g.findDistance(m, center);
-//         if (this_dist < closest_dist) {
-//             closest_dist = this_dist;
-//             closest = m;
-//         }
-//     }
-//     return closest;
-// }
-
-// void robust_prune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R) {
-//     set<size_t> neighbors = graph.getNodeNeighbor(point);
-//     for (size_t i : neighbors) {
-//         candidates.push_back(i);
-//     }
-//     for (size_t j = 0; j < candidates.size(); j++) {
-//         if (candidates[j] == point) {
-//             candidates[j] = candidates[candidates.size()-1];
-//             candidates.pop_back();
-//             break;
-//         }
-//     }
-//     graph.clearNeighbors(point);
-//     while (candidates.size() != 0) {
-//         // find p* <- closest neighbor to p
-//         size_t bestCandidate = *candidates.begin();
-//         for (size_t j : candidates) {
-//             if (graph.findDistance(j, graph.getNode(point).val) < graph.findDistance(bestCandidate, graph.getNode(point).val)) {
-//                 bestCandidate = j;
-//             }
-//         }
-//         for (size_t j = 0; j < candidates.size(); j++) {
-//             if (candidates[j] == bestCandidate) {
-//                 candidates[j] = candidates[candidates.size()-1];
-//                 candidates.pop_back();
-//                 break;
-//             }
-//         }
-//         // add best candidate back to p's neighborhood
-//         set<size_t> edges = graph.getNodeNeighbor(point);
-//         edges.insert(bestCandidate);
-//         graph.setEdge(point, edges);
-//         // neighborhood is full
-//         if (graph.getNodeNeighbor(point).size() == R) {
-//             break;
-//         }
-//         vector<size_t> copy;
-//         for (size_t k : candidates) {
-//             if (graph.findDistance(point, graph.getNode(k).val) < threshold * graph.findDistance(bestCandidate, graph.getNode(k).val)) {
-//                 copy.push_back(k);
-//             }
-//         }
-//         candidates = copy;
-//     }
-// }
