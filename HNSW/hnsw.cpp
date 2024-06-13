@@ -20,6 +20,18 @@ ofstream* when_neigh_found_file;
 
 HNSW::HNSW(int node_size, float** nodes) : node_size(node_size), nodes(nodes), layers(0) {}
 
+Edge::Edge() : target(-1), distance(-1), weight(-1) {}
+
+Edge::Edge(int target, float distance, float weight) : target(target), distance(distance), weight(weight) {}
+
+bool Edge::operator>(const Edge& rhs) const {
+    return this->distance > rhs.distance;
+}
+
+bool Edge::operator<(const Edge& rhs) const {
+    return this->distance < rhs.distance;
+}
+
 float calculate_l2_sq(float* a, float* b, int size, int layer) {
     if (layer == 0)
         ++layer0_dist_comps;
@@ -226,7 +238,7 @@ void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_no
                 float distance;
                 graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
                 graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
-                hnsw->mappings[i][j].emplace_back(distance, index);
+                hnsw->mappings[i][j].emplace_back(Edge(index, distance));
             }
         }
     }
@@ -400,34 +412,36 @@ HNSW* insert(Config* config, HNSW* hnsw, int query, int opt_con, int max_con, in
         search_layer(config, hnsw, hnsw->nodes[query], entry_points, ef_con, layer);
 
         // Initialize mapping vector
-        vector<pair<float, int>>& neighbors = hnsw->mappings[query][layer];
+        vector<Edge>& neighbors = hnsw->mappings[query][layer];
         neighbors.reserve(max_con + 1);
         neighbors.resize(min(opt_con, (int)entry_points.size()));
 
         //Select opt_con number of neighbors from entry_points
-        copy_n(entry_points.begin(), min(opt_con, (int)entry_points.size()), neighbors.begin());
+        for (int i = 0; i < min(opt_con, (int)entry_points.size()); i++) {
+            neighbors[i] = Edge(entry_points[i].second, entry_points[i].first);
+        }
 
         if (config->debug_insert) {
             cout << "Neighbors at layer " << layer << " are ";
             for (auto n_pair : neighbors)
-                cout << n_pair.second << " (" << n_pair.first << ") ";
+                cout << n_pair.target << " (" << n_pair.distance << ") ";
             cout << endl;
         }
 
         //Connect neighbors to this node
         for (auto n_pair : neighbors) {
-            vector<pair<float, int>>& neighbor_mapping = hnsw->mappings[n_pair.second][layer];
+            vector<Edge>& neighbor_mapping = hnsw->mappings[n_pair.target][layer];
 
             // Place query in correct position in neighbor_mapping
-            float new_dist = calculate_l2_sq(hnsw->nodes[query], hnsw->nodes[n_pair.second], config->dimensions, layer);
-            auto new_pair = make_pair(new_dist, query);
-            auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_pair);
-            neighbor_mapping.insert(pos, new_pair);
+            float new_dist = calculate_l2_sq(hnsw->nodes[query], hnsw->nodes[n_pair.target], config->dimensions, layer);
+            auto new_edge = Edge(query, new_dist);
+            auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge);
+            neighbor_mapping.insert(pos, new_edge);
         }
 
         // Trim neighbor connections if needed
         for (auto n_pair : neighbors) {
-            vector<pair<float, int>>& neighbor_mapping = hnsw->mappings[n_pair.second][layer];
+            vector<Edge>& neighbor_mapping = hnsw->mappings[n_pair.target][layer];
             if (neighbor_mapping.size() > max_con) {
                 // Pop last element (size will be max_con after this)
                 neighbor_mapping.pop_back();
@@ -519,10 +533,10 @@ void search_layer(Config* config, HNSW* hnsw, float* query, vector<pair<float, i
             break;
 
         // Get neighbors of closest in HNSWLayer
-        vector<pair<float, int>>& neighbors = hnsw->mappings[closest][layer_num];
+        vector<Edge>& neighbors = hnsw->mappings[closest][layer_num];
 
         for (auto n_pair : neighbors) {
-            int neighbor = n_pair.second;
+            int neighbor = n_pair.target;
             if (visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
@@ -698,7 +712,7 @@ void print_hnsw(Config* config, HNSW* hnsw) {
 
                 cout << j << ": ";
                 for (auto n_pair : hnsw->mappings[j][i])
-                    cout << n_pair.second << " ";
+                    cout << n_pair.target << " ";
                 cout << endl;
             }
         }
@@ -866,7 +880,7 @@ void export_graph(Config* config, HNSW* hnsw, float** nodes) {
             file << i << endl;
             for (int layer = 0; layer < hnsw->mappings[i].size(); ++layer) {
                 for (auto n_pair : hnsw->mappings[i][layer])
-                    file << n_pair.second << ",";
+                    file << n_pair.target << ",";
                 file << endl;
             }
         }
@@ -897,11 +911,11 @@ void delete_node(Config* config, HNSW* hnsw, int target) {
     // Remove edges from all neighbors to the node
     for (int i = 0; i < hnsw->mappings[target].size(); i++) {
         for (int j = 0; j < hnsw->mappings[target][i].size() - 1; j++) {
-            int neighbor_index = hnsw->mappings[target][i][j].second;
-            vector<pair<float, int>>& neighbor_mapping = hnsw->mappings[neighbor_index][i];
+            int neighbor_index = hnsw->mappings[target][i][j].target;
+            vector<Edge>& neighbor_mapping = hnsw->mappings[neighbor_index][i];
             int position = -1;
             for (int k = 0; k < neighbor_mapping.size() - 1; k++) {
-                if (neighbor_mapping[k].second == target) {
+                if (neighbor_mapping[k].target == target) {
                     position = k;
                     break;
                 }
@@ -923,7 +937,7 @@ vector<int> get_layer(Config* config, HNSW* hnsw, int layer) {
     for (int i = 0; i < config->num_nodes; i++) {
         if (hnsw->mappings[i].size() - 1 >= layer) {
             for (int j = 0; j < hnsw->mappings[i][layer].size(); j++) {
-                nodes.insert(hnsw->mappings[i][layer][j].second);
+                nodes.insert(hnsw->mappings[i][layer][j].target);
             }
         }
     }

@@ -66,12 +66,24 @@ public:
     int debug_query_search_index = -1;
 };
 
+class Edge {
+public:
+    int target;
+    float distance;
+    float weight; 
+
+    Edge();
+    Edge(int target, float distance, float weight = 0.5);
+    bool operator>(const Edge& rhs) const;
+    bool operator<(const Edge& rhs) const;
+};
+
 class HNSW {
 public:
     int node_size;
     float** nodes;
     // This vector stores vectors by node index, then layer number, then connection pair
-    std::vector<std::vector<std::vector<std::pair<float, int>>>> mappings;
+    std::vector<std::vector<std::vector<Edge>>> mappings;
     int entry_point;
     int layers;
 
