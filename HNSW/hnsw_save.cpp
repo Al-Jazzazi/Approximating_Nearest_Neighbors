@@ -88,8 +88,8 @@ int main() {
                     auto n_pair = hnsw->mappings[i][j][k];
                     
                     // Write index and distance
-                    graph_file.write(reinterpret_cast<const char*>(&n_pair.second), sizeof(n_pair.second));
-                    graph_file.write(reinterpret_cast<const char*>(&n_pair.first), sizeof(n_pair.first));
+                    graph_file.write(reinterpret_cast<const char*>(&n_pair.target), sizeof(n_pair.target));
+                    graph_file.write(reinterpret_cast<const char*>(&n_pair.distance), sizeof(n_pair.distance));
                 }
             }
         }

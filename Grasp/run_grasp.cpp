@@ -29,12 +29,8 @@ int main() {
         insert_nodes(config, hnsw);
     }
 
-    // Print HNSW graph
-    print_hnsw(config, hnsw);
-    for (int i = 0; i < 11; i++) {
-        vector<int> layer = get_layer(config, hnsw, i);
-        cout << "Layer " << i << ", Size: " << layer.size() << endl;
-    }
+    // Optimize HNSW using GraSP
+    
 
     // Run queries
     if (RUN_SEARCH) {

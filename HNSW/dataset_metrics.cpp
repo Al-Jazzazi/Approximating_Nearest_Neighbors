@@ -16,6 +16,10 @@ const int hopkins_sample_size = 1000;
 const int cluster_k = 400;
 const int cluster_iterations = 20;
 
+const bool COMPARE_DATASETS = false;
+const string other_dataset = "./exports/glove/test";
+const int other_num_nodes = 1000;
+
 void load_fvecs(const string& file, const string& type, float** nodes, int num, int dim) {
     ifstream f(file, ios::binary | ios::in);
     if (!f) {
@@ -54,6 +58,26 @@ void load_fvecs(const string& file, const string& type, float** nodes, int num, 
         f.read(reinterpret_cast<char*>(nodes[i]), dim * 4);
     }
     f.close();
+}
+
+int count_same_nodes(float** nodes1, int size1, float** nodes2, int size2) {
+    int count = 0;
+    for (int i = 0; i < size1; i++) {
+        for (int j = 0; j < size2; j++) {
+            bool is_same = true;
+            for (int d = 0; d < dim; d++) {
+                if (nodes1[i][d] != nodes2[j][d]) {
+                    is_same = false;
+                    break;
+                }
+            }
+            if (is_same) {
+                count += 1;
+                break;
+            }
+        }
+    }
+    return count;
 }
 
 // Given some nodes, k, num, and dim, cluster the nodes and store its properties
@@ -257,6 +281,13 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
     float* cluster_sizes = new float[cluster_k];
     float wcss = 0;
     k_means_cluster(cluster_sizes, wcss, nodes, cluster_k, num, dim);
+
+    int num_same = 0;
+    if (COMPARE_DATASETS) {
+        float** other_nodes = new float*[num_nodes];
+        load_fvecs(other_dataset + ".fvecs", "base", other_nodes, other_num_nodes, dim);
+        num_same = count_same_nodes(nodes, num_nodes, other_nodes, other_num_nodes);
+    }
     
     if (displayStats) {
         cout << endl << "Mean: ";
@@ -325,6 +356,10 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
 
         f << endl << cluster_k << " " << cluster_iterations << " " << wcss;
         f << endl << hopkins << endl;
+
+        if (COMPARE_DATASETS) {
+            f << endl << num_same << endl;
+        }
 
         f.close();
     }
@@ -399,6 +434,9 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         cout << endl << "Bottom 10 cluster sizes: ";
         for (int m = 0; m < 10; m++) {
             cout << cluster_sizes[m] << " ";
+        }
+        if (COMPARE_DATASETS) {
+            cout << endl << "# of Common Nodes: " << num_same;
         }
 
         cout << endl;
