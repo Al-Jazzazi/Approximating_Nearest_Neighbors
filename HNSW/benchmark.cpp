@@ -19,10 +19,10 @@ const string EXPORT_NAME = "random_graph";
 
 void return_queries(Config* config, HNSW* hnsw, float** queries, vector<vector<pair<float, int>>>& results) {
     results.reserve(config->num_queries);
-    vector<vector<int>> paths(config->num_queries);
+    vector<vector<Edge*>> path;
     for (int i = 0; i < config->num_queries; ++i) {
         pair<int, float*> query = make_pair(i, queries[i]);
-        results.emplace_back(nn_search(config, hnsw, query, config->num_return, config->ef_search, paths[i]));
+        results.emplace_back(nn_search(config, hnsw, path, query, config->num_return, config->ef_search));
     }
 }
 

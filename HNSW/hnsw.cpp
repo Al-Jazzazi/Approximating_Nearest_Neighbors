@@ -376,6 +376,7 @@ void load_queries(Config* config, float** nodes, float** queries) {
 */
 HNSW* insert(Config* config, HNSW* hnsw, int query, int opt_con, int max_con, int ef_con, float normal_factor, function<double()> rand) {
     vector<pair<float, int>> entry_points;
+    vector<vector<Edge*>> path;
     entry_points.reserve(ef_con);
     int top = hnsw->layers - 1;
 
@@ -398,7 +399,7 @@ HNSW* insert(Config* config, HNSW* hnsw, int query, int opt_con, int max_con, in
 
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= node_layer + 1; layer--) {
-        search_layer(config, hnsw, hnsw->nodes[query], entry_points, 1, layer);
+        search_layer(config, hnsw, path, hnsw->nodes[query], entry_points, 1, layer);
 
         if (config->debug_insert)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
@@ -409,7 +410,7 @@ HNSW* insert(Config* config, HNSW* hnsw, int query, int opt_con, int max_con, in
             max_con = config->max_connections_0;
 
         // Get nearest elements
-        search_layer(config, hnsw, hnsw->nodes[query], entry_points, ef_con, layer);
+        search_layer(config, hnsw, path, hnsw->nodes[query], entry_points, ef_con, layer);
 
         // Initialize mapping vector
         vector<Edge>& neighbors = hnsw->mappings[query][layer];
@@ -464,10 +465,15 @@ HNSW* insert(Config* config, HNSW* hnsw, int query, int opt_con, int max_con, in
  * SEARCH-LAYER(hnsw, q, ep, ef, lc)
  * Note: Result is stored in entry_points (ep)
 */
-void search_layer(Config* config, HNSW* hnsw, float* query, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num) {
+void search_layer(Config* config, HNSW* hnsw, vector<vector<Edge*>>& path, float* query, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num) {
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<pair<float, int>> found;
+    
+    path.clear();
+    for (int i = 0; i < hnsw->layers; i++) {
+        path.push_back(vector<Edge*>());
+    }
 
     // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
@@ -535,8 +541,8 @@ void search_layer(Config* config, HNSW* hnsw, float* query, vector<pair<float, i
         // Get neighbors of closest in HNSWLayer
         vector<Edge>& neighbors = hnsw->mappings[closest][layer_num];
 
-        for (auto n_pair : neighbors) {
-            int neighbor = n_pair.target;
+        for (int i = 0; i < neighbors.size(); i++) {
+            int neighbor = neighbors[i].target;
             if (visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
@@ -550,6 +556,7 @@ void search_layer(Config* config, HNSW* hnsw, float* query, vector<pair<float, i
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
+                    path[layer_num].push_back(&neighbors[i]);
 
                     if (log_neighbors) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
@@ -594,9 +601,9 @@ void search_layer(Config* config, HNSW* hnsw, float* query, vector<pair<float, i
 /**
  * Alg 5
  * K-NN-SEARCH(hnsw, q, K, ef)
- * Extra argument: path (for traversal debugging)
+ * This also stores the traversed edges in the path parameter
 */
-vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, pair<int, float*>& query, int num_to_return, int ef_con, vector<int>& path) {
+vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, int ef_con) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(ef_con);
     int top = hnsw->layers - 1;
@@ -608,8 +615,7 @@ vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, pair<int, float*>
 
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= 1; layer--) {
-        search_layer(config, hnsw, query.second, entry_points, 1, layer);
-        path.push_back(entry_points[0].second);
+        search_layer(config, hnsw, path, query.second, entry_points, 1, layer);
 
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
@@ -620,7 +626,7 @@ vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, pair<int, float*>
     }
     if (config->gt_dist_log)
         log_neighbors = true;
-    search_layer(config, hnsw, query.second, entry_points, ef_con, 0);
+    search_layer(config, hnsw, path, query.second, entry_points, ef_con, 0);
     if (config->gt_dist_log)
         log_neighbors = false;
     if (config->debug_query_search_index == query.first) {
@@ -720,7 +726,6 @@ void print_hnsw(Config* config, HNSW* hnsw) {
 }
 
 void run_query_search(Config* config, HNSW* hnsw, float** queries) {
-    vector<vector<int>> paths(config->num_queries);
     ofstream* export_file = NULL;
     if (config->export_queries)
         export_file = new ofstream(config->export_dir + "queries.txt");
@@ -771,7 +776,8 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
         cur_groundtruth = actual_neighbors[i];
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
-        vector<pair<float, int>> found = nn_search(config, hnsw, query, config->num_return, config->ef_search, paths[i]);
+        vector<vector<Edge*>> path;
+        vector<pair<float, int>> found = nn_search(config, hnsw, path, query, config->num_return, config->ef_search);
         if (config->gt_dist_log)
             *when_neigh_found_file << endl;
         
@@ -786,8 +792,12 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
             cout << endl;
             // Print path
             cout << "Path taken: ";
-            for (int path : paths[i])
-                cout << path << " ";
+            for (vector<Edge*>& layer : path) {
+                for (Edge* edge : layer) {
+                    cout << edge->target << " ";
+                }
+                cout << endl;
+            }
             cout << endl;
         }
 
@@ -826,8 +836,11 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
             for (auto n_pair : found)
                 *export_file << n_pair.second << ",";
             *export_file << endl;
-            for (int node : paths[i])
-                *export_file << node << ",";
+            for (vector<Edge*>& layer : path) {
+                for (Edge* edge : layer) {
+                    *export_file << edge->target << ",";
+                }
+            }
             *export_file << endl;
         }
     }

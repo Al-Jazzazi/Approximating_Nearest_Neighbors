@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include "grasp.h"
 #include "../HNSW/hnsw.h"
 
 using namespace std;
@@ -21,6 +22,10 @@ int main() {
     // Construct HNSW
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
+
+    float** queries = new float*[config->num_queries];
+    load_queries(config, nodes, queries);
+    
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = init_hnsw(config, nodes);
     if (LOAD_FROM_FILE) {
@@ -30,28 +35,28 @@ int main() {
     }
 
     // Optimize HNSW using GraSP
-    
+    learn_edge_importance(config, hnsw, nodes, queries);
 
     // Run queries
-    if (RUN_SEARCH) {
-        // Generate num_queries amount of queries
-        float** queries = new float*[config->num_queries];
-        load_queries(config, nodes, queries);
-        auto search_start = chrono::high_resolution_clock::now();
-        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
-        cout << "Beginning search" << endl;
+    // if (RUN_SEARCH) {
+    //     // Generate num_queries amount of queries
+    //     float** queries = new float*[config->num_queries];
+    //     load_queries(config, nodes, queries);
+    //     auto search_start = chrono::high_resolution_clock::now();
+    //     cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
+    //     cout << "Beginning search" << endl;
 
-        // Run query search and print results
-        run_query_search(config, hnsw, queries);
+    //     // Run query search and print results
+    //     run_query_search(config, hnsw, queries);
 
-        auto search_end = chrono::high_resolution_clock::now();
-        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
+    //     auto search_end = chrono::high_resolution_clock::now();
+    //     cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
 
-        // Delete queries
-        for (int i = 0; i < config->num_queries; ++i)
-            delete queries[i];
-        delete[] queries;
-    }
+    //     // Delete queries
+    //     for (int i = 0; i < config->num_queries; ++i)
+    //         delete queries[i];
+    //     delete[] queries;
+    // }
 
     // Clean up
     for (int i = 0; i < config->num_nodes; i++)

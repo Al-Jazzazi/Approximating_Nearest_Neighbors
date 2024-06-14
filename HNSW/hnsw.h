@@ -15,23 +15,24 @@ extern std::ofstream* debug_file;
 
 class Config {
 public:
+    // Datasets
     const std::string load_file = "./exports/sift/sift_base.fvecs";
     const std::string query_file = "./exports/sift/sift_query.fvecs";
     const std::string groundtruth_file = "";
     const std::string export_dir = "runs/";
 
+    // Random Generation
     int graph_seed = 0;
     int query_seed = 100000;
     int insertion_seed = 1000000;
-
     int gen_min = 0;
     int gen_max = 100000;
     int gen_decimals = 2;
-    float reinsert_percent = 0.0;
     
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
 
+    // Construction parameters
     int dimensions = 128;
     int num_nodes = 10000;
     int optimal_connections = 10;
@@ -39,10 +40,20 @@ public:
     int max_connections_0 = 30;
     int ef_construction = 50;
     double scaling_factor = 0.368;
+    float reinsert_percent = 0.0;
 
+    // Search parameters
     int ef_search = 300;
     int num_queries = 10000;
     int num_return = 20;
+
+    // GraSP training parameters
+    float learning_rate = 0.1;
+    float initial_temperature = 1;
+    float decay_factor = 0.8;
+    float keep_ratio = 0.7;
+    int grasp_iterations = 20;
+    int num_training = 1000;
 
     // Note: Distance ties will make the found percentage lower
     bool print_results = false;
@@ -103,8 +114,8 @@ void load_queries(Config* config, float** nodes, float** queries);
 
 // Main algorithms
 HNSW* insert(Config* config, HNSW* hnsw, int query, int est_con, int max_con, int ef_con, float normal_factor, std::function<double()> rand);
-void search_layer(Config* config, HNSW* hnsw, float* query, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num);
-std::vector<std::pair<float, int>> nn_search(Config* config, HNSW* hnsw, std::pair<int, float*>& query, int num_to_return, int ef_con, std::vector<int>& path);
+void search_layer(Config* config, HNSW* hnsw, std::vector<std::vector<Edge*>>& path, float* query, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num);
+std::vector<std::pair<float, int>> nn_search(Config* config, HNSW* hnsw, std::vector<std::vector<Edge*>>& path, std::pair<int, float*>& query, int num_to_return, int ef_con);
 
 // Executing HNSW
 bool sanity_checks(Config* config);

@@ -23,7 +23,7 @@ hnsw_save: HNSW/hnsw_save.cpp HNSW/hnsw.cpp HNSW/hnsw.h
 dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-run_grasp: Grasp/run_grasp.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+run_grasp: Grasp/run_grasp.cpp Grasp/grasp.cpp Grasp/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
 clean:
