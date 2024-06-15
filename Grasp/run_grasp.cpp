@@ -24,7 +24,9 @@ int main() {
     if (config->load_graph_file) {
         load_hnsw_file(config, hnsw, nodes);
     } else {
-        insert_nodes(config, hnsw);
+        for (int i = 1; i < config->num_nodes; i++) {
+            hnsw->insert(config, i);
+        }
     }
 
     // Optimize HNSW using GraSP
@@ -40,7 +42,7 @@ int main() {
     //     cout << "Beginning search" << endl;
 
     //     // Run query search and print results
-    //     run_query_search(config, hnsw, queries);
+    //     hnsw->search_queries(config, queries);
 
     //     auto search_end = chrono::high_resolution_clock::now();
     //     cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;

@@ -18,8 +18,8 @@ void learn_edge_importance(Config* config, HNSW* hnsw, float** nodes, float** qu
             pair<int, float*> query = make_pair(i, queries[i]);
             vector<vector<Edge*>> sample_path;
             vector<vector<Edge*>> original_path;
-            vector<pair<float, int>> sample_nearest = nn_search(config, hnsw, sample_path, query, 1, config->ef_search);
-            vector<pair<float, int>> original_nearest = nn_search(config, hnsw, original_path, query, 1, config->ef_search);
+            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1);
+            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1);
             
             // If the nearest neighbor differs, increase the weight importances
             if (original_nearest[0].second != sample_nearest[0].second) {

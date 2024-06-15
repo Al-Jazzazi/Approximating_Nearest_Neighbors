@@ -107,7 +107,9 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
                 << ", ef_construction = " << config->ef_construction << ", ef_search = "
                 << config->ef_search << ", num_return = " << config->num_return << endl; 
             hnsw = init_hnsw(config, nodes);
-            insert_nodes(config, hnsw);
+            for (int i = 1; i < config->num_nodes; i++) {
+                hnsw->insert(config, i);
+            }
 
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -115,7 +117,6 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
             cout << "Distance computations (top layers): " << upper_dist_comps << endl;
         }
-        reinsert_nodes(config, hnsw);
 
         if (config->ef_search < config->num_return) {
             cout << "Warning: Skipping ef_search = " << config->ef_search << " which is less than num_return" << endl;
@@ -132,7 +133,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         vector<vector<Edge*>> path;
         for (int i = 0; i < config->num_queries; ++i) {
             pair<int, float*> query = make_pair(i, queries[i]);
-            neighbors.emplace_back(nn_search(config, hnsw, path, query, config->num_return, config->ef_search));
+            neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));
         }
 
         auto end = chrono::high_resolution_clock::now();

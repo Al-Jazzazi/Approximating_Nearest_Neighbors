@@ -18,10 +18,6 @@ bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
-HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
-           num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           layer_rand(config->insertion_seed), layer_dis(0.0000001, 0.9999999) {}
-
 Edge::Edge() : target(-1), distance(-1), weight(-1) {}
 
 Edge::Edge(int target, float distance, float weight) : target(target), distance(distance), weight(weight) {}
@@ -34,341 +30,9 @@ bool Edge::operator<(const Edge& rhs) const {
     return this->distance < rhs.distance;
 }
 
-float calculate_l2_sq(float* a, float* b, int size, int layer) {
-    if (layer == 0)
-        ++layer0_dist_comps;
-    else
-        ++upper_dist_comps;
-
-    int parts = size / 8;
-
-    // Initialize result to 0
-    __m256 result = _mm256_setzero_ps();
-
-    // Process 8 floats at a time
-    for (size_t i = 0; i < parts; ++i) {
-        // Load vectors from memory into AVX registers
-        __m256 vec_a = _mm256_loadu_ps(&a[i * 8]);
-        __m256 vec_b = _mm256_loadu_ps(&b[i * 8]);
-
-        // Compute differences and square
-        __m256 diff = _mm256_sub_ps(vec_a, vec_b);
-        __m256 diff_sq = _mm256_mul_ps(diff, diff);
-
-        result = _mm256_add_ps(result, diff_sq);
-    }
-
-    // Process remaining floats
-    float remainder = 0;
-    for (size_t i = parts * 8; i < size; ++i) {
-        float diff = a[i] - b[i];
-        remainder += diff * diff;
-    }
-
-    // Sum all floats in result
-    float sum[8];
-    _mm256_storeu_ps(sum, result);
-    for (size_t i = 1; i < 8; ++i) {
-        sum[0] += sum[i];
-    }
-
-    return sum[0] + remainder;
-}
-
-void load_fvecs(const string& file, const string& type, float** nodes, int num, int dim, bool has_groundtruth) {
-    ifstream f(file, ios::binary | ios::in);
-    if (!f) {
-        cout << "File " << file << " not found!" << endl;
-        exit(-1);
-    }
-    cout << "Loading " << num << " " << type << " from file " << file << endl;
-
-    // Read dimension
-    int read_dim;
-    f.read(reinterpret_cast<char*>(&read_dim), 4);
-    if (dim != read_dim) {
-        cout << "Mismatch between expected and actual dimension: " << dim << " != " << read_dim << endl;
-        exit(-1);
-    }
-
-    // Check size
-    f.seekg(0, ios::end);
-    if (num > f.tellg() / (dim * 4 + 4)) {
-        cout << "Requested number of " << type << " is greater than number in file: "
-            << num << " > " << f.tellg() / (dim * 4 + 4) << endl;
-        exit(-1);
-    }
-    if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
-        cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
-        exit(-1);
-    }
-
-    f.seekg(0, ios::beg);
-    for (int i = 0; i < num; i++) {
-        // Skip dimension size
-        f.seekg(4, ios::cur);
-
-        // Read point
-        nodes[i] = new float[dim];
-        f.read(reinterpret_cast<char*>(nodes[i]), dim * 4);
-    }
-    f.close();
-}
-
-void load_ivecs(const string& file, vector<vector<int>>& results, int num, int num_return) {
-    ifstream f(file, ios::binary | ios::in);
-    if (!f) {
-        cout << "File " << file << " not found!" << endl;
-        exit(-1);
-    }
-    cout << "Loading groundtruth from file " << file << endl;
-
-    // Read width
-    int width;
-    f.read(reinterpret_cast<char*>(&width), 4);
-    if (num_return > width) {
-        cout << "Requested num_return is greater than width in file: " << num_return << " > " << width << endl;
-        exit(-1);
-    }
-
-    // Check size
-    f.seekg(0, ios::end);
-    if (num > f.tellg() / (width * 4 + 4)) {
-        cout << "Requested number of queries is greater than number in file: "
-            << num << " > " << f.tellg() / (width * 4 + 4) << endl;
-        exit(-1);
-    }
-
-    results.reserve(num);
-    f.seekg(0, ios::beg);
-    for (int i = 0; i < num; i++) {
-        // Skip list size
-        f.seekg(4, ios::cur);
-
-        // Read point
-        int values[num_return];
-        f.read(reinterpret_cast<char*>(values), num_return * 4);
-        results.push_back(vector<int>(values, values + num_return));
-
-        // Skip remaining values
-        f.seekg((width - num_return) * 4, ios::cur);
-    }
-    f.close();
-}
-
-// graph_file_name is the file path for the .bin graph file, and info_file_name
-// is the file path for a .txt graph information file
-void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
-    // Check file and parameters
-    ifstream graph_file(config->hnsw_graph_file);
-    ifstream info_file(config->hnsw_info_file);
-    cout << "Loading saved graph from " << config->hnsw_graph_file << endl;
-
-    if (!graph_file) {
-        cout << "File " << config->hnsw_graph_file << " not found!" << endl;
-        return;
-    }
-    if (!info_file) {
-        cout << "File " << config->hnsw_info_file << " not found!" << endl;
-        return;
-    }
-
-    int opt_con, max_con, max_con_0, ef_con;
-    int num_nodes;
-    int num_layers;
-    info_file >> opt_con >> max_con >> max_con_0 >> ef_con;
-    info_file >> num_nodes;
-    info_file >> num_layers;
-
-    // Check if number of nodes match
-    if (num_nodes != config->num_nodes) {
-        cout << "Mismatch between loaded and expected number of nodes" << endl;
-        return;
-    }
-
-    // Check if construction parameters match
-    if (opt_con != config->optimal_connections || max_con != config->max_connections ||
-        max_con_0 != config->max_connections_0 || ef_con != config->ef_construction) {
-        cout << "Mismatch between loaded and expected construction parameters" << endl;
-        return;
-    }
-
-    if (is_benchmarking) {
-        long long construct_layer0_dist_comps;
-        long long construct_upper_dist_comps;
-        double construct_duration;
-        info_file >> construct_layer0_dist_comps;
-        info_file >> construct_upper_dist_comps;
-        info_file >> construct_duration;
-
-        auto start = chrono::high_resolution_clock::now();
-        cout << "Loading graph with construction parameters: "
-            << config->optimal_connections << ", " << config->max_connections << ", "
-            << config->max_connections_0 << ", " << config->ef_construction << endl;
-        
-        hnsw->num_layers = num_layers;
-        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
-        
-        auto end = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-        cout << "Load time: " << duration / 1000.0 << " seconds, ";
-        cout << "Construction time: " << construct_duration << " seconds, ";
-        cout << "Distance computations (layer 0): " << construct_layer0_dist_comps <<", ";
-        cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
-    } else {
-        hnsw->num_layers = num_layers;
-        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
-    }
-}
-
-void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
-    // Load node neighbors
-    for (int i = 0; i < num_nodes; ++i) {
-        int layers;
-        graph_file.read(reinterpret_cast<char*>(&layers), sizeof(layers));
-        hnsw->mappings[i].resize(layers);
-
-        // Load layers
-        for (int j = 0; j < layers; ++j) {
-            int num_neighbors;
-            graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
-            hnsw->mappings[i][j].reserve(num_neighbors);
-
-            // Load neighbors
-            for (int k = 0; k < num_neighbors; ++k) {
-                int index;
-                float distance;
-                graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
-                graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
-                hnsw->mappings[i][j].emplace_back(Edge(index, distance));
-            }
-        }
-    }
-
-    // Load entry point
-    int entry_point;
-    graph_file.read(reinterpret_cast<char*>(&entry_point), sizeof(entry_point));
-    hnsw->entry_point = entry_point;
-}
-
-void load_nodes(Config* config, float** nodes) {
-    if (config->load_file != "") {
-        if (config->load_file.size() >= 6 && config->load_file.substr(config->load_file.size() - 6) == ".fvecs") {
-            // Load nodes from fvecs file
-            load_fvecs(config->load_file, "nodes", nodes, config->num_nodes, config->dimensions, config->groundtruth_file != "");
-            return;
-        }
-    
-        // Load nodes from file
-        ifstream f(config->load_file, ios::in);
-        if (!f) {
-            cout << "File " << config->load_file << " not found!" << endl;
-            exit(1);
-        }
-        cout << "Loading " << config->num_nodes << " nodes from file " << config->load_file << endl;
-
-        for (int i = 0; i < config->num_nodes; i++) {
-            nodes[i] = new float[config->dimensions];
-            for (int j = 0; j < config->dimensions; j++) {
-                f >> nodes[i][j];
-            }
-        }
-
-        f.close();
-        return;
-    }
-
-    cout << "Generating " << config->num_nodes << " random nodes" << endl;
-
-    mt19937 gen(config->graph_seed);
-    uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
-
-    for (int i = 0; i < config->num_nodes; i++) {
-        nodes[i] = new float[config->dimensions];
-        for (int j = 0; j < config->dimensions; j++) {
-            nodes[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
-        }
-    }
-}
-
-void load_queries(Config* config, float** nodes, float** queries) {
-    mt19937 gen(config->query_seed);
-    if (config->query_file != "") {
-        if (config->query_file.size() >= 6 && config->query_file.substr(config->query_file.size() - 6) == ".fvecs") {
-            // Load queries from fvecs file
-            load_fvecs(config->query_file, "queries", queries, config->num_queries, config->dimensions, config->groundtruth_file != "");
-            return;
-        }
-
-        // Load queries from file
-        ifstream f(config->query_file, ios::in);
-        if (!f) {
-            cout << "File " << config->query_file << " not found!" << endl;
-            exit(1);
-        }
-        cout << "Loading " << config->num_queries << " queries from file " << config->query_file << endl;
-
-        for (int i = 0; i < config->num_queries; i++) {
-            queries[i] = new float[config->dimensions];
-            for (int j = 0; j < config->dimensions; j++) {
-                f >> queries[i][j];
-            }
-        }
-
-        f.close();
-        return;
-    }
-
-    if (config->load_file == "") {
-        // Generate random queries (same as get_nodes)
-        cout << "Generating " << config->num_queries << " random queries" << endl;
-        uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
-
-        for (int i = 0; i < config->num_queries; i++) {
-            queries[i] = new float[config->dimensions];
-            for (int j = 0; j < config->dimensions; j++) {
-                queries[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
-            }
-        }
-
-        return;
-    }
-    
-    // Generate queries randomly based on bounds of graph_nodes
-    cout << "Generating queries based on file " << config->load_file << endl;
-    float* lower_bound = new float[config->dimensions];
-    float* upper_bound = new float[config->dimensions];
-    copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
-    copy(nodes[0], nodes[0] + config->dimensions, upper_bound);
-
-    // Calculate lowest and highest value for each dimension using graph_nodes
-    for (int i = 1; i < config->num_nodes; i++) {
-        for (int j = 0; j < config->dimensions; j++) {
-            if (nodes[i][j] < lower_bound[j]) {
-                lower_bound[j] = nodes[i][j];
-            }
-            if (nodes[i][j] > upper_bound[j]) {
-                upper_bound[j] = nodes[i][j];
-            }
-        }
-    }
-    uniform_real_distribution<float>* dis_array = new uniform_real_distribution<float>[config->dimensions];
-    for (int i = 0; i < config->dimensions; i++) {
-        dis_array[i] = uniform_real_distribution<float>(lower_bound[i], upper_bound[i]);
-    }
-
-    // Generate queries based on the range of values in each dimension
-    for (int i = 0; i < config->num_queries; i++) {
-        queries[i] = new float[config->dimensions];
-        for (int j = 0; j < config->dimensions; j++) {
-            queries[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
-        }
-    }
-
-    delete[] lower_bound;
-    delete[] upper_bound;
-    delete[] dis_array;
-}
+HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
+           num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
+           layer_rand(config->insertion_seed), layer_dis(0.0000001, 0.9999999) {}
 
 /**
  * Alg 1
@@ -605,19 +269,19 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
  * K-NN-SEARCH(hnsw, q, K, ef)
  * This also stores the traversed edges in the path parameter
 */
-vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, int ef_con) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return) {
     vector<pair<float, int>> entry_points;
-    entry_points.reserve(ef_con);
-    int top = hnsw->num_layers - 1;
-    float dist = calculate_l2_sq(query.second, hnsw->nodes[hnsw->entry_point], config->dimensions, top);
-    entry_points.push_back(make_pair(dist, hnsw->entry_point));
+    entry_points.reserve(config->ef_search);
+    int top = num_layers - 1;
+    float dist = calculate_l2_sq(query.second, nodes[entry_point], config->dimensions, top);
+    entry_points.push_back(make_pair(dist, entry_point));
 
     if (config->debug_search)
         cout << "Searching for " << num_to_return << " nearest neighbors of node " << query.first << endl;
 
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= 1; layer--) {
-        hnsw->search_layer(config, query.second, path, entry_points, 1, layer);
+        search_layer(config, query.second, path, entry_points, 1, layer);
 
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
@@ -629,7 +293,7 @@ vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, vector<vector<Edg
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    hnsw->search_layer(config, query.second, path, entry_points, ef_con, 0);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0);
     
     if (config->gt_dist_log)
         log_neighbors = false;
@@ -652,52 +316,63 @@ vector<pair<float, int>> nn_search(Config* config, HNSW* hnsw, vector<vector<Edg
     return entry_points;
 }
 
-HNSW* init_hnsw(Config* config, float** nodes) {
-    HNSW* hnsw = new HNSW(config, nodes);
-    hnsw->mappings.resize(hnsw->num_nodes);
-
-    // Insert first node into first layer with empty connections vector
-    hnsw->num_layers = 1;
-    hnsw->mappings[0].resize(1);
-    hnsw->entry_point = 0;
-    return hnsw;
-}
-
-void insert_nodes(Config* config, HNSW* hnsw) {
-    for (int i = 1; i < config->num_nodes; i++) {
-        hnsw->insert(config, i);
-    }
-}
-
-void print_hnsw(Config* config, HNSW* hnsw) {
-    if (config->print_graph) {
-        vector<int> nodes_per_layer(hnsw->num_layers);
-        for (int i = 0; i < config->num_nodes; ++i) {
-            for (int j = 0; j < hnsw->mappings[i].size(); ++j)
-                ++nodes_per_layer[j];
-        }
-
-        cout << "Nodes per layer: " << endl;
-        for (int i = 0; i < hnsw->num_layers; ++i)
-            cout << "Layer " << i << ": " << nodes_per_layer[i] << endl;
-        cout << endl;
-
-        for (int i = 0; i < hnsw->num_layers; ++i) {
-            cout << "Layer " << i << " connections: " << endl;
-            for (int j = 0; j < config->num_nodes; ++j) {
-                if (hnsw->mappings[j].size() <= i)
-                    continue;
-
-                cout << j << ": ";
-                for (auto n_pair : hnsw->mappings[j][i])
-                    cout << n_pair.target << " ";
-                cout << endl;
+// Delete the node at the target index from the HNSW
+void HNSW::delete_node(Config* config, int target) {
+    // Remove edges from all neighbors to the node
+    for (int i = 0; i < mappings[target].size(); i++) {
+        for (int j = 0; j < mappings[target][i].size() - 1; j++) {
+            int neighbor_index = mappings[target][i][j].target;
+            vector<Edge>& neighbor_mapping = mappings[neighbor_index][i];
+            int position = -1;
+            for (int k = 0; k < neighbor_mapping.size() - 1; k++) {
+                if (neighbor_mapping[k].target == target) {
+                    position = k;
+                    break;
+                }
+            }
+            // Check if the position is valid (the target node's edge is not a duplicate)
+            if (position >= 0) {
+                neighbor_mapping[position] = neighbor_mapping[neighbor_mapping.size() - 1];
+                neighbor_mapping.pop_back();
             }
         }
     }
+    // Remove the node
+    mappings[target] = mappings[mappings.size() - 1];
+    mappings.pop_back();
 }
 
-void run_query_search(Config* config, HNSW* hnsw, float** queries) {
+void HNSW::export_graph(Config* config) {
+    ofstream file(config->export_dir + "graph.txt");
+
+    // Export number of layers
+    file << num_layers << endl;
+
+    // Export nodes
+    file << "Nodes" << endl;
+    for (int i = 0; i < num_nodes; ++i) {
+        file << i << " " << mappings[i].size() - 1 << ": " << nodes[i][0];
+        for (int dim = 1; dim < num_dimensions; ++dim)
+            file << "," << nodes[i][dim];
+        file << endl;
+    }
+
+    // Export edges
+    file << "Edges" << endl;
+    for (int i = 0; i < config->num_nodes; ++i) {
+        file << i << endl;
+        for (int layer = 0; layer < mappings[i].size(); ++layer) {
+            for (auto n_pair : mappings[i][layer])
+                file << n_pair.target << ",";
+            file << endl;
+        }
+    }
+
+    file.close();
+    cout << "Exported graph to " << config->export_dir << "graph.txt" << endl;
+}
+
+void HNSW::search_queries(Config* config, float** queries) {
     ofstream* export_file = NULL;
     if (config->export_queries)
         export_file = new ofstream(config->export_dir + "queries.txt");
@@ -729,7 +404,7 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
             // Get actual nearest neighbors
             priority_queue<pair<float, int>> pq;
             for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(query.second, hnsw->nodes[j], config->dimensions, -1);
+                float dist = calculate_l2_sq(query.second, nodes[j], config->dimensions, -1);
                 pq.emplace(dist, j);
                 if (pq.size() > config->num_return)
                     pq.pop();
@@ -749,7 +424,7 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
         vector<vector<Edge*>> path;
-        vector<pair<float, int>> found = nn_search(config, hnsw, path, query, config->num_return, config->ef_search);
+        vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
         if (config->gt_dist_log)
             *when_neigh_found_file << endl;
         
@@ -843,81 +518,387 @@ void run_query_search(Config* config, HNSW* hnsw, float** queries) {
     }
 }
 
-void export_graph(Config* config, HNSW* hnsw, float** nodes) {
-    if (config->export_graph) {
-        ofstream file(config->export_dir + "graph.txt");
-
-        // Export number of layers
-        file << hnsw->num_layers << endl;
-
-        // Export nodes
-        file << "Nodes" << endl;
-        for (int i = 0; i < config->num_nodes; ++i) {
-            file << i << " " << hnsw->mappings[i].size() - 1 << ": " << nodes[i][0];
-            for (int dim = 1; dim < config->dimensions; ++dim)
-                file << "," << nodes[i][dim];
-            file << endl;
-        }
-
-        // Export edges
-        file << "Edges" << endl;
-        for (int i = 0; i < config->num_nodes; ++i) {
-            file << i << endl;
-            for (int layer = 0; layer < hnsw->mappings[i].size(); ++layer) {
-                for (auto n_pair : hnsw->mappings[i][layer])
-                    file << n_pair.target << ",";
-                file << endl;
-            }
-        }
-
-        file.close();
-        cout << "Exported graph to " << config->export_dir << "graph.txt" << endl;
-    }
-}
-
-void reinsert_nodes(Config* config, HNSW* hnsw) {
-    for (int i = 0; i < config->reinsert_percent * config->num_nodes; i++) {
-        int selected = rand() % config->num_nodes;
-        delete_node(config, hnsw, selected);
-        hnsw->insert(config, selected);
-    }
-}
-
-// Delete the node at the target index from the HNSW
-void delete_node(Config* config, HNSW* hnsw, int target) {
-    // Remove edges from all neighbors to the node
-    for (int i = 0; i < hnsw->mappings[target].size(); i++) {
-        for (int j = 0; j < hnsw->mappings[target][i].size() - 1; j++) {
-            int neighbor_index = hnsw->mappings[target][i][j].target;
-            vector<Edge>& neighbor_mapping = hnsw->mappings[neighbor_index][i];
-            int position = -1;
-            for (int k = 0; k < neighbor_mapping.size() - 1; k++) {
-                if (neighbor_mapping[k].target == target) {
-                    position = k;
-                    break;
-                }
-            }
-            // Check if the position is valid (the target node's edge is not a duplicate)
-            if (position >= 0) {
-                neighbor_mapping[position] = neighbor_mapping[neighbor_mapping.size() - 1];
-                neighbor_mapping.pop_back();
-            }
-        }
-    }
-    // Remove the node
-    hnsw->mappings[target] = hnsw->mappings[hnsw->mappings.size() - 1];
-    hnsw->mappings.pop_back();
-}
-
-vector<int> get_layer(Config* config, HNSW* hnsw, int layer) {
+vector<int> HNSW::get_layer(Config* config, int layer) {
     unordered_set<int> nodes;
-    for (int i = 0; i < config->num_nodes; i++) {
-        if (hnsw->mappings[i].size() - 1 >= layer) {
-            for (int j = 0; j < hnsw->mappings[i][layer].size(); j++) {
-                nodes.insert(hnsw->mappings[i][layer][j].target);
+    for (int i = 0; i < num_nodes; i++) {
+        if (mappings[i].size() - 1 >= layer) {
+            for (int j = 0; j < mappings[i][layer].size(); j++) {
+                nodes.insert(mappings[i][layer][j].target);
             }
         }
     }
     vector<int> result(nodes.begin(), nodes.end());
     return result;
+}
+
+HNSW* init_hnsw(Config* config, float** nodes) {
+    HNSW* hnsw = new HNSW(config, nodes);
+    hnsw->mappings.resize(hnsw->num_nodes);
+
+    // Insert first node into first layer with empty connections vector
+    hnsw->num_layers = 1;
+    hnsw->mappings[0].resize(1);
+    hnsw->entry_point = 0;
+    return hnsw;
+}
+
+std::ostream& operator<<(std::ostream& os, const HNSW& hnsw) {
+    vector<int> nodes_per_layer(hnsw.num_layers);
+    for (int i = 0; i < hnsw.num_nodes; ++i) {
+        for (int j = 0; j < hnsw.mappings[i].size(); ++j)
+            ++nodes_per_layer[j];
+    }
+
+    os << "Nodes per layer: " << endl;
+    for (int i = 0; i < hnsw.num_layers; ++i)
+        os << "Layer " << i << ": " << nodes_per_layer[i] << endl;
+    os << endl;
+
+    for (int i = 0; i < hnsw.num_layers; ++i) {
+        os << "Layer " << i << " connections: " << endl;
+        for (int j = 0; j < hnsw.num_nodes; ++j) {
+            if (hnsw.mappings[j].size() <= i)
+                continue;
+
+            os << j << ": ";
+            for (auto n_pair : hnsw.mappings[j][i])
+                os << n_pair.target << " ";
+            os << endl;
+        }
+    }
+    return os;
+}
+
+float calculate_l2_sq(float* a, float* b, int size, int layer) {
+    if (layer == 0)
+        ++layer0_dist_comps;
+    else
+        ++upper_dist_comps;
+
+    int parts = size / 8;
+
+    // Initialize result to 0
+    __m256 result = _mm256_setzero_ps();
+
+    // Process 8 floats at a time
+    for (size_t i = 0; i < parts; ++i) {
+        // Load vectors from memory into AVX registers
+        __m256 vec_a = _mm256_loadu_ps(&a[i * 8]);
+        __m256 vec_b = _mm256_loadu_ps(&b[i * 8]);
+
+        // Compute differences and square
+        __m256 diff = _mm256_sub_ps(vec_a, vec_b);
+        __m256 diff_sq = _mm256_mul_ps(diff, diff);
+
+        result = _mm256_add_ps(result, diff_sq);
+    }
+
+    // Process remaining floats
+    float remainder = 0;
+    for (size_t i = parts * 8; i < size; ++i) {
+        float diff = a[i] - b[i];
+        remainder += diff * diff;
+    }
+
+    // Sum all floats in result
+    float sum[8];
+    _mm256_storeu_ps(sum, result);
+    for (size_t i = 1; i < 8; ++i) {
+        sum[0] += sum[i];
+    }
+
+    return sum[0] + remainder;
+}
+
+void load_fvecs(const string& file, const string& type, float** nodes, int num, int dim, bool has_groundtruth) {
+    ifstream f(file, ios::binary | ios::in);
+    if (!f) {
+        cout << "File " << file << " not found!" << endl;
+        exit(-1);
+    }
+    cout << "Loading " << num << " " << type << " from file " << file << endl;
+
+    // Read dimension
+    int read_dim;
+    f.read(reinterpret_cast<char*>(&read_dim), 4);
+    if (dim != read_dim) {
+        cout << "Mismatch between expected and actual dimension: " << dim << " != " << read_dim << endl;
+        exit(-1);
+    }
+
+    // Check size
+    f.seekg(0, ios::end);
+    if (num > f.tellg() / (dim * 4 + 4)) {
+        cout << "Requested number of " << type << " is greater than number in file: "
+            << num << " > " << f.tellg() / (dim * 4 + 4) << endl;
+        exit(-1);
+    }
+    if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
+        cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
+        exit(-1);
+    }
+
+    f.seekg(0, ios::beg);
+    for (int i = 0; i < num; i++) {
+        // Skip dimension size
+        f.seekg(4, ios::cur);
+
+        // Read point
+        nodes[i] = new float[dim];
+        f.read(reinterpret_cast<char*>(nodes[i]), dim * 4);
+    }
+    f.close();
+}
+
+void load_ivecs(const string& file, vector<vector<int>>& results, int num, int num_return) {
+    ifstream f(file, ios::binary | ios::in);
+    if (!f) {
+        cout << "File " << file << " not found!" << endl;
+        exit(-1);
+    }
+    cout << "Loading groundtruth from file " << file << endl;
+
+    // Read width
+    int width;
+    f.read(reinterpret_cast<char*>(&width), 4);
+    if (num_return > width) {
+        cout << "Requested num_return is greater than width in file: " << num_return << " > " << width << endl;
+        exit(-1);
+    }
+
+    // Check size
+    f.seekg(0, ios::end);
+    if (num > f.tellg() / (width * 4 + 4)) {
+        cout << "Requested number of queries is greater than number in file: "
+            << num << " > " << f.tellg() / (width * 4 + 4) << endl;
+        exit(-1);
+    }
+
+    results.reserve(num);
+    f.seekg(0, ios::beg);
+    for (int i = 0; i < num; i++) {
+        // Skip list size
+        f.seekg(4, ios::cur);
+
+        // Read point
+        int values[num_return];
+        f.read(reinterpret_cast<char*>(values), num_return * 4);
+        results.push_back(vector<int>(values, values + num_return));
+
+        // Skip remaining values
+        f.seekg((width - num_return) * 4, ios::cur);
+    }
+    f.close();
+}
+
+void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
+    // Check file and parameters
+    ifstream graph_file(config->hnsw_graph_file);
+    ifstream info_file(config->hnsw_info_file);
+    cout << "Loading saved graph from " << config->hnsw_graph_file << endl;
+
+    if (!graph_file) {
+        cout << "File " << config->hnsw_graph_file << " not found!" << endl;
+        return;
+    }
+    if (!info_file) {
+        cout << "File " << config->hnsw_info_file << " not found!" << endl;
+        return;
+    }
+
+    int opt_con, max_con, max_con_0, ef_con;
+    int num_nodes;
+    int num_layers;
+    info_file >> opt_con >> max_con >> max_con_0 >> ef_con;
+    info_file >> num_nodes;
+    info_file >> num_layers;
+
+    // Check if number of nodes match
+    if (num_nodes != config->num_nodes) {
+        cout << "Mismatch between loaded and expected number of nodes" << endl;
+        return;
+    }
+
+    // Check if construction parameters match
+    if (opt_con != config->optimal_connections || max_con != config->max_connections ||
+        max_con_0 != config->max_connections_0 || ef_con != config->ef_construction) {
+        cout << "Mismatch between loaded and expected construction parameters" << endl;
+        return;
+    }
+
+    if (is_benchmarking) {
+        long long construct_layer0_dist_comps;
+        long long construct_upper_dist_comps;
+        double construct_duration;
+        info_file >> construct_layer0_dist_comps;
+        info_file >> construct_upper_dist_comps;
+        info_file >> construct_duration;
+
+        auto start = chrono::high_resolution_clock::now();
+        cout << "Loading graph with construction parameters: "
+            << config->optimal_connections << ", " << config->max_connections << ", "
+            << config->max_connections_0 << ", " << config->ef_construction << endl;
+        
+        hnsw->num_layers = num_layers;
+        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+        
+        auto end = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+        cout << "Load time: " << duration / 1000.0 << " seconds, ";
+        cout << "Construction time: " << construct_duration << " seconds, ";
+        cout << "Distance computations (layer 0): " << construct_layer0_dist_comps <<", ";
+        cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
+    } else {
+        hnsw->num_layers = num_layers;
+        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+    }
+}
+
+void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
+    // Load node neighbors
+    for (int i = 0; i < num_nodes; ++i) {
+        int layers;
+        graph_file.read(reinterpret_cast<char*>(&layers), sizeof(layers));
+        hnsw->mappings[i].resize(layers);
+
+        // Load layers
+        for (int j = 0; j < layers; ++j) {
+            int num_neighbors;
+            graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
+            hnsw->mappings[i][j].reserve(num_neighbors);
+
+            // Load neighbors
+            for (int k = 0; k < num_neighbors; ++k) {
+                int index;
+                float distance;
+                graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
+                graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
+                hnsw->mappings[i][j].emplace_back(Edge(index, distance));
+            }
+        }
+    }
+
+    // Load entry point
+    int entry_point;
+    graph_file.read(reinterpret_cast<char*>(&entry_point), sizeof(entry_point));
+    hnsw->entry_point = entry_point;
+}
+
+void load_nodes(Config* config, float** nodes) {
+    if (config->load_file != "") {
+        if (config->load_file.size() >= 6 && config->load_file.substr(config->load_file.size() - 6) == ".fvecs") {
+            // Load nodes from fvecs file
+            load_fvecs(config->load_file, "nodes", nodes, config->num_nodes, config->dimensions, config->groundtruth_file != "");
+            return;
+        }
+    
+        // Load nodes from file
+        ifstream f(config->load_file, ios::in);
+        if (!f) {
+            cout << "File " << config->load_file << " not found!" << endl;
+            exit(1);
+        }
+        cout << "Loading " << config->num_nodes << " nodes from file " << config->load_file << endl;
+
+        for (int i = 0; i < config->num_nodes; i++) {
+            nodes[i] = new float[config->dimensions];
+            for (int j = 0; j < config->dimensions; j++) {
+                f >> nodes[i][j];
+            }
+        }
+
+        f.close();
+        return;
+    }
+
+    cout << "Generating " << config->num_nodes << " random nodes" << endl;
+
+    mt19937 gen(config->graph_seed);
+    uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
+
+    for (int i = 0; i < config->num_nodes; i++) {
+        nodes[i] = new float[config->dimensions];
+        for (int j = 0; j < config->dimensions; j++) {
+            nodes[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+        }
+    }
+}
+
+void load_queries(Config* config, float** nodes, float** queries) {
+    mt19937 gen(config->query_seed);
+    if (config->query_file != "") {
+        if (config->query_file.size() >= 6 && config->query_file.substr(config->query_file.size() - 6) == ".fvecs") {
+            // Load queries from fvecs file
+            load_fvecs(config->query_file, "queries", queries, config->num_queries, config->dimensions, config->groundtruth_file != "");
+            return;
+        }
+
+        // Load queries from file
+        ifstream f(config->query_file, ios::in);
+        if (!f) {
+            cout << "File " << config->query_file << " not found!" << endl;
+            exit(1);
+        }
+        cout << "Loading " << config->num_queries << " queries from file " << config->query_file << endl;
+
+        for (int i = 0; i < config->num_queries; i++) {
+            queries[i] = new float[config->dimensions];
+            for (int j = 0; j < config->dimensions; j++) {
+                f >> queries[i][j];
+            }
+        }
+
+        f.close();
+        return;
+    }
+
+    if (config->load_file == "") {
+        // Generate random queries (same as get_nodes)
+        cout << "Generating " << config->num_queries << " random queries" << endl;
+        uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
+
+        for (int i = 0; i < config->num_queries; i++) {
+            queries[i] = new float[config->dimensions];
+            for (int j = 0; j < config->dimensions; j++) {
+                queries[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+            }
+        }
+
+        return;
+    }
+    
+    // Generate queries randomly based on bounds of graph_nodes
+    cout << "Generating queries based on file " << config->load_file << endl;
+    float* lower_bound = new float[config->dimensions];
+    float* upper_bound = new float[config->dimensions];
+    copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
+    copy(nodes[0], nodes[0] + config->dimensions, upper_bound);
+
+    // Calculate lowest and highest value for each dimension using graph_nodes
+    for (int i = 1; i < config->num_nodes; i++) {
+        for (int j = 0; j < config->dimensions; j++) {
+            if (nodes[i][j] < lower_bound[j]) {
+                lower_bound[j] = nodes[i][j];
+            }
+            if (nodes[i][j] > upper_bound[j]) {
+                upper_bound[j] = nodes[i][j];
+            }
+        }
+    }
+    uniform_real_distribution<float>* dis_array = new uniform_real_distribution<float>[config->dimensions];
+    for (int i = 0; i < config->dimensions; i++) {
+        dis_array[i] = uniform_real_distribution<float>(lower_bound[i], upper_bound[i]);
+    }
+
+    // Generate queries based on the range of values in each dimension
+    for (int i = 0; i < config->num_queries; i++) {
+        queries[i] = new float[config->dimensions];
+        for (int j = 0; j < config->dimensions; j++) {
+            queries[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+        }
+    }
+
+    delete[] lower_bound;
+    delete[] upper_bound;
+    delete[] dis_array;
 }

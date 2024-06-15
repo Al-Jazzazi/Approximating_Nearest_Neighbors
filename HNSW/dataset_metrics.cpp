@@ -8,46 +8,6 @@
 
 using namespace std;
 
-void load_fvecs(const string& file, const string& type, float** nodes, int num, int dim) {
-    ifstream f(file, ios::binary | ios::in);
-    if (!f) {
-        cout << "File " << file << " not found!" << endl;
-        exit(-1);
-    }
-    cout << "Loading " << num << " " << type << " from file " << file << endl;
-
-    // Read dimension
-    int read_dim;
-    f.read(reinterpret_cast<char*>(&read_dim), 4);
-    if (dim != read_dim) {
-        cout << "Mismatch between expected and actual dimension: " << dim << " != " << read_dim << endl;
-        exit(-1);
-    }
-
-    // Check size
-    f.seekg(0, ios::end);
-    if (num > f.tellg() / (dim * 4 + 4)) {
-        cout << "Requested number of " << type << " is greater than number in file: "
-            << num << " > " << f.tellg() / (dim * 4 + 4) << endl;
-        exit(-1);
-    }
-    if (num != f.tellg() / (dim * 4 + 4)) {
-        cout << "Warning: requested number of " << type << " is different from number in file: "
-            << num << " != " << f.tellg() / (dim * 4 + 4) << endl;
-    }
-
-    f.seekg(0, ios::beg);
-    for (int i = 0; i < num; i++) {
-        // Skip dimension size
-        f.seekg(4, ios::cur);
-
-        // Read point
-        nodes[i] = new float[dim];
-        f.read(reinterpret_cast<char*>(nodes[i]), dim * 4);
-    }
-    f.close();
-}
-
 int count_same_nodes(Config* config, float** nodes1, int size1, float** nodes2, int size2) {
     int count = 0;
     for (int i = 0; i < size1; i++) {
@@ -68,8 +28,9 @@ int count_same_nodes(Config* config, float** nodes1, int size1, float** nodes2, 
     return count;
 }
 
-// Given some nodes, k, num, and dim, cluster the nodes and store its properties
-// inside cluster_sizes and wcss (within-cluster sum of squares)
+/* Given some nodes, k, num, and dim, cluster the nodes and store its properties
+ * inside cluster_sizes and wcss (within-cluster sum of squares)
+ */
 void k_means_cluster(Config* config, float* cluster_sizes, float& wcss, float** nodes, int k) {
     // Stop if k is invalid
     if (k < 1) {
@@ -273,7 +234,7 @@ void calculate_stats(Config* config, const string& name, float** nodes, bool dis
     int num_same = 0;
     if (config->compare_datasets) {
         float** comparison_nodes = new float*[config->comparison_num_nodes];
-        load_fvecs(config->metrics_dataset2_prefix + ".fvecs", "base", comparison_nodes, config->comparison_num_nodes, config->dimensions);
+        load_fvecs(config->metrics_dataset2_prefix + ".fvecs", "base", comparison_nodes, config->comparison_num_nodes, config->dimensions, config->groundtruth_file != "");
         num_same = count_same_nodes(config, nodes, config->num_nodes, comparison_nodes, config->comparison_num_nodes);
     }
     
@@ -444,7 +405,7 @@ int main() {
     Config* config = new Config();
 
     float** nodes = new float*[config->num_nodes];
-    load_fvecs(config->metrics_dataset1_prefix + ".fvecs", "base", nodes, config->num_nodes, config->dimensions);
+    load_fvecs(config->metrics_dataset1_prefix + ".fvecs", "base", nodes, config->num_nodes, config->dimensions, config->groundtruth_file != "");
 
     // Calculate stats
     cout << endl << "Base nodes:";

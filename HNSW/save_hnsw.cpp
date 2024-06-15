@@ -40,7 +40,9 @@ int main() {
             << config->optimal_connections << ", " << config->max_connections << ", "
             << config->max_connections_0 << ", " << config->ef_construction << endl; 
         HNSW* hnsw = init_hnsw(config, nodes);
-        insert_nodes(config, hnsw);
+        for (int i = 1; i < config->num_nodes; i++) {
+            hnsw->insert(config, i);
+        }
 
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();

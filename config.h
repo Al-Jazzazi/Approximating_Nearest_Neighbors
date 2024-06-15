@@ -24,7 +24,6 @@ public:
     int max_connections_0 = 14;
     int ef_construction = 21;
     double scaling_factor = 0.368;
-    float reinsert_percent = 0.0;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
 

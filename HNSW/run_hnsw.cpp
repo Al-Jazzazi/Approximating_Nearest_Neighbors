@@ -22,16 +22,22 @@ int main() {
     if (config->load_graph_file) {
         load_hnsw_file(config, hnsw, nodes);
     } else {
-        insert_nodes(config, hnsw);
+        for (int i = 1; i < config->num_nodes; i++) {
+            hnsw->insert(config, i);
+        }
     }
 
     // Print and export HNSW graph
-    print_hnsw(config, hnsw);
-    for (int i = 0; i < 11; i++) {
-        vector<int> layer = get_layer(config, hnsw, i);
+    if (config->print_graph) {
+        cout << hnsw;
+    }
+    for (int i = 0; i < 10; i++) {
+        vector<int> layer = hnsw->get_layer(config, i);
         cout << "Layer " << i << ", Size: " << layer.size() << endl;
     }
-    export_graph(config, hnsw, nodes);
+    if (config->export_graph) {
+        hnsw->export_graph(config);
+    }
 
     // Run queries
     if (config->run_search) {
@@ -43,7 +49,7 @@ int main() {
         cout << "Beginning search" << endl;
 
         // Run query search and print results
-        run_query_search(config, hnsw, queries);
+        hnsw->search_queries(config, queries);
 
         auto search_end = chrono::high_resolution_clock::now();
         cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
