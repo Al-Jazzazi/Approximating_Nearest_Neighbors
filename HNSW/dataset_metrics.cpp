@@ -442,8 +442,6 @@ int main() {
     bool exportStats = true;
     bool displayAggrStats = true;
     Config* config = new Config();
-    if(!sanity_checks(config))
-        return 1;
 
     float** nodes = new float*[config->num_nodes];
     load_fvecs(config->metrics_dataset1_prefix + ".fvecs", "base", nodes, config->num_nodes, config->dimensions);

@@ -80,7 +80,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             *results_file << endl << parameter << ", ";
         }
         // Sanity checks
-        if(!sanity_checks(config)) {
+        if(!config->sanity_checks()) {
             cout << "Config error!" << endl;
             break;
         }

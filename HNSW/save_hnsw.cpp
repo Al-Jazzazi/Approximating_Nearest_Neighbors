@@ -28,7 +28,7 @@ int main() {
         upper_dist_comps = 0;
 
         // Sanity checks
-        if(!sanity_checks(config)) {
+        if(!config->sanity_checks()) {
             cout << "Config error!" << endl;
             return 1;
         }
@@ -85,7 +85,7 @@ int main() {
         info_file << config->optimal_connections << " " << config->max_connections << " "
             << config->max_connections_0 << " " << config->ef_construction << endl;
         info_file << config->num_nodes << endl;
-        info_file << hnsw->layers << endl;
+        info_file << hnsw->num_layers << endl;
         info_file << layer0_dist_comps << endl;
         info_file << upper_dist_comps << endl;
         info_file << duration / 1000.0 << endl;

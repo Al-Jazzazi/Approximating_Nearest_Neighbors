@@ -13,8 +13,6 @@ int main() {
     time_t now = time(NULL);
     cout << "HNSW run started at " << ctime(&now);
     Config* config = new Config();
-    if(!sanity_checks(config))
-        return 1;
 
     // Construct HNSW
     float** nodes = new float*[config->num_nodes];

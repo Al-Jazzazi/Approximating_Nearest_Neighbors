@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -96,6 +97,36 @@ public:
     int hopkins_sample_size = 1000;
     int cluster_k = 400;
     int cluster_iterations = 20;
+
+    Config() {
+        if (!sanity_checks()) {
+            exit(1);
+        }
+    }
+
+    bool sanity_checks() {
+        if (optimal_connections > max_connections) {
+            std::cout << "Optimal connections cannot be greater than max connections" << std::endl;
+            return false;
+        }
+        if (optimal_connections > ef_construction) {
+            std::cout << "Optimal connections cannot be greater than beam width" << std::endl;
+            return false;
+        }
+        if (num_return > num_nodes) {
+            std::cout << "Number of nodes to return cannot be greater than number of nodes" << std::endl;
+            return false;
+        }
+        if (ef_construction > num_nodes) {
+            ef_construction = num_nodes;
+            std::cout << "Warning: Beam width was set to " << num_nodes << std::endl;
+        }
+        if (num_return > ef_search) {
+            num_return = ef_search;
+            std::cout << "Warning: Number of queries to return was set to " << ef_search << std::endl;
+        }
+        return true;
+    }
 };
 
 #endif

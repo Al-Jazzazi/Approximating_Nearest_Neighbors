@@ -7,6 +7,7 @@
 #include <queue>
 #include <random>
 #include <functional>
+#include <immintrin.h>
 #include "../config.h"
 
 extern long long int layer0_dist_comps;
@@ -28,14 +29,20 @@ public:
 
 class HNSW {
 public:
-    int node_size;
     float** nodes;
     // This vector stores vectors by node index, then layer number, then connection pair
     std::vector<std::vector<std::vector<Edge>>> mappings;
+    std::mt19937 layer_rand;
+    std::uniform_real_distribution<double> layer_dis;
+    double normal_factor;
     int entry_point;
-    int layers;
+    int num_layers;
+    int num_nodes;
+    int num_dimensions;
 
-    HNSW(int node_size, float** nodes);
+    HNSW(Config* config, float** nodes);
+    void insert(Config* config, int query);
+    void search_layer(Config* config, float* query, std::vector<std::vector<Edge*>>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num);
 };
 
 // Helper functions
@@ -50,12 +57,9 @@ void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);
 
 // Main algorithms
-HNSW* insert(Config* config, HNSW* hnsw, int query, int est_con, int max_con, int ef_con, float normal_factor, std::function<double()> rand);
-void search_layer(Config* config, HNSW* hnsw, std::vector<std::vector<Edge*>>& path, float* query, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num);
 std::vector<std::pair<float, int>> nn_search(Config* config, HNSW* hnsw, std::vector<std::vector<Edge*>>& path, std::pair<int, float*>& query, int num_to_return, int ef_con);
 
 // Executing HNSW
-bool sanity_checks(Config* config);
 HNSW* init_hnsw(Config* config, float** nodes);
 void insert_nodes(Config* config, HNSW* hnsw);
 void print_hnsw(Config* config, HNSW* hnsw);
