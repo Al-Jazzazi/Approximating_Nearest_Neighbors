@@ -5,43 +5,25 @@
 
 using namespace std;
 
-const string EXPORT_DIR = "runs/";
-const string EXPORT_NAME = "random_graph";
-
 /**
  * This class is used to export multiple HNSW graphs to file.
 */
 int main() {
     time_t now = time(NULL);
     cout << "HNSW save run started at " << ctime(&now);
-
     Config* config = new Config();
-
-    // Setup config
-    config->export_graph = false;
-    config->export_queries = false;
-    config->export_indiv = false;
-    config->debug_query_search_index = -1;
 
     // Get num_nodes amount of graph nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
-
     cout << "Construction parameters: opt_con, max_con, max_con_0, ef_con" << endl;
 
-    // Initialize different config values
-    const int SIZE = 3;
-    int optimal_connections[SIZE] = {7, 14, 25};
-    int max_connections[SIZE] = {11, 18, 30};
-    int max_connections_0[SIZE] = {14, 28, 50};
-    int ef_constructions[SIZE] = {21, 42, 75};
-
     // Run HNSW with different ef_construction values
-    for (int i = 0; i < SIZE; ++i) {
-        config->optimal_connections = optimal_connections[i];
-        config->max_connections = max_connections[i];
-        config->max_connections_0 = max_connections_0[i];
-        config->ef_construction = ef_constructions[i];
+    for (int i = 0; i < config->num_graphs_saved; ++i) {
+        config->optimal_connections = config->save_optimal_connections[i];
+        config->max_connections = config->save_max_connections[i];
+        config->max_connections_0 = config->save_max_connections_0[i];
+        config->ef_construction = config->save_ef_constructions[i];
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
 
@@ -67,7 +49,7 @@ int main() {
         cout << "Distance computations (top layers): " << upper_dist_comps << endl;
 
         // Export graph to file
-        ofstream graph_file(EXPORT_DIR + EXPORT_NAME + "_graph_" + to_string(i) + ".bin");
+        ofstream graph_file(config->save_file_prefix + "_graph_" + to_string(i) + ".bin");
 
         // Export edges
         for (int i = 0; i < config->num_nodes; ++i) {
@@ -99,7 +81,7 @@ int main() {
         graph_file.close();
 
         // Export construction parameters
-        ofstream info_file(EXPORT_DIR + EXPORT_NAME + "_info_" + to_string(i) + ".txt");
+        ofstream info_file(config->save_file_prefix + "_info_" + to_string(i) + ".txt");
         info_file << config->optimal_connections << " " << config->max_connections << " "
             << config->max_connections_0 << " " << config->ef_construction << endl;
         info_file << config->num_nodes << endl;
@@ -108,7 +90,7 @@ int main() {
         info_file << upper_dist_comps << endl;
         info_file << duration / 1000.0 << endl;
 
-        cout << "Exported graph to " << EXPORT_DIR + EXPORT_NAME + "_graph_" + to_string(i) + ".bin" << endl;
+        cout << "Exported graph to " << config->save_file_prefix + "_graph_" + to_string(i) + ".bin" << endl;
 
         delete hnsw;
     }

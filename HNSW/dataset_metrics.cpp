@@ -8,18 +8,6 @@
 
 using namespace std;
 
-// File name of fvecs file, including its path and excluding its extension
-const string filename = "./exports/glove/train";
-const int num_nodes = 1183514;
-const int dim = 25;
-const int hopkins_sample_size = 1000;
-const int cluster_k = 400;
-const int cluster_iterations = 20;
-
-const bool COMPARE_DATASETS = false;
-const string other_dataset = "./exports/glove/test";
-const int other_num_nodes = 1000;
-
 void load_fvecs(const string& file, const string& type, float** nodes, int num, int dim) {
     ifstream f(file, ios::binary | ios::in);
     if (!f) {
@@ -60,12 +48,12 @@ void load_fvecs(const string& file, const string& type, float** nodes, int num, 
     f.close();
 }
 
-int count_same_nodes(float** nodes1, int size1, float** nodes2, int size2) {
+int count_same_nodes(Config* config, float** nodes1, int size1, float** nodes2, int size2) {
     int count = 0;
     for (int i = 0; i < size1; i++) {
         for (int j = 0; j < size2; j++) {
             bool is_same = true;
-            for (int d = 0; d < dim; d++) {
+            for (int d = 0; d < config->dimensions; d++) {
                 if (nodes1[i][d] != nodes2[j][d]) {
                     is_same = false;
                     break;
@@ -82,7 +70,7 @@ int count_same_nodes(float** nodes1, int size1, float** nodes2, int size2) {
 
 // Given some nodes, k, num, and dim, cluster the nodes and store its properties
 // inside cluster_sizes and wcss (within-cluster sum of squares)
-void k_means_cluster(float* cluster_sizes, float& wcss, float** nodes, int k, int num, int dim) {
+void k_means_cluster(Config* config, float* cluster_sizes, float& wcss, float** nodes, int k) {
     // Stop if k is invalid
     if (k < 1) {
         return;
@@ -90,43 +78,43 @@ void k_means_cluster(float* cluster_sizes, float& wcss, float** nodes, int k, in
 
     // Generate random node indices for initial centroids
     mt19937 centroid_gen(std::chrono::system_clock::now().time_since_epoch().count());
-    int* range = new int[num];
-    for (int i = 0; i < num; i++) {
+    int* range = new int[config->num_nodes];
+    for (int i = 0; i < config->num_nodes; i++) {
         range[i] = i;
     }
-    std::shuffle(range, range + num, centroid_gen);
+    std::shuffle(range, range + config->num_nodes, centroid_gen);
 
     // Initialize clusters
     float** centroids = new float*[k];
     float** dimension_totals = new float*[k];
     float* sum_of_squares = new float[k];
     for (int i = 0; i < k; i++) {
-        centroids[i] = new float[dim];
-        dimension_totals[i] = new float[dim];
+        centroids[i] = new float[config->dimensions];
+        dimension_totals[i] = new float[config->dimensions];
         sum_of_squares[i] = 0;
 
-        for (int d = 0; d < dim; d++) {
+        for (int d = 0; d < config->dimensions; d++) {
             centroids[i][d] = nodes[range[i]][d];
             dimension_totals[i][d] = nodes[range[i]][d];
         }
     }
     delete[] range;
-    int* assignments = new int[num];
+    int* assignments = new int[config->num_nodes];
 
-    for (int i = 0; i < cluster_iterations; i++) {
+    for (int i = 0; i < config->cluster_iterations; i++) {
         // Update running statistics
         for (int m = 0; m < k; m++) {
-            for (int d = 0; d < dim; d++) {
+            for (int d = 0; d < config->dimensions; d++) {
                 dimension_totals[m][d] = 0;
             }
             cluster_sizes[m] = 0;
         }
         // Assign each node to the nearest cluster
-        for (int n = 0; n < num; n++) {
+        for (int n = 0; n < config->num_nodes; n++) {
             int min_distance = -1;
             int min_index = -1;
             for (int m = 0; m < k; m++) {
-                float distance = calculate_l2_sq(nodes[n], centroids[m], dim, -1);
+                float distance = calculate_l2_sq(nodes[n], centroids[m], config->dimensions, -1);
                 if (min_distance == -1 || distance < min_distance) {
                     min_distance = distance;
                     min_index = m;
@@ -134,23 +122,23 @@ void k_means_cluster(float* cluster_sizes, float& wcss, float** nodes, int k, in
             }
             assignments[n] = min_index;
             // Update new center of cluster
-            for (int d = 0; d < dim; d++) {
+            for (int d = 0; d < config->dimensions; d++) {
                 dimension_totals[min_index][d] += nodes[n][d];
             }
             cluster_sizes[min_index] += 1;
         }
         // Move centroids to center of cluster
         for (int m = 0; m < k; m++) {
-            for (int d = 0; d < dim; d++) {
+            for (int d = 0; d < config->dimensions; d++) {
                 centroids[m][d] = dimension_totals[m][d] / cluster_sizes[m];
             }
         }
     }
     // Calculate Within-Cluster Sum of Squares
     float total_error = 0;
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < config->num_nodes; i++) {
         int cluster_index = assignments[i];
-        sum_of_squares[cluster_index] +=  calculate_l2_sq(nodes[i], centroids[cluster_index], dim, -1);
+        sum_of_squares[cluster_index] +=  calculate_l2_sq(nodes[i], centroids[cluster_index], config->dimensions, -1);
     }
     for (int i = 0; i < k; i++) {
         if (cluster_sizes[i] > 0) {
@@ -173,18 +161,18 @@ void k_means_cluster(float* cluster_sizes, float& wcss, float** nodes, int k, in
  * Calculate Hopkins Statistic for the given nodes, where 0.5 indicates a
  * perfectly uniform dataset and 1.0 indicates a perfectly clustered dataset
 */
-float calculate_hopkins(float** nodes, int sample_size, int num, int dim, float* min, float* max) {
+float calculate_hopkins(Config* config, float** nodes, int sample_size, float* min, float* max) {
     // Obtain a random sample of nodes
     mt19937 sample_gen(std::chrono::system_clock::now().time_since_epoch().count());
     float** sample = new float*[sample_size];
-    std::sample(nodes, nodes + num, sample, sample_size, sample_gen);
+    std::sample(nodes, nodes + config->num_nodes, sample, sample_size, sample_gen);
 
     // Generate uniform data using system clock time as generation seed
     mt19937 uniform_gen(std::chrono::system_clock::now().time_since_epoch().count());
     float** uniform = new float*[sample_size];
     for (int i = 0; i < sample_size; i++) {
-        uniform[i] = new float[dim];
-        for (int j = 0; j < dim; j++) {
+        uniform[i] = new float[config->dimensions];
+        for (int j = 0; j < config->dimensions; j++) {
             uniform_real_distribution<float> distribution(min[j], max[j]);
             uniform[i][j] = distribution(uniform_gen);
         }
@@ -196,7 +184,7 @@ float calculate_hopkins(float** nodes, int sample_size, int num, int dim, float*
     for (int i = 0; i < sample_size; i++) {
         min_distance = -1;
         for (int j = 0; j < sample_size; j++) {
-            float distance = calculate_l2_sq(sample[i], sample[j], dim, -1);
+            float distance = calculate_l2_sq(sample[i], sample[j], config->dimensions, -1);
             if ((min_distance == -1 || distance < min_distance) && i != j) {
                 min_distance = distance;
             }
@@ -209,7 +197,7 @@ float calculate_hopkins(float** nodes, int sample_size, int num, int dim, float*
     for (int i = 0; i < sample_size; i++) {
         min_distance = -1;
         for (int j = 0; j < sample_size; j++) {
-            float distance = calculate_l2_sq(uniform[i], sample[j], dim, -1);
+            float distance = calculate_l2_sq(uniform[i], sample[j], config->dimensions, -1);
             if ((min_distance == -1 || distance < min_distance)) {
                 min_distance = distance;
             }
@@ -226,45 +214,45 @@ float calculate_hopkins(float** nodes, int sample_size, int num, int dim, float*
     return artificial_distance_sum / (artificial_distance_sum + real_distance_sum);
 }
 
-void calculate_stats(const string& name, float** nodes, int num, int dim, bool displayStats, bool exportStats, bool displayAggrStats) {
+void calculate_stats(Config* config, const string& name, float** nodes, bool displayStats, bool exportStats, bool displayAggrStats) {
     // Calculate mean, median, and std of each dimension as well as min and max
-    float* mean = new float[dim];
-    float* median = new float[dim];
-    float* std = new float[dim];
+    float* mean = new float[config->dimensions];
+    float* median = new float[config->dimensions];
+    float* std = new float[config->dimensions];
 
-    float* min = new float[dim];
-    float* max = new float[dim];
+    float* min = new float[config->dimensions];
+    float* max = new float[config->dimensions];
 
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < config->dimensions; i++) {
         float sum = 0;
-        for (int j = 0; j < num; j++) {
+        for (int j = 0; j < config->num_nodes; j++) {
             sum += nodes[j][i];
         }
-        mean[i] = sum / num;
+        mean[i] = sum / config->num_nodes;
     }
 
-    for (int i = 0; i < dim; i++) {
-        float* values = new float[num];
-        for (int j = 0; j < num; j++) {
+    for (int i = 0; i < config->dimensions; i++) {
+        float* values = new float[config->num_nodes];
+        for (int j = 0; j < config->num_nodes; j++) {
             values[j] = nodes[j][i];
         }
-        sort(values, values + num);
-        median[i] = values[num / 2];
+        sort(values, values + config->num_nodes);
+        median[i] = values[config->num_nodes / 2];
         delete[] values;
     }
 
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < config->dimensions; i++) {
         float sum = 0;
-        for (int j = 0; j < num; j++) {
+        for (int j = 0; j < config->num_nodes; j++) {
             sum += (nodes[j][i] - mean[i]) * (nodes[j][i] - mean[i]);
         }
-        std[i] = sqrt(sum / num);
+        std[i] = sqrt(sum / config->num_nodes);
     }
 
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < config->dimensions; i++) {
         float min_val = nodes[0][i];
         float max_val = nodes[0][i];
-        for (int j = 1; j < num; j++) {
+        for (int j = 1; j < config->num_nodes; j++) {
             if (nodes[j][i] < min_val) {
                 min_val = nodes[j][i];
             }
@@ -276,88 +264,88 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         max[i] = max_val;
     }
 
-    float hopkins = calculate_hopkins(nodes, hopkins_sample_size, num, dim, min, max);
+    float hopkins = calculate_hopkins(config, nodes, config->hopkins_sample_size, min, max);
 
-    float* cluster_sizes = new float[cluster_k];
+    float* cluster_sizes = new float[config->cluster_k];
     float wcss = 0;
-    k_means_cluster(cluster_sizes, wcss, nodes, cluster_k, num, dim);
+    k_means_cluster(config, cluster_sizes, wcss, nodes, config->cluster_k);
 
     int num_same = 0;
-    if (COMPARE_DATASETS) {
-        float** other_nodes = new float*[num_nodes];
-        load_fvecs(other_dataset + ".fvecs", "base", other_nodes, other_num_nodes, dim);
-        num_same = count_same_nodes(nodes, num_nodes, other_nodes, other_num_nodes);
+    if (config->compare_datasets) {
+        float** comparison_nodes = new float*[config->comparison_num_nodes];
+        load_fvecs(config->metrics_dataset2_prefix + ".fvecs", "base", comparison_nodes, config->comparison_num_nodes, config->dimensions);
+        num_same = count_same_nodes(config, nodes, config->num_nodes, comparison_nodes, config->comparison_num_nodes);
     }
     
     if (displayStats) {
         cout << endl << "Mean: ";
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             cout << mean[i] << " ";
         }
         cout << endl;
 
         cout << endl << "Median: ";
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             cout << median[i] << " ";
         }
         cout << endl;
 
         cout << endl << "Std: ";
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             cout << std[i] << " ";
         }
         cout << endl;
 
         cout << endl << "Min: ";
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             cout << min[i] << " ";
         }
         cout << endl;
 
         cout << endl << "Max: ";
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             cout << max[i] << " ";
         }
         cout << endl;
     }
 
     if (exportStats) {
-        ofstream f("runs/dataset_metrics.txt");
-        f << num_nodes << " " << dim << endl;
+        ofstream f(config->metrics_file);
+        f << config->num_nodes << " " << config->dimensions << endl;
 
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             f << mean[i] << " ";
         }
         f << endl;
 
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             f << median[i] << " ";
         }
         f << endl;
 
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             f << std[i] << " ";
         }
         f << endl;
 
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             f << min[i] << " ";
         }
         f << endl;
 
-        for (int i = 0; i < dim; i++) {
+        for (int i = 0; i < config->dimensions; i++) {
             f << max[i] << " ";
         }
         f << endl;
 
-        for (int i = 0; i < cluster_k; i++) {
+        for (int i = 0; i < config->cluster_k; i++) {
             f << cluster_sizes[i] << " ";
         }
 
-        f << endl << cluster_k << " " << cluster_iterations << " " << wcss;
+        f << endl << config->cluster_k << " " << config->cluster_iterations << " " << wcss;
         f << endl << hopkins << endl;
 
-        if (COMPARE_DATASETS) {
+        if (config->compare_datasets) {
             f << endl << num_same << endl;
         }
 
@@ -366,15 +354,15 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
 
     if (displayAggrStats) {
         // Sort mean, median, std, min, max, and cluster sizes, and display the top 10 and bottom 10 values
-        sort(mean, mean + dim);
-        sort(median, median + dim);
-        sort(std, std + dim);
-        sort(min, min + dim);
-        sort(max, max + dim);
-        sort(cluster_sizes, cluster_sizes + cluster_k);
+        sort(mean, mean + config->dimensions);
+        sort(median, median + config->dimensions);
+        sort(std, std + config->dimensions);
+        sort(min, min + config->dimensions);
+        sort(max, max + config->dimensions);
+        sort(cluster_sizes, cluster_sizes + config->cluster_k);
 
         cout << endl << "Top 10 mean: ";
-        for (int i = dim - 1; i >= dim - 10; i--) {
+        for (int i = config->dimensions - 1; i >= config->dimensions - 10; i--) {
             cout << mean[i] << " ";
         }
 
@@ -384,7 +372,7 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         }
 
         cout << endl << "Top 10 median: ";
-        for (int i = dim - 1; i >= dim - 10; i--) {
+        for (int i = config->dimensions - 1; i >= config->dimensions - 10; i--) {
             cout << median[i] << " ";
         }
 
@@ -394,7 +382,7 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         }
 
         cout << endl << "Top 10 std: ";
-        for (int i = dim - 1; i >= dim - 10; i--) {
+        for (int i = config->dimensions - 1; i >= config->dimensions - 10; i--) {
             cout << std[i] << " ";
         }
 
@@ -404,7 +392,7 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         }
 
         cout << endl << "Top 10 min: ";
-        for (int i = dim - 1; i >= dim - 10; i--) {
+        for (int i = config->dimensions - 1; i >= config->dimensions - 10; i--) {
             cout << min[i] << " ";
         }
 
@@ -414,7 +402,7 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         }
 
         cout << endl << "Top 10 max: ";
-        for (int i = dim - 1; i >= dim - 10; i--) {
+        for (int i = config->dimensions - 1; i >= config->dimensions - 10; i--) {
             cout << max[i] << " ";
         }
 
@@ -428,14 +416,14 @@ void calculate_stats(const string& name, float** nodes, int num, int dim, bool d
         // Print output
         cout << endl << "Within-Cluster Sum of Squares: " << wcss;
         cout << endl << "Top 10 cluster sizes: ";
-        for (int m = cluster_k - 1; m > cluster_k - 10; m--) {
+        for (int m = config->cluster_k - 1; m > config->cluster_k - 10; m--) {
             cout << cluster_sizes[m] << " ";
         }
         cout << endl << "Bottom 10 cluster sizes: ";
         for (int m = 0; m < 10; m++) {
             cout << cluster_sizes[m] << " ";
         }
-        if (COMPARE_DATASETS) {
+        if (config->compare_datasets) {
             cout << endl << "# of Common Nodes: " << num_same;
         }
 
@@ -453,19 +441,23 @@ int main() {
     bool displayStats = false;
     bool exportStats = true;
     bool displayAggrStats = true;
+    Config* config = new Config();
+    if(!sanity_checks(config))
+        return 1;
 
-    float** nodes = new float*[num_nodes];
-    load_fvecs(filename + ".fvecs", "base", nodes, num_nodes, dim);
+    float** nodes = new float*[config->num_nodes];
+    load_fvecs(config->metrics_dataset1_prefix + ".fvecs", "base", nodes, config->num_nodes, config->dimensions);
 
     // Calculate stats
     cout << endl << "Base nodes:";
-    calculate_stats(filename, nodes, num_nodes, dim, displayStats, exportStats, displayAggrStats);
+    calculate_stats(config, config->metrics_dataset1_prefix, nodes, displayStats, exportStats, displayAggrStats);
 
     // Delete objects
-    for (int i = 0; i < num_nodes; i++) {
+    for (int i = 0; i < config->num_nodes; i++) {
         delete[] nodes[i];
     }
     delete[] nodes;
+    delete config;
 
     return 0;
 }

@@ -156,18 +156,18 @@ void load_ivecs(const string& file, vector<vector<int>>& results, int num, int n
 
 // graph_file_name is the file path for the .bin graph file, and info_file_name
 // is the file path for a .txt graph information file
-void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, const string& graph_file_name, const string& info_file_name, bool is_benchmarking) {
+void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
     // Check file and parameters
-    ifstream graph_file(graph_file_name);
-    ifstream info_file(info_file_name);
-    cout << "Loading saved graph from " << graph_file_name << endl;
+    ifstream graph_file(config->hnsw_graph_file);
+    ifstream info_file(config->hnsw_info_file);
+    cout << "Loading saved graph from " << config->hnsw_graph_file << endl;
 
     if (!graph_file) {
-        cout << "File " << graph_file_name << " not found!" << endl;
+        cout << "File " << config->hnsw_graph_file << " not found!" << endl;
         return;
     }
     if (!info_file) {
-        cout << "File " << info_file_name << " not found!" << endl;
+        cout << "File " << config->hnsw_info_file << " not found!" << endl;
         return;
     }
 

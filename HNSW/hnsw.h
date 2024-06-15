@@ -7,75 +7,12 @@
 #include <queue>
 #include <random>
 #include <functional>
+#include "../config.h"
 
 extern long long int layer0_dist_comps;
 extern long long int upper_dist_comps;
 
 extern std::ofstream* debug_file;
-
-class Config {
-public:
-    // Datasets
-    const std::string load_file = "./exports/sift/sift_base.fvecs";
-    const std::string query_file = "./exports/sift/sift_query.fvecs";
-    const std::string groundtruth_file = "";
-    const std::string export_dir = "runs/";
-
-    // Random Generation
-    int graph_seed = 0;
-    int query_seed = 100000;
-    int insertion_seed = 1000000;
-    int gen_min = 0;
-    int gen_max = 100000;
-    int gen_decimals = 2;
-    
-    // Enforces a single entry point for graph construction. Searching will always be single entry point
-    bool single_entry_point = true;
-
-    // Construction parameters
-    int dimensions = 128;
-    int num_nodes = 10000;
-    int optimal_connections = 10;
-    int max_connections = 30;
-    int max_connections_0 = 30;
-    int ef_construction = 50;
-    double scaling_factor = 0.368;
-    float reinsert_percent = 0.0;
-
-    // Search parameters
-    int ef_search = 300;
-    int num_queries = 10000;
-    int num_return = 20;
-
-    // GraSP training parameters
-    float learning_rate = 0.1;
-    float initial_temperature = 1;
-    float decay_factor = 0.8;
-    float keep_ratio = 0.7;
-    int grasp_iterations = 20;
-    int num_training = 1000;
-
-    // Note: Distance ties will make the found percentage lower
-    bool print_results = false;
-    bool print_actual = false;
-    bool print_indiv_found = false;
-    bool print_total_found = true;
-
-    // Log where the neighbors are found per query
-    bool gt_dist_log = false;
-    // Use groundtruth to terminate search early
-    bool gt_smart_termination = true;
-
-    bool debug_insert = false;
-    bool debug_search = false;
-    bool print_graph = false;
-
-    bool export_graph = true;
-    bool export_queries = true;
-    bool export_indiv = true;
-
-    int debug_query_search_index = -1;
-};
 
 class Edge {
 public:
@@ -107,7 +44,7 @@ void load_fvecs(const std::string& file, const std::string& type, float** nodes,
 void load_ivecs(const std::string& file, std::vector<std::vector<int>>& results, int num, int dim);
 
 // Loading nodes and graph
-void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, const std::string& graph_file_name, const std::string& info_file_name, bool is_benchmarking = false);
+void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking = false);
 void load_hnsw_graph(HNSW* hnsw, std::ifstream& graph_file, float** nodes, int num_nodes, int num_layers);
 void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);

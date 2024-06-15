@@ -3,7 +3,7 @@ CXXFLAGS := -O2 -mavx
 
 SRCS := $(wildcard HNSW/*.cpp Grasp/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
-TARGETS := benchmark run_hnsw hnsw_save dataset_metrics run_grasp
+TARGETS := benchmark run_hnsw save_hnsw dataset_metrics run_grasp
 BUILD_PATH := build
 MAKE_DIRECTORIES := $(shell mkdir -p build)
 
@@ -11,19 +11,19 @@ MAKE_DIRECTORIES := $(shell mkdir -p build)
 
 all: $(TARGETS)
 
-benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-run_hnsw: HNSW/run_hnsw.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+run_hnsw: HNSW/run_hnsw.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-hnsw_save: HNSW/hnsw_save.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+save_hnsw: HNSW/save_hnsw.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h
+dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
-run_grasp: Grasp/run_grasp.cpp Grasp/grasp.cpp Grasp/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h
+run_grasp: Grasp/run_grasp.cpp Grasp/grasp.cpp Grasp/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
 clean:

@@ -4,12 +4,6 @@
 
 using namespace std;
 
-const bool LOAD_FROM_FILE = false;
-const string GRAPH_FILE = "exports/";
-const string INFO_FILE = "exports/";
-
-const bool RUN_SEARCH = true;
-
 /** 
  * This class is used to run a single instance of the HNSW algorithm.
 */
@@ -27,8 +21,8 @@ int main() {
     load_nodes(config, nodes);
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = init_hnsw(config, nodes);
-    if (LOAD_FROM_FILE) {
-        load_hnsw_file(config, hnsw, nodes, GRAPH_FILE, INFO_FILE);
+    if (config->load_graph_file) {
+        load_hnsw_file(config, hnsw, nodes);
     } else {
         insert_nodes(config, hnsw);
     }
@@ -42,7 +36,7 @@ int main() {
     export_graph(config, hnsw, nodes);
 
     // Run queries
-    if (RUN_SEARCH) {
+    if (config->run_search) {
         // Generate num_queries amount of queries
         float** queries = new float*[config->num_queries];
         load_queries(config, nodes, queries);
