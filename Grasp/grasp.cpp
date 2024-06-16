@@ -8,7 +8,7 @@ using namespace std;
 /**
  * Alg 1
  */
-void learn_edge_importance(Config* config, HNSW* hnsw, float** nodes, float** queries) {
+void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** nodes, float** queries) {
     float temperature = config->initial_temperature;
     for (int k = 0; k < config->grasp_iterations; k++) {
         // TODO: formulas
@@ -31,6 +31,31 @@ void learn_edge_importance(Config* config, HNSW* hnsw, float** nodes, float** qu
                         original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
                     }
                 }
+            }
+        }
+    }
+}
+
+void prune_edges(Config* config, HNSW* hnsw, int num_keep) {
+    // Mark lowest weight edges for deletion
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->weight < rhs->weight; };
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
+    for (int i = 0; i < hnsw->num_nodes; i++) {
+        for (int j = 0; j < hnsw->mappings[i][0].size(); j++) {
+            remaining_edges.push(&hnsw->mappings[i][0][j]);
+            if (remaining_edges.size() > num_keep) {
+                remaining_edges.top()->is_enabled = false;
+                remaining_edges.pop();
+            }
+        }
+    }
+    // Remove all edges in layer 0 that are marked for deletion
+    for (int i = 0; i < hnsw->num_nodes; i++) {
+        for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
+            vector<Edge>& edges = hnsw->mappings[i][0];
+            if (!edges[j].is_enabled) {
+                edges[j] = layer_edges[edges.size() - 1];
+                edges.pop_back();
             }
         }
     }

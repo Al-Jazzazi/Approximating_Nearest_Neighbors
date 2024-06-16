@@ -3,6 +3,7 @@
 
 #include "../HNSW/hnsw.h"
 
-void learn_edge_importance(Config* config, HNSW* hnsw, float** nodes, float** queries);
+void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** nodes, float** queries);
+void prune_edges(Config* config, HNSW* hnsw, int num_keep);
 
 #endif

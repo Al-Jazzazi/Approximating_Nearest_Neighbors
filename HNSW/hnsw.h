@@ -20,9 +20,10 @@ public:
     int target;
     float distance;
     float weight; 
+    bool is_enabled;
 
     Edge();
-    Edge(int target, float distance, float weight = 0.5);
+    Edge(int target, float distance, float weight = 0.5, bool is_enabled = true);
     bool operator>(const Edge& rhs) const;
     bool operator<(const Edge& rhs) const;
 };
@@ -42,10 +43,9 @@ public:
     int num_dimensions;
 
     HNSW(Config* config, float** nodes);
-    void delete_node(Config* config, int index);
     void export_graph(Config* config);
     void search_queries(Config* config, float** queries);
-    std::vector<int> get_layer(Config* config, int layer);
+    std::vector<Edge*> get_layer_edges(Config* config, int layer);
     
     // Main algorithms
     void insert(Config* config, int query);

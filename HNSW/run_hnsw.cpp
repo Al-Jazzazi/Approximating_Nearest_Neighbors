@@ -31,10 +31,6 @@ int main() {
     if (config->print_graph) {
         cout << hnsw;
     }
-    for (int i = 0; i < 10; i++) {
-        vector<int> layer = hnsw->get_layer(config, i);
-        cout << "Layer " << i << ", Size: " << layer.size() << endl;
-    }
     if (config->export_graph) {
         hnsw->export_graph(config);
     }

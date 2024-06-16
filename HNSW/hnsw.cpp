@@ -18,9 +18,10 @@ bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
-Edge::Edge() : target(-1), distance(-1), weight(-1) {}
+Edge::Edge() : target(-1), distance(-1), weight(-1), is_enabled(true) {}
 
-Edge::Edge(int target, float distance, float weight) : target(target), distance(distance), weight(weight) {}
+Edge::Edge(int target, float distance, float weight, bool is_enabled) : target(target),
+           distance(distance), weight(weight), is_enabled(is_enabled) {}
 
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;
@@ -316,32 +317,6 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     return entry_points;
 }
 
-// Delete the node at the target index from the HNSW
-void HNSW::delete_node(Config* config, int target) {
-    // Remove edges from all neighbors to the node
-    for (int i = 0; i < mappings[target].size(); i++) {
-        for (int j = 0; j < mappings[target][i].size() - 1; j++) {
-            int neighbor_index = mappings[target][i][j].target;
-            vector<Edge>& neighbor_mapping = mappings[neighbor_index][i];
-            int position = -1;
-            for (int k = 0; k < neighbor_mapping.size() - 1; k++) {
-                if (neighbor_mapping[k].target == target) {
-                    position = k;
-                    break;
-                }
-            }
-            // Check if the position is valid (the target node's edge is not a duplicate)
-            if (position >= 0) {
-                neighbor_mapping[position] = neighbor_mapping[neighbor_mapping.size() - 1];
-                neighbor_mapping.pop_back();
-            }
-        }
-    }
-    // Remove the node
-    mappings[target] = mappings[mappings.size() - 1];
-    mappings.pop_back();
-}
-
 void HNSW::export_graph(Config* config) {
     ofstream file(config->export_dir + "graph.txt");
 
@@ -518,17 +493,17 @@ void HNSW::search_queries(Config* config, float** queries) {
     }
 }
 
-vector<int> HNSW::get_layer(Config* config, int layer) {
-    unordered_set<int> nodes;
-    for (int i = 0; i < num_nodes; i++) {
+vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
+    vector<Edge*> edges;
+    for (int i = 0; i < config->num_nodes; i++) {
+        // Check if node in adjacency list has at least 'layer' layers
         if (mappings[i].size() - 1 >= layer) {
             for (int j = 0; j < mappings[i][layer].size(); j++) {
-                nodes.insert(mappings[i][layer][j].target);
+                edges.push_back(&mappings[i][layer][j]);
             }
         }
     }
-    vector<int> result(nodes.begin(), nodes.end());
-    return result;
+    return edges;
 }
 
 HNSW* init_hnsw(Config* config, float** nodes) {
