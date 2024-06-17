@@ -20,7 +20,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     for (int k = 0; k < config->grasp_iterations; k++) {
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
-        sample_subgraph(config, hnsw);
+        sample_subgraph(config, hnsw, lambda);
 
         for (int i = 0; i < config->num_training; i++) {
             // Find the nearest neighbor using both the original and sampled graphs
@@ -44,13 +44,13 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         }
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(queries, queries + config->num_training, gen);
-        cout << "Temperature: " << temperature << "Lambda: " << lambda << endl;
+        cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
     }
 }
 
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
     // Mark lowest weight edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->weight > rhs->weight; };
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
@@ -80,13 +80,15 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
     float target = lambda * edges.size();
     pair<float,float> max_min = find_max_min(config, hnsw);
-    float avg_w = temperature * log(lambda / (1 - lambda));
+    float avg_w = (max_min.second  +  max_min.first)/2;
+
+    //temperature * log10(lambda / (1 - lambda));
 
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
 
     float mu = binary_search(config, hnsw, search_range_min, search_range_max, target, temperature);
-    cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << endl;
+    cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
@@ -97,19 +99,24 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
 
 }
 
-void sample_subgraph(Config* config, HNSW* hnsw) {
+void sample_subgraph(Config* config, HNSW* hnsw, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
     mt19937 gen(config->graph_seed);
     uniform_real_distribution<float> dis(0, 1);
+    int count = 0;
      for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            if(hnsw->mappings[i][0][k].probability_edge < dis(gen) )
+            if(hnsw->mappings[i][0][k].probability_edge < dis(gen)){
                 hnsw->mappings[i][0][k].ignore = true; 
+                count++;
+            }
             else 
                 hnsw->mappings[i][0][k].ignore = false; 
         }
     }
+
+    cout << "Number of edges ignored: " << count << endl;
 
 }
 
@@ -123,6 +130,8 @@ float compute_lambda(float final_keep, float initial_keep, int k, int num_iterat
 pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     float max_w = 0.0f; 
     float min_w = FLT_MAX; 
+    float lowest_percentage = 1.0f;
+    float max_probability = 0.0f;
     pair<float,float> max_min;
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
@@ -130,8 +139,16 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
                 max_w = hnsw->mappings[i][0][k].weight;
             if(min_w > hnsw->mappings[i][0][k].weight)
                 min_w = hnsw->mappings[i][0][k].weight;
+
+
+            if (lowest_percentage > hnsw->mappings[i][0][k].probability_edge)
+                lowest_percentage = hnsw->mappings[i][0][k].probability_edge;
+
+            if(max_probability < hnsw->mappings[i][0][k].probability_edge)
+                max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
+    cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }

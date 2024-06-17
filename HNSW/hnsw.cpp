@@ -79,7 +79,7 @@ void HNSW::insert(Config* config, int query) {
 
         // Get nearest elements
         search_layer(config, nodes[query], path, entry_points, config->ef_construction, layer);
-        // select_neighbors_heuristic(config, nodes[query], entry_points, max_connections, layer);
+        select_neighbors_heuristic(config, nodes[query], entry_points, max_connections, layer);
 
         // Initialize mapping vector
         vector<Edge>& neighbors = mappings[query][layer];
@@ -114,7 +114,7 @@ void HNSW::insert(Config* config, int query) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
             if (neighbor_mapping.size() > max_connections) {
                 neighbor_mapping.pop_back();
-                // select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
+                //select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
             }
         }
 
@@ -267,6 +267,13 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
         }
 }
 
+
+
+/**
+ * Alg 4
+ * SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections
+ * Note: does not work yet 
+*/
 void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<pair<float, int>>& candidates, int num_to_return, int layer_num, bool extend_candidates, bool keep_pruned) {
     vector<pair<float, int>> output;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> considered;
@@ -276,7 +283,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<pair<
     }
 
     // Extend candidates by their neighbors
-    if (extend_candidates) {
+    if (false) {
         for (auto candidate : candidates) {
             for (auto neighbor : mappings[candidate.second][layer_num]) {
                 bool is_found = false;

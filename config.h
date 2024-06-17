@@ -33,13 +33,13 @@ public:
     int num_return = 50;
 
     // GraSP Training
-    float learning_rate = 0.1;
-    float initial_temperature = 1;
+    float learning_rate = 0.3;
+    float initial_temperature = 10000;
     float decay_factor = 0.8;
-    float initial_keep_ratio = 0.95;
-    float final_keep_ratio = 0.6;
-    int keep_exponent = 1;
-    int grasp_iterations = 20;
+    float initial_keep_ratio = 1;
+    float final_keep_ratio = 0.8;
+    int keep_exponent = 3;
+    int grasp_iterations = 20 ;
     int num_training = 1000;
 
     // Generation Settings
