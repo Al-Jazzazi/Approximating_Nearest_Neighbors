@@ -11,9 +11,9 @@ void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, f
 
 //Normalization Helper functions
 int num_of_edges_function (Config* config, HNSW* hnsw);
-float find_probability_edge (float weight, float temprature);
+float find_probability_edge (float weight, float temprature, float mu);
 std::pair<float,float> find_max_min  (Config* config, HNSW* hnsw);
-float search(Config* config, HNSW* hnsw, float left, float right, float target);
+float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temprature);
 
 //Stage 3 function
 void prune_edges(Config* config, HNSW* hnsw, int num_keep);

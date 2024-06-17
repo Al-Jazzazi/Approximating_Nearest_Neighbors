@@ -86,12 +86,12 @@ void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, f
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
 
-    float mu = search(config, hnsw, search_range_min, search_range_max, target);
+    float mu = binary_search(config, hnsw, search_range_min, search_range_max, target,temprature);
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
             hnsw->mappings[i][0][k].weight += mu;
-            hnsw->mappings[i][0][k].probability_edge = find_probability_edge(hnsw->mappings[i][0][k].weight, temprature);
+            hnsw->mappings[i][0][k].probability_edge = find_probability_edge(hnsw->mappings[i][0][k].weight, temprature, mu);
         }
     }
 
@@ -142,16 +142,32 @@ pair<float,float> find_max_min  (Config* config, HNSW* hnsw){
   return max_min;
 }
 
-float find_probability_edge (float weight, float temprature){
-    return 1/(1+exp(-weight/temprature));
+float find_probability_edge (float weight, float temprature, float mu){
+    return 1/(1+exp(- (weight+mu) /temprature));
 }
 
-float search(Config* config, HNSW* hnsw, float left, float right, float target){
-     return 0.0f;
-     for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            //// 
+float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temprature){
+    const double EPSILON = 1e-9; // Tolerance for convergence
+    float sum_of_probabilities = 0;
+    while (right - left > EPSILON) {
+        double mid = left + (right - left) / 2;
+        int count = 0;
+   
+        for(int i = 0; i < config->num_nodes ; i++){
+            for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
+                sum_of_probabilities += find_probability_edge(hnsw->mappings[i][0][k].weight, temprature, mid);
+            }
         }
+
+        if(abs(sum_of_probabilities - target) < 1.0f)
+            break;
+        else if (count < target) 
+            left = mid; 
+         else 
+            right = mid; 
+        
     }
+
+    return left + (right - left) / 2;
 
 }
