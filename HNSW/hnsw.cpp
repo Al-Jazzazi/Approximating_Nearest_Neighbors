@@ -58,7 +58,7 @@ void HNSW::insert(Config* config, int query) {
             cout << "Layer count increased to " << num_layers << endl;
     }
 
-    float dist = calculate_l2_sq(nodes[query], nodes[entry_point], config->dimensions, top);
+    float dist = calculate_l2_sq(nodes[query], nodes[entry_point], num_dimensions, top);
     entry_points.push_back(make_pair(dist, entry_point));
 
     if (config->debug_insert)
@@ -79,6 +79,7 @@ void HNSW::insert(Config* config, int query) {
 
         // Get nearest elements
         search_layer(config, nodes[query], path, entry_points, config->ef_construction, layer);
+        // select_neighbors_heuristic(config, nodes[query], entry_points, max_connections, layer);
 
         // Initialize mapping vector
         vector<Edge>& neighbors = mappings[query][layer];
@@ -112,8 +113,8 @@ void HNSW::insert(Config* config, int query) {
         for (auto n_pair : neighbors) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
             if (neighbor_mapping.size() > max_connections) {
-                // Pop last element (size will be max_connections after this)
                 neighbor_mapping.pop_back();
+                // select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
             }
         }
 
@@ -220,7 +221,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 // If distance from query to neighbor is less than the distance from query to furthest,
                 // or if the size of found is less than num_to_return,
                 // add to candidates and found
-                float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], config->dimensions, layer_num);
+                float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], num_dimensions, layer_num);
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
@@ -266,6 +267,64 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
         }
 }
 
+void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<pair<float, int>>& candidates, int num_to_return, int layer_num, bool extend_candidates, bool keep_pruned) {
+    vector<pair<float, int>> output;
+    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> considered;
+    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> discarded;
+    for (auto candidate : candidates) {
+        considered.emplace(candidate);
+    }
+
+    // Extend candidates by their neighbors
+    if (extend_candidates) {
+        for (auto candidate : candidates) {
+            for (auto neighbor : mappings[candidate.second][layer_num]) {
+                bool is_found = false;
+                priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_considered;
+                while (!temp_considered.empty()) {
+                    if (temp_considered.top().second == neighbor.target) {
+                        is_found = true;
+                        break;
+                    }
+                    temp_considered.pop();
+                }
+                if (!is_found) {
+                    considered.emplace(neighbor.distance, neighbor.target);
+                }
+            }
+        }
+    }
+
+    while (!considered.empty() && output.size() < num_to_return) {
+        pair<float, int> closest = considered.top();
+        considered.pop();
+        float query_distance = calculate_l2_sq(nodes[closest.second], query, num_dimensions, layer_num);
+        bool is_closer_to_query = true;
+        for (auto n_pair : output) {
+            if (query_distance < calculate_l2_sq(nodes[closest.second], nodes[n_pair.second], num_dimensions, layer_num)) {
+                is_closer_to_query = false;
+                break;
+            }
+        }
+        if (is_closer_to_query) {
+            output.emplace_back(closest);
+        } else {
+            discarded.emplace(closest);
+        }
+    }
+    if (keep_pruned) {
+        while (!discarded.empty() && output.size() < num_to_return) {
+            output.emplace_back(discarded.top());
+            discarded.pop();
+        }
+    }
+    candidates.clear();
+    candidates.resize(output.size());
+    for (int i = 0; i < output.size(); i++) {
+        candidates[i] = output[i];
+    }
+}
+
 /**
  * Alg 5
  * K-NN-SEARCH(hnsw, q, K, ef)
@@ -275,7 +334,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
-    float dist = calculate_l2_sq(query.second, nodes[entry_point], config->dimensions, top);
+    float dist = calculate_l2_sq(query.second, nodes[entry_point], num_dimensions, top);
     entry_points.push_back(make_pair(dist, entry_point));
 
     if (config->debug_search)
@@ -380,7 +439,7 @@ void HNSW::search_queries(Config* config, float** queries) {
             // Get actual nearest neighbors
             priority_queue<pair<float, int>> pq;
             for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(query.second, nodes[j], config->dimensions, -1);
+                float dist = calculate_l2_sq(query.second, nodes[j], num_dimensions, -1);
                 pq.emplace(dist, j);
                 if (pq.size() > config->num_return)
                     pq.pop();
@@ -407,7 +466,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         if (config->print_results) {
             // Print out found
             cout << "Found " << found.size() << " nearest neighbors of [" << query.second[0];
-            for (int dim = 1; dim < config->dimensions; ++dim)
+            for (int dim = 1; dim < num_dimensions; ++dim)
                 cout << " " << query.second[dim];
             cout << "] : ";
             for (auto n_pair : found)
@@ -427,7 +486,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         if (config->print_actual) {
             // Print out actual
             cout << "Actual " << config->num_return << " nearest neighbors of [" << query.second[0];
-            for (int dim = 1; dim < config->dimensions; ++dim)
+            for (int dim = 1; dim < num_dimensions; ++dim)
                 cout << " " << query.second[dim];
             cout << "] : ";
             for (int index : actual_neighbors[i])
@@ -453,7 +512,7 @@ void HNSW::search_queries(Config* config, float** queries) {
 
         if (config->export_queries) {
             *export_file << "Query " << i << endl << query.second[0];
-            for (int dim = 1; dim < config->dimensions; ++dim)
+            for (int dim = 1; dim < num_dimensions; ++dim)
                 *export_file << "," << query.second[dim];
             *export_file << endl;
             for (auto n_pair : found)

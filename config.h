@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 100000;
+    int num_nodes = 10000;
     int optimal_connections = 7;
     int max_connections = 11;
     int max_connections_0 = 14;

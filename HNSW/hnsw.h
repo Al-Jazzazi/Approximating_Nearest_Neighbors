@@ -54,6 +54,7 @@ public:
     // Main algorithms
     void insert(Config* config, int query);
     void search_layer(Config* config, float* query, std::vector<std::vector<Edge*>>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring = false);
+    void select_neighbors_heuristic(Config* config, float* query, std::vector<std::pair<float, int>>& candidates, int num_to_return, int layer_num, bool extend_candidates = true, bool keep_pruned = true);
     std::vector<std::pair<float, int>> nn_search(Config* config, std::vector<std::vector<Edge*>>& path, std::pair<int, float*>& query, int num_to_return, bool is_ignoring = false);
 };
 
