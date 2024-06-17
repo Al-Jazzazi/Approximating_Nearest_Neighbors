@@ -112,6 +112,8 @@ void sample_subgraph(Config* config, HNSW* hnsw) {
     }
 
 }
+
+
  
 /**
  * Alg 2 helper Functions 
