@@ -37,7 +37,7 @@ public:
     float initial_temperature = 1;
     float decay_factor = 0.8;
     float initial_keep_ratio = 0.95;
-    float final_keep_ratio = 0.8;
+    float final_keep_ratio = 0.6;
     int keep_exponent = 1;
     int grasp_iterations = 20;
     int num_training = 1000;
