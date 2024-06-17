@@ -86,12 +86,12 @@ void normalize_weights (Config* config, HNSW* hnsw, vector<Edge*>& edges, float 
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
 
-    float mu = binary_search(config, hnsw, search_range_min, search_range_max, target,temprature);
+    float mu = binary_search(config, hnsw, search_range_min, search_range_max, target, temperature);
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
             hnsw->mappings[i][0][k].weight += mu;
-            hnsw->mappings[i][0][k].probability_edge = 1/(1 + exp(-hnsw->mappings[i][0][k].weight / temperature));
+            hnsw->mappings[i][0][k].probability_edge = 1 / (1 + exp(-hnsw->mappings[i][0][k].weight / temperature));
         }
     }
 
@@ -132,7 +132,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw){
     return max_min;
 }
 
-float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temprature){
+float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temperature){
     const double EPSILON = 1e-9; // Tolerance for convergence
     float sum_of_probabilities = 0;
     //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
@@ -143,7 +143,7 @@ float binary_search(Config* config, HNSW* hnsw, float left, float right, float t
    
         for(int i = 0; i < config->num_nodes ; i++){
             for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-                sum_of_probabilities += find_probability_edge(hnsw->mappings[i][0][k].weight, temprature, mid);
+                sum_of_probabilities += 1/(1 + exp(-(hnsw->mappings[i][0][k].weight + mid) / temperature));
             }
         }
         
