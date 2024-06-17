@@ -32,16 +32,19 @@ public:
 class HNSW {
     friend std::ostream& operator<<(std::ostream& os, const HNSW& hnsw);
 public:
+    // This stores nodes by node index, then dimensions
     float** nodes;
-    // This vector stores vectors by node index, then layer number, then connection pair
+    // This stores edges in an adjacency list by node index, then layer number, then connection pair
     std::vector<std::vector<std::vector<Edge>>> mappings;
-    std::mt19937 layer_rand;
-    std::uniform_real_distribution<double> layer_dis;
-    double normal_factor;
     int entry_point;
     int num_layers;
     int num_nodes;
     int num_dimensions;
+    
+    // Layer probability function
+    std::mt19937 layer_rand;
+    std::uniform_real_distribution<double> layer_dis;
+    double normal_factor;
 
     HNSW(Config* config, float** nodes);
     void export_graph(Config* config);
