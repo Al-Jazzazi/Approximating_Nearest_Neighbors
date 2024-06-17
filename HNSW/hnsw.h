@@ -25,6 +25,8 @@ public:
 
     Edge();
     Edge(int target, float distance, float weight = 0.5, bool ignore = false, float probability_edge = 1/2);
+    // Convert a node represented by a distance and index into an edge
+    Edge(std::pair<float, int>& node);
     bool operator>(const Edge& rhs) const;
     bool operator<(const Edge& rhs) const;
 };
@@ -54,7 +56,7 @@ public:
     // Main algorithms
     void insert(Config* config, int query);
     void search_layer(Config* config, float* query, std::vector<std::vector<Edge*>>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring = false);
-    void select_neighbors_heuristic(Config* config, float* query, std::vector<std::pair<float, int>>& candidates, int num_to_return, int layer_num, bool extend_candidates = true, bool keep_pruned = true);
+    void select_neighbors_heuristic(Config* config, float* query, std::vector<Edge>& candidates, int num_to_return, int layer_num, bool extend_candidates = false, bool keep_pruned = true);
     std::vector<std::pair<float, int>> nn_search(Config* config, std::vector<std::vector<Edge*>>& path, std::pair<int, float*>& query, int num_to_return, bool is_ignoring = false);
 };
 

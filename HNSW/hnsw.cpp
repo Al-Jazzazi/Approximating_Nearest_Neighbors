@@ -23,6 +23,8 @@ Edge::Edge() : target(-1), distance(-1), weight(-1), ignore(false), probability_
 Edge::Edge(int target, float distance, float weight, bool ignore, float probability_edge) : target(target),
            distance(distance), weight(weight), ignore(ignore), probability_edge(probability_edge) {}
 
+Edge::Edge(pair<float, int>& node) : target(node.second), distance(node.first), weight(-1), ignore(false), probability_edge(1/2) {}
+
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;
 }
@@ -79,16 +81,20 @@ void HNSW::insert(Config* config, int query) {
 
         // Get nearest elements
         search_layer(config, nodes[query], path, entry_points, config->ef_construction, layer);
-        select_neighbors_heuristic(config, nodes[query], entry_points, max_connections, layer);
+        vector<Edge> candidates(entry_points.size());
+        for (int i = 0; i < entry_points.size(); i++) {
+            candidates[i] = Edge(entry_points[i].second, entry_points[i].first);
+        }
+        // Choose opt_con number of neighbors out of candidates
+        int num_neighbors = min(config->optimal_connections, static_cast<int>(entry_points.size()));
+        select_neighbors_heuristic(config, nodes[query], candidates, num_neighbors, layer);
 
         // Initialize mapping vector
         vector<Edge>& neighbors = mappings[query][layer];
         neighbors.reserve(max_connections + 1);
-        neighbors.resize(min(config->optimal_connections, (int)entry_points.size()));
-
-        //Select opt_con number of neighbors from entry_points
-        for (int i = 0; i < min(config->optimal_connections, (int)entry_points.size()); i++) {
-            neighbors[i] = Edge(entry_points[i].second, entry_points[i].first);
+        neighbors.resize(num_neighbors);
+        for (int i = 0; i < num_neighbors; i++) {
+            neighbors[i] = candidates[i];
         }
 
         if (config->debug_insert) {
@@ -98,7 +104,7 @@ void HNSW::insert(Config* config, int query) {
             cout << endl;
         }
 
-        //Connect neighbors to this node
+        // Connect neighbors to this node
         for (auto n_pair : neighbors) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
 
@@ -113,8 +119,7 @@ void HNSW::insert(Config* config, int query) {
         for (auto n_pair : neighbors) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
             if (neighbor_mapping.size() > max_connections) {
-                neighbor_mapping.pop_back();
-                //select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
+                select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
             }
         }
 
@@ -267,48 +272,50 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
         }
 }
 
-
-
 /**
  * Alg 4
- * SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections
- * Note: does not work yet 
-*/
-void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<pair<float, int>>& candidates, int num_to_return, int layer_num, bool extend_candidates, bool keep_pruned) {
-    vector<pair<float, int>> output;
-    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> considered;
-    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> discarded;
-    for (auto candidate : candidates) {
+ * SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections)
+ * Given a query and candidates, return the num_to_return best candidates according to a heuristic
+ */
+void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>& candidates, int num_to_return, int layer_num, bool extend_candidates, bool keep_pruned) {
+    // Initialize output vector, consider queue, and discard queue
+    auto compare = [](const Edge& lhs, const Edge& rhs) { return lhs.distance > rhs.distance; };
+    vector<Edge> output;
+    priority_queue<Edge, vector<Edge>, decltype(compare)> considered(compare);
+    priority_queue<Edge, vector<Edge>, decltype(compare)> discarded(compare);
+    for (const Edge& candidate : candidates) {
         considered.emplace(candidate);
     }
 
-    // Extend candidates by their neighbors
-    if (false) {
+    // Extend candidate list by their neighbors
+    if (extend_candidates) {
         for (auto candidate : candidates) {
-            for (auto neighbor : mappings[candidate.second][layer_num]) {
+            for (const Edge& neighbor : mappings[candidate.target][layer_num]) {
+                // Make sure neighbor isn't already being considered
                 bool is_found = false;
-                priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_considered;
+                priority_queue<Edge, vector<Edge>, decltype(compare)> temp_considered(considered);
                 while (!temp_considered.empty()) {
-                    if (temp_considered.top().second == neighbor.target) {
+                    if (temp_considered.top().target == neighbor.target) {
                         is_found = true;
                         break;
                     }
                     temp_considered.pop();
                 }
                 if (!is_found) {
-                    considered.emplace(neighbor.distance, neighbor.target);
+                    considered.emplace(neighbor);
                 }
             }
         }
     }
 
+    // Add considered element to output if it is closer to query than to other output elements
     while (!considered.empty() && output.size() < num_to_return) {
-        pair<float, int> closest = considered.top();
+        const Edge& closest = considered.top();
         considered.pop();
-        float query_distance = calculate_l2_sq(nodes[closest.second], query, num_dimensions, layer_num);
+        float query_distance = calculate_l2_sq(nodes[closest.target], query, num_dimensions, layer_num);
         bool is_closer_to_query = true;
         for (auto n_pair : output) {
-            if (query_distance < calculate_l2_sq(nodes[closest.second], nodes[n_pair.second], num_dimensions, layer_num)) {
+            if (query_distance >= calculate_l2_sq(nodes[closest.target], nodes[n_pair.target], num_dimensions, layer_num)) {
                 is_closer_to_query = false;
                 break;
             }
@@ -319,12 +326,16 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<pair<
             discarded.emplace(closest);
         }
     }
+
+    // Add discarded elements until output is large enough
     if (keep_pruned) {
         while (!discarded.empty() && output.size() < num_to_return) {
             output.emplace_back(discarded.top());
             discarded.pop();
         }
     }
+
+    // Set candidates to output
     candidates.clear();
     candidates.resize(output.size());
     for (int i = 0; i < output.size(); i++) {
