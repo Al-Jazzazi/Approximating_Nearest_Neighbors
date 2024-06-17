@@ -84,10 +84,10 @@ void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, f
 
     float mu = search(config, search_range_min, search_range_max, target);
 
-    for(int i = 0; i < config.num_nodes ; i++){
-        for(int k = 0; k< hnsw.mappings[i][0].size(); k++){
+    for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
             w_e += mu
-            hnsw.mappings[i][0][k].probability_edge = find_probability_edge(hnsw.mappings[i][0][k].weight, temprature);
+            hnsw->mappings[i][0][k].probability_edge = find_probability_edge(hnsw->mappings[i][0][k].weight, temprature);
         }
     }
 
@@ -95,8 +95,8 @@ void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, f
 
 int num_of_edges_function (Config* config, HNSW* hnsw){
  int size = 0;
- for(int i = 0; i < config.num_nodes ; i++){
-        size += hnsw.mappings[i][0].size();
+ for(int i = 0; i < config->num_nodes ; i++){
+        size += hnsw->mappings[i][0].size();
 }
  return size; 
 }
@@ -105,12 +105,12 @@ pair<float,float> find_max_min  (Config* config, HNSW* hnsw){
     float max_w = 0.0f; 
     float min_w = FLT_MAX; 
     pair<float,float> max_min;
-    for(int i = 0; i < config.num_nodes ; i++){
-        for(int k = 0; k< hnsw.mappings[i][0].size(); k++){
-            if(max_w < hnsw.mappings[i][0][k].weight)
-                max_w = hnsw.mappings[i][0][k].weight;
-            if(min_w > hnsw.mappings[i][0][k].weight)
-                min_w = hnsw.mappings[i][0][k].weight;
+    for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
+            if(max_w < hnsw->mappings[i][0][k].weight)
+                max_w = hnsw->mappings[i][0][k].weight;
+            if(min_w > hnsw->mappings[i][0][k].weight)
+                min_w = hnsw->mappings[i][0][k].weight;
         }
     }
     max_min = make_pair(max_w, min_w);
@@ -122,10 +122,10 @@ float find_probability_edge (float weight, float temprature){
 }
 
 float search(Config* config, HNSW* hnsw, float left, float right, float target){
-     for(int i = 0; i < config.num_nodes ; i++){
-        for(int k = 0; k< hnsw.mappings[i][0].size(); k++){
+     for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
             w_e += mu
-            hnsw.mappings[i][0][k].probability_edge = find_probability_edge(hnsw.mappings[i][0][k].weight, temprature);
+            hnsw->mappings[i][0][k].probability_edge = find_probability_edge(hnsw->mappings[i][0][k].weight, temprature);
         }
     }
 
@@ -135,12 +135,12 @@ float search(Config* config, HNSW* hnsw, float left, float right, float target){
 void randome_subgraph(Config* config, HNSW* hnsw) {
     mt19937 gen(config->graph_seed);
     uniform_real_distribution<float> dis(0, 1);
-     for(int i = 0; i < config.num_nodes ; i++){
-        for(int k = 0; k< hnsw.mappings[i][0].size(); k++){
-            if(hnsw.mappings[i][0][k].probability_edge < dis(gen) )
-                 hnsw.mappings[i][0][k].ignore = true; 
+     for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
+            if(hnsw->mappings[i][0][k].probability_edge < dis(gen) )
+                 hnsw->mappings[i][0][k].ignore = true; 
             else 
-                hnsw.mappings[i][0][k].ignore = false; 
+                hnsw->mappings[i][0][k].ignore = false; 
         }
     }
 
