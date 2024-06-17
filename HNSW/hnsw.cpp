@@ -18,10 +18,10 @@ bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
-Edge::Edge() : target(-1), distance(-1), weight(-1), is_enabled(true) {}
+Edge::Edge() : target(-1), distance(-1), weight(-1), ignore(false), probability_edge(1/2) {}
 
-Edge::Edge(int target, float distance, float weight, bool is_enabled) : target(target),
-           distance(distance), weight(weight), is_enabled(is_enabled) {}
+Edge::Edge(int target, float distance, float weight, bool ignore, float probability_edge) : target(target),
+           distance(distance), weight(weight), ignore(ignore), probability_edge(probability_edge) {}
 
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;

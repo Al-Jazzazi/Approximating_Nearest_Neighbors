@@ -20,10 +20,11 @@ public:
     int target;
     float distance;
     float weight; 
-    bool is_enabled;
+    bool ignore;
+    float probability_edge;
 
     Edge();
-    Edge(int target, float distance, float weight = 0.5, bool is_enabled = true);
+    Edge(int target, float distance, float weight = 0.5, bool ignore = false, float probability_edge = 1/2);
     bool operator>(const Edge& rhs) const;
     bool operator<(const Edge& rhs) const;
 };
