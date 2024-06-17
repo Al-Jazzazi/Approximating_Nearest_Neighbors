@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
+    int num_nodes = 100000;
     int optimal_connections = 7;
     int max_connections = 11;
     int max_connections_0 = 14;
@@ -36,8 +36,8 @@ public:
     float learning_rate = 0.1;
     float initial_temperature = 1;
     float decay_factor = 0.8;
-    float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.5;
+    float initial_keep_ratio = 0.95;
+    float final_keep_ratio = 0.8;
     int keep_exponent = 1;
     int grasp_iterations = 20;
     int num_training = 1000;

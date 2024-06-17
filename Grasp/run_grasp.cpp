@@ -38,25 +38,25 @@ int main() {
     cout << "Edges: " << edges.size() << endl;
 
     // Run queries
-    // if (config->run_search) {
-    //     // Generate num_queries amount of queries
-    //     float** queries = new float*[config->num_queries];
-    //     load_queries(config, nodes, queries);
-    //     auto search_start = chrono::high_resolution_clock::now();
-    //     cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
-    //     cout << "Beginning search" << endl;
+    if (config->run_search) {
+        // Generate num_queries amount of queries
+        float** queries = new float*[config->num_queries];
+        load_queries(config, nodes, queries);
+        auto search_start = chrono::high_resolution_clock::now();
+        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
+        cout << "Beginning search" << endl;
 
-    //     // Run query search and print results
-    //     hnsw->search_queries(config, queries);
+        // Run query search and print results
+        hnsw->search_queries(config, queries);
 
-    //     auto search_end = chrono::high_resolution_clock::now();
-    //     cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
+        auto search_end = chrono::high_resolution_clock::now();
+        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
 
-    //     // Delete queries
-    //     for (int i = 0; i < config->num_queries; ++i)
-    //         delete queries[i];
-    //     delete[] queries;
-    // }
+        // Delete queries
+        for (int i = 0; i < config->num_queries; ++i)
+            delete queries[i];
+        delete[] queries;
+    }
 
     // Clean up
     for (int i = 0; i < config->num_nodes; i++)

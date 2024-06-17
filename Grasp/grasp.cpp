@@ -18,9 +18,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     mt19937 gen(config->graph_seed);
 
     for (int k = 0; k < config->grasp_iterations; k++) {
-        lambda = (config->initial_keep_ratio
-                  + (config->final_keep_ratio - config->initial_keep_ratio)
-                  * pow((1 - static_cast<float>(k) / config->grasp_iterations), config->keep_exponent));
+        lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
         sample_subgraph(config, hnsw);
 
@@ -46,12 +44,13 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         }
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(queries, queries + config->num_training, gen);
+        cout << "Temperature: " << temperature << "Lambda: " << lambda << endl;
     }
 }
 
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
     // Mark lowest weight edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->weight < rhs->weight; };
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->weight > rhs->weight; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
@@ -78,10 +77,10 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 /**
  * Alg 2
  */
-void normalize_weights (Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature){
+void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
     float target = lambda * edges.size();
     pair<float,float> max_min = find_max_min(config, hnsw);
-    float avg_w = temperature * log( lambda / (1-lambda));
+    float avg_w = temperature * log(lambda / (1 - lambda));
 
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
@@ -114,12 +113,14 @@ void sample_subgraph(Config* config, HNSW* hnsw) {
 
 }
 
-
+float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c) {
+    return final_keep + (initial_keep - final_keep) * pow(1 - static_cast<float>(k) / num_iterations, c);
+}
  
 /**
  * Alg 2 helper Functions 
  */
-pair<float,float> find_max_min(Config* config, HNSW* hnsw){
+pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     float max_w = 0.0f; 
     float min_w = FLT_MAX; 
     pair<float,float> max_min;
@@ -135,8 +136,8 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw){
     return max_min;
 }
 
-float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temperature){
-    const double EPSILON = 1e-9; // Tolerance for convergence
+float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temperature) {
+    const double EPSILON = 1e-6; // Tolerance for convergence
     float sum_of_probabilities = 0;
     //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
     //sum of probabilites gets as close as lambda*E.
