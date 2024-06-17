@@ -132,11 +132,12 @@ void HNSW::insert(Config* config, int query) {
  * SEARCH-LAYER(hnsw, q, ep, ef, lc)
  * Note: Result is stored in entry_points (ep)
 */
-void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num) {
+void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring) {
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<pair<float, int>> found;
     
+    // Re-initialize the path
     path.clear();
     for (int i = 0; i < num_layers; i++) {
         path.push_back(vector<Edge*>());
@@ -210,7 +211,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
 
         for (int i = 0; i < neighbors.size(); i++) {
             int neighbor = neighbors[i].target;
-            if (visited.find(neighbor) == visited.end()) {
+            if ((!is_ignoring || !neighbors[i].ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
                 // Get furthest element in found to query
@@ -270,7 +271,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
  * K-NN-SEARCH(hnsw, q, K, ef)
  * This also stores the traversed edges in the path parameter
 */
-vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, bool is_ignoring) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
@@ -294,7 +295,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_ignoring);
     
     if (config->gt_dist_log)
         log_neighbors = false;

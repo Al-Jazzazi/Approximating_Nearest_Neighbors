@@ -29,8 +29,8 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             pair<int, float*> query = make_pair(i, queries[i]);
             vector<vector<Edge*>> sample_path;
             vector<vector<Edge*>> original_path;
-            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1);
-            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1);
+            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1, true);
+            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1, false);
             
             // If the nearest neighbor differs, increase the weight importances
             if (original_nearest[0].second != sample_nearest[0].second) {
@@ -87,6 +87,7 @@ void normalize_weights (Config* config, HNSW* hnsw, vector<Edge*>& edges, float 
     float search_range_max = avg_w - max_min.second;
 
     float mu = binary_search(config, hnsw, search_range_min, search_range_max, target, temperature);
+    cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
