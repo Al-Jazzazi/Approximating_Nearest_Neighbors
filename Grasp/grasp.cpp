@@ -48,7 +48,7 @@ void prune_edges(Config* config, HNSW* hnsw, int num_keep) {
         for (int j = 0; j < hnsw->mappings[i][0].size(); j++) {
             remaining_edges.push(&hnsw->mappings[i][0][j]);
             if (remaining_edges.size() > num_keep) {
-                remaining_edges.top()->ignore = false;
+                remaining_edges.top()->ignore = true;
                 remaining_edges.pop();
             }
         }
@@ -57,7 +57,7 @@ void prune_edges(Config* config, HNSW* hnsw, int num_keep) {
     for (int i = 0; i < hnsw->num_nodes; i++) {
         for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
             vector<Edge>& edges = hnsw->mappings[i][0];
-            if (!edges[j].ignore) {
+            if (edges[j].ignore) {
                 edges[j] = edges[edges.size() - 1];
                 edges.pop_back();
             }
@@ -68,13 +68,16 @@ void prune_edges(Config* config, HNSW* hnsw, int num_keep) {
 
 
 
+
 float lambda_calculate (float sigma, float lambda_0, int k, int max_K, int c){
     return sigma + (lambda_0 - sigma)* pow((1- (float)k/max_K), c);
 }
 
-
+/**
+ * Alg 2
+ */
 void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, float temprature){
-
+    
     int num_of_edges = num_of_edges_function (config, hnsw );
     float target = lambda * num_of_edges;
     pair<float,float> max_min = find_max_min(config, hnsw);
@@ -94,6 +97,27 @@ void Binomial_weight_Normailization (Config* config, HNSW* hnsw, float lambda, f
 
 }
 
+
+void randome_subgraph(Config* config, HNSW* hnsw) {
+    //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
+    //Note: the number is not necessarily lambda * E 
+    mt19937 gen(config->graph_seed);
+    uniform_real_distribution<float> dis(0, 1);
+     for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
+            if(hnsw->mappings[i][0][k].probability_edge < dis(gen) )
+                 hnsw->mappings[i][0][k].ignore = true; 
+            else 
+                hnsw->mappings[i][0][k].ignore = false; 
+        }
+    }
+
+}
+
+ 
+/**
+ * Alg 2 helper Functions 
+ */
 int num_of_edges_function (Config* config, HNSW* hnsw){
  int size = 0;
  for(int i = 0; i < config->num_nodes ; i++){
@@ -123,31 +147,11 @@ float find_probability_edge (float weight, float temprature){
 }
 
 float search(Config* config, HNSW* hnsw, float left, float right, float target){
+     return 0.0f;
      for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            ////
+            //// 
         }
     }
 
 }
-
-
-void randome_subgraph(Config* config, HNSW* hnsw) {
-    mt19937 gen(config->graph_seed);
-    uniform_real_distribution<float> dis(0, 1);
-     for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            if(hnsw->mappings[i][0][k].probability_edge < dis(gen) )
-                 hnsw->mappings[i][0][k].ignore = true; 
-            else 
-                hnsw->mappings[i][0][k].ignore = false; 
-        }
-    }
-
-}
-
-
-
-
-
-
