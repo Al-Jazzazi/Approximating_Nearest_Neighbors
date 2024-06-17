@@ -149,6 +149,8 @@ float find_probability_edge (float weight, float temprature, float mu){
 float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temprature){
     const double EPSILON = 1e-9; // Tolerance for convergence
     float sum_of_probabilities = 0;
+    //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
+    //sum of probabilites gets as close as lambda*E.
     while (right - left > EPSILON) {
         double mid = left + (right - left) / 2;
         int count = 0;
@@ -158,7 +160,7 @@ float binary_search(Config* config, HNSW* hnsw, float left, float right, float t
                 sum_of_probabilities += find_probability_edge(hnsw->mappings[i][0][k].weight, temprature, mid);
             }
         }
-
+        
         if(abs(sum_of_probabilities - target) < 1.0f)
             break;
         else if (count < target) 
