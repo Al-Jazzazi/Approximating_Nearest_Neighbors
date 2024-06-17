@@ -25,8 +25,6 @@ public:
 
     Edge();
     Edge(int target, float distance, float weight = 0.5, bool ignore = false, float probability_edge = 1/2);
-    // Convert a node represented by a distance and index into an edge
-    Edge(std::pair<float, int>& node);
     bool operator>(const Edge& rhs) const;
     bool operator<(const Edge& rhs) const;
 };

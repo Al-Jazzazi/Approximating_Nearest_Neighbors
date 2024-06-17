@@ -23,8 +23,6 @@ Edge::Edge() : target(-1), distance(-1), weight(-1), ignore(false), probability_
 Edge::Edge(int target, float distance, float weight, bool ignore, float probability_edge) : target(target),
            distance(distance), weight(weight), ignore(ignore), probability_edge(probability_edge) {}
 
-Edge::Edge(pair<float, int>& node) : target(node.second), distance(node.first), weight(-1), ignore(false), probability_edge(1/2) {}
-
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;
 }
