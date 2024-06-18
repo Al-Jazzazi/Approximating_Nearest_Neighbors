@@ -36,13 +36,24 @@ public:
     // GraSP Training
     std::string training_file = "./exports/gist/gist_query.fvecs";
     int num_training = 1000;
-    float learning_rate = 0.3;
+    float learning_rate = 3;
     float initial_temperature = 1;
     float decay_factor = 0.8;
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
     int keep_exponent = 3;
     int grasp_iterations = 20 ;
+    int num_training = 1000;
+
+
+    //Grasp/benchmark_grasp.cpp parameters
+    std::vector<int> benchmark_learning_rate = {1, 3};
+    std::vector<int> benchmark_initial_temperature = {1, 10 , 100 , 1000, 10000, 100000};
+    std::vector<int> benchmark_decay_factor = {2, 4, 6, 8 , 10};
+    std::vector<int> benchmark_final_keep_ratio = {2,4,6,8,10};
+    std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 50, 100};
+    std::string benchmark_file_grasp = "./Grasp/runs/random_graph_results.txt";
+    bool export_benchmark_grasp = true;
 
     // Generation Settings
     int graph_seed = 0;

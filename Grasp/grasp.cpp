@@ -43,7 +43,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         }
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(queries, queries + config->num_training, gen);
-        cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
+        //cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
     }
 }
 
@@ -86,7 +86,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float search_range_max = avg_w - max_min.second;
 
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
-    cout << " Mu: " << mu << endl;
+   // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
@@ -112,7 +112,9 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
             edge->ignore = false; 
         }
     }
-    cout << "Number of edges ignored: " << count << endl;
+
+   // cout << "Number of edges ignored: " << count << endl;
+
 }
 
 float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c) {
@@ -143,7 +145,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
                 max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    cout << "Min Prob: " << lowest_percentage <<  " Max Prob: " <<  max_probability << " Min Weight: " << min_w << " Max Weight: " << max_w << endl;
+    //cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }
