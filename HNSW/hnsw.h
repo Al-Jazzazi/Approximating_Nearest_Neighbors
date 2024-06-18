@@ -24,7 +24,7 @@ public:
     float probability_edge;
 
     Edge();
-    Edge(int target, float distance, float weight = 0.5, bool ignore = false, float probability_edge = 1/2);
+    Edge(int target, float distance, float weight = 50, bool ignore = false, float probability_edge = 0.5);
     bool operator>(const Edge& rhs) const;
     bool operator<(const Edge& rhs) const;
 };

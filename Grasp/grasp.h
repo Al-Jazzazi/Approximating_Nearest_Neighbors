@@ -11,7 +11,7 @@ float compute_lambda(float final_keep, float initial_keep, int k, int num_iterat
 
 // Normalization Helper functions
 std::pair<float,float> find_max_min(Config* config, HNSW* hnsw);
-float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temperature);
+float binary_search(Config* config, std::vector<Edge*>& edges, float left, float right, float target, float temperature);
 
 // Stage 3 functions
 void prune_edges(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, int num_keep);

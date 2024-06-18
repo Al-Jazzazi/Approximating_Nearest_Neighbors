@@ -32,11 +32,10 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             
             // If the nearest neighbor differs, increase the weight importances
             if (original_nearest[0].second != sample_nearest[0].second) {
-                for (int j = 0; j < original_path[0].size(); j++) {
-                    float sample_distance = calculate_l2_sq(nodes[sample_nearest[0].second], queries[i], config->dimensions, 0);
-                    float original_distance = calculate_l2_sq(nodes[original_nearest[0].second], queries[i], config->dimensions, 0);
-                    float& weight = original_path[0][j]->weight;
-                    if (original_distance != 0) {
+                float sample_distance = calculate_l2_sq(nodes[sample_nearest[0].second], queries[i], config->dimensions, 0);
+                float original_distance = calculate_l2_sq(nodes[original_nearest[0].second], queries[i], config->dimensions, 0);
+                if (original_distance != 0) {
+                    for (int j = 0; j < original_path[0].size(); j++) {
                         original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
                     }
                 }
@@ -80,20 +79,20 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
     float target = lambda * edges.size();
     pair<float,float> max_min = find_max_min(config, hnsw);
-    float avg_w = (max_min.second  +  max_min.first)/2;
-
-    //temperature * log10(lambda / (1 - lambda));
+    // float avg_w = (max_min.second  +  max_min.first)/2;
+    float avg_w = temperature * log(lambda / (1 - lambda));
 
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
 
-    float mu = binary_search(config, hnsw, search_range_min, search_range_max, target, temperature);
+    float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
     cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            hnsw->mappings[i][0][k].weight += mu;
-            hnsw->mappings[i][0][k].probability_edge = 1 / (1 + exp(-hnsw->mappings[i][0][k].weight / temperature));
+        for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
+            Edge& edge = hnsw->mappings[i][0][k];
+            edge.weight += mu;
+            edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
         }
     }
 
@@ -107,7 +106,7 @@ void sample_subgraph(Config* config, HNSW* hnsw, float lambda) {
     int count = 0;
      for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            if(hnsw->mappings[i][0][k].probability_edge < dis(gen)){
+            if((1 - hnsw->mappings[i][0][k].probability_edge) < dis(gen)){
                 hnsw->mappings[i][0][k].ignore = true; 
                 count++;
             }
@@ -134,7 +133,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     float max_probability = 0.0f;
     pair<float,float> max_min;
     for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
+        for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             if(max_w < hnsw->mappings[i][0][k].weight)
                 max_w = hnsw->mappings[i][0][k].weight;
             if(min_w > hnsw->mappings[i][0][k].weight)
@@ -153,28 +152,23 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     return max_min;
 }
 
-float binary_search(Config* config, HNSW* hnsw, float left, float right, float target, float temperature) {
+float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
     const double EPSILON = 1e-6; // Tolerance for convergence
     float sum_of_probabilities = 0;
     //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
     //sum of probabilites gets as close as lambda*E.
     while (right - left > EPSILON) {
         double mid = left + (right - left) / 2;
-        int count = 0;
-   
-        for(int i = 0; i < config->num_nodes ; i++){
-            for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-                sum_of_probabilities += 1/(1 + exp(-(hnsw->mappings[i][0][k].weight + mid) / temperature));
-            }
+        for (const Edge* edge : edges) {
+            sum_of_probabilities += 1/(1 + exp(-(edge->weight + mid) / temperature));
         }
-        
         if(abs(sum_of_probabilities - target) < 1.0f)
             break;
-        else if (count < target) 
+        else if (sum_of_probabilities < target) 
             left = mid; 
          else 
             right = mid; 
-        
+        sum_of_probabilities = 0;
     }
 
     return left + (right - left) / 2;
