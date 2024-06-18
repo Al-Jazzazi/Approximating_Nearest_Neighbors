@@ -18,6 +18,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     mt19937 gen(config->graph_seed);
 
     for (int k = 0; k < config->grasp_iterations; k++) {
+        int num_diff = 0;
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
         sample_subgraph(config, edges, lambda);
@@ -34,6 +35,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             if (original_nearest[0].second != sample_nearest[0].second) {
                 float sample_distance = calculate_l2_sq(nodes[sample_nearest[0].second], queries[i], config->dimensions, 0);
                 float original_distance = calculate_l2_sq(nodes[original_nearest[0].second], queries[i], config->dimensions, 0);
+                num_diff++;
                 if (original_distance != 0) {
                     for (int j = 0; j < original_path[0].size(); j++) {
                         original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
@@ -44,6 +46,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(queries, queries + config->num_training, gen);
         //cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
+        cout << "Num Different: " << num_diff << endl;
     }
 }
 
@@ -105,7 +108,7 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     uniform_real_distribution<float> dis(0, 1);
     int count = 0;
     for(Edge* edge : edges) {
-        if ((1 - edge->probability_edge) < dis(gen)) {
+        if (dis(gen) < (1 - edge->probability_edge)) {
             edge->ignore = true;
             count++;
         } else {
@@ -153,7 +156,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
     const double EPSILON = 1e-6; // Tolerance for convergence
     float sum_of_probabilities = 0;
-    cout << "Range: " << left << " " << right << " Target: " << target;
+    // cout << "Range: " << left << " " << right << " Target: " << target;
     //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
     //sum of probabilites gets as close as lambda*E.
     while (right - left > EPSILON) {
