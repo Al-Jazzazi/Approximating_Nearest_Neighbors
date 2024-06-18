@@ -26,6 +26,7 @@ public:
     double scaling_factor = 0.368;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
+    bool use_heuristic = false;
 
     // HNSW Search
     int ef_search = 300;

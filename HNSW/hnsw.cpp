@@ -79,20 +79,25 @@ void HNSW::insert(Config* config, int query) {
 
         // Get nearest elements
         search_layer(config, nodes[query], path, entry_points, config->ef_construction, layer);
-        vector<Edge> candidates(entry_points.size());
-        for (int i = 0; i < entry_points.size(); i++) {
-            candidates[i] = Edge(entry_points[i].second, entry_points[i].first);
-        }
         // Choose opt_con number of neighbors out of candidates
         int num_neighbors = min(config->optimal_connections, static_cast<int>(entry_points.size()));
-        select_neighbors_heuristic(config, nodes[query], candidates, num_neighbors, layer);
-
         // Initialize mapping vector
         vector<Edge>& neighbors = mappings[query][layer];
         neighbors.reserve(max_connections + 1);
         neighbors.resize(num_neighbors);
-        for (int i = 0; i < num_neighbors; i++) {
-            neighbors[i] = candidates[i];
+        if (config->use_heuristic) {
+            vector<Edge> candidates(entry_points.size());
+            for (int i = 0; i < entry_points.size(); i++) {
+                candidates[i] = Edge(entry_points[i].second, entry_points[i].first);
+            }
+            select_neighbors_heuristic(config, nodes[query], candidates, num_neighbors, layer);
+            for (int i = 0; i < num_neighbors; i++) {
+                neighbors[i] = candidates[i];
+            }
+        } else {
+            for (int i = 0; i < min(config->optimal_connections, (int)entry_points.size()); i++) {
+                neighbors[i] = Edge(entry_points[i].second, entry_points[i].first);
+            }
         }
 
         if (config->debug_insert) {
@@ -117,7 +122,11 @@ void HNSW::insert(Config* config, int query) {
         for (auto n_pair : neighbors) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
             if (neighbor_mapping.size() > max_connections) {
-                select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
+                if (config->use_heuristic) {
+                    select_neighbors_heuristic(config, nodes[query], neighbor_mapping, max_connections, layer);
+                } else {
+                    neighbor_mapping.pop_back();
+                }
             }
         }
 
