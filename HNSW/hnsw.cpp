@@ -282,7 +282,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
 /**
  * Alg 4
  * SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections)
- * Given a query and candidates, return the num_to_return best candidates according to a heuristic
+ * Given a query and candidates, set candidates to the num_to_return best candidates according to a heuristic
  */
 void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>& candidates, int num_to_return, int layer_num, bool extend_candidates, bool keep_pruned) {
     // Initialize output vector, consider queue, and discard queue
@@ -318,7 +318,6 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
     // Add considered element to output if it is closer to query than to other output elements
     while (!considered.empty() && output.size() < num_to_return) {
         const Edge& closest = considered.top();
-        considered.pop();
         float query_distance = calculate_l2_sq(nodes[closest.target], query, num_dimensions, layer_num);
         bool is_closer_to_query = true;
         for (auto n_pair : output) {
@@ -332,6 +331,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
         } else {
             discarded.emplace(closest);
         }
+        considered.pop();
     }
 
     // Add discarded elements until output is large enough

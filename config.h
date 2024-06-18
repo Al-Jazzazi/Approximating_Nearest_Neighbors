@@ -8,8 +8,8 @@
 class Config {
 public:
     // Datasets
-    std::string load_file = "./exports/sift/sift_base.fvecs";
-    std::string query_file = "./exports/sift/sift_query.fvecs";
+    std::string load_file = "./exports/gist/gist_base.fvecs";
+    std::string query_file = "./exports/gist/gist_query.fvecs";
     std::string groundtruth_file = "";
     std::string export_dir = "./HNSW/runs/";
     std::string hnsw_graph_file = "./HNSW/runs/random_graph_graph_0.bin";
@@ -17,8 +17,8 @@ public:
     bool load_graph_file = false;
 
     // HNSW Construction
-    int dimensions = 128;
-    int num_nodes = 10000;
+    int dimensions = 960;
+    int num_nodes = 100000;
     int optimal_connections = 7;
     int max_connections = 11;
     int max_connections_0 = 14;
@@ -26,7 +26,7 @@ public:
     double scaling_factor = 0.368;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
-    bool use_heuristic = false;
+    bool use_heuristic = true;
 
     // HNSW Search
     int ef_search = 300;
