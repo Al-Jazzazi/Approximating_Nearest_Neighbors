@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 960;
-    int num_nodes = 100000;
+    int num_nodes = 10000;
     int optimal_connections = 7;
     int max_connections = 11;
     int max_connections_0 = 14;
@@ -34,18 +34,20 @@ public:
     int num_return = 50;
 
     // GraSP Training
+    std::string training_file = "./exports/gist/gist_query.fvecs";
+    int num_training = 1000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.8;
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.5;
+    float final_keep_ratio = 0.7;
     int keep_exponent = 3;
     int grasp_iterations = 20 ;
-    int num_training = 1000;
 
     // Generation Settings
     int graph_seed = 0;
     int query_seed = 100000;
+    int training_seed = 100000;
     int insertion_seed = 1000000;
     int gen_min = 0;
     int gen_max = 100000;

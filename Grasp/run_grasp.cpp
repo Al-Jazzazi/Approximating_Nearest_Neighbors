@@ -16,8 +16,8 @@ int main() {
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
 
-    float** queries = new float*[config->num_queries];
-    load_queries(config, nodes, queries);
+    float** training = new float*[config->num_training];
+    load_training(config, nodes, training);
     
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = init_hnsw(config, nodes);
@@ -32,7 +32,7 @@ int main() {
     // Optimize HNSW using GraSP
     vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
     cout << "Edges: " << edges.size() << endl;
-    learn_edge_importance(config, hnsw, edges, nodes, queries);
+    learn_edge_importance(config, hnsw, edges, nodes, training);
     prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
     edges = hnsw->get_layer_edges(config, 0);
     cout << "Edges: " << edges.size() << endl;

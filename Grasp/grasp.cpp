@@ -86,7 +86,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float search_range_max = avg_w - max_min.second;
 
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
-    cout << "Mu: " << mu << endl;
+    cout << " Mu: " << mu << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
@@ -170,4 +170,84 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
 
     return left + (right - left) / 2;
 
+}
+
+// Load training set from training file or randomly generate them from nodes
+void load_training(Config* config, float** nodes, float** training) {
+    mt19937 gen(config->training_seed);
+    if (config->training_file != "") {
+        if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
+            // Load queries from fvecs file
+            load_fvecs(config->training_file, "training", training, config->num_training, config->dimensions, config->groundtruth_file != "");
+            return;
+        }
+
+        // Load queries from file
+        ifstream f(config->training_file, ios::in);
+        if (!f) {
+            cout << "File " << config->training_file << " not found!" << endl;
+            exit(1);
+        }
+        cout << "Loading " << config->num_training << " training set from file " << config->training_file << endl;
+
+        for (int i = 0; i < config->num_training; i++) {
+            training[i] = new float[config->dimensions];
+            for (int j = 0; j < config->dimensions; j++) {
+                f >> training[i][j];
+            }
+        }
+
+        f.close();
+        return;
+    }
+
+    if (config->load_file == "") {
+        // Generate random queries (same as get_nodes)
+        cout << "Generating " << config->num_training << " random training points" << endl;
+        uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
+
+        for (int i = 0; i < config->num_training; i++) {
+            training[i] = new float[config->dimensions];
+            for (int j = 0; j < config->dimensions; j++) {
+                training[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+            }
+        }
+
+        return;
+    }
+    
+    // Generate queries randomly based on bounds of graph_nodes
+    cout << "Generating queries based on file " << config->load_file << endl;
+    float* lower_bound = new float[config->dimensions];
+    float* upper_bound = new float[config->dimensions];
+    copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
+    copy(nodes[0], nodes[0] + config->dimensions, upper_bound);
+
+    // Calculate lowest and highest value for each dimension using graph_nodes
+    for (int i = 1; i < config->num_nodes; i++) {
+        for (int j = 0; j < config->dimensions; j++) {
+            if (nodes[i][j] < lower_bound[j]) {
+                lower_bound[j] = nodes[i][j];
+            }
+            if (nodes[i][j] > upper_bound[j]) {
+                upper_bound[j] = nodes[i][j];
+            }
+        }
+    }
+    uniform_real_distribution<float>* dis_array = new uniform_real_distribution<float>[config->dimensions];
+    for (int i = 0; i < config->dimensions; i++) {
+        dis_array[i] = uniform_real_distribution<float>(lower_bound[i], upper_bound[i]);
+    }
+
+    // Generate queries based on the range of values in each dimension
+    for (int i = 0; i < config->num_training; i++) {
+        training[i] = new float[config->dimensions];
+        for (int j = 0; j < config->dimensions; j++) {
+            training[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+        }
+    }
+
+    delete[] lower_bound;
+    delete[] upper_bound;
+    delete[] dis_array;
 }
