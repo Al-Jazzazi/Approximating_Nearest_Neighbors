@@ -8,8 +8,8 @@
 class Config {
 public:
     // Datasets
-    std::string load_file = "./exports/sift/sift_base.fvecs";
-    std::string query_file = "./exports/sift/sift_query.fvecs";
+    std::string load_file = "./exports/gist/gist_base.fvecs";
+    std::string query_file = "./exports/gist/gist_query.fvecs";
     std::string groundtruth_file = "";
     std::string export_dir = "./HNSW/runs/";
     std::string hnsw_graph_file = "./HNSW/runs/random_graph_graph_0.bin";
@@ -17,8 +17,8 @@ public:
     bool load_graph_file = false;
 
     // HNSW Construction
-    int dimensions = 128;
-    int num_nodes = 10000;
+    int dimensions = 960;
+    int num_nodes = 100000;
     int optimal_connections = 7;
     int max_connections = 11;
     int max_connections_0 = 14;
@@ -37,8 +37,8 @@ public:
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.8;
-    float initial_keep_ratio = 0.99;
-    float final_keep_ratio = 0.8;
+    float initial_keep_ratio = 0.9;
+    float final_keep_ratio = 0.5;
     int keep_exponent = 3;
     int grasp_iterations = 20 ;
     int num_training = 1000;

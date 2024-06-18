@@ -20,7 +20,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     for (int k = 0; k < config->grasp_iterations; k++) {
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
-        sample_subgraph(config, hnsw, lambda);
+        sample_subgraph(config, edges, lambda);
 
         for (int i = 0; i < config->num_training; i++) {
             // Find the nearest neighbor using both the original and sampled graphs
@@ -64,10 +64,10 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
     // Remove all edges in layer 0 that are marked for deletion
     for (int i = 0; i < hnsw->num_nodes; i++) {
         for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
-            vector<Edge>& edges = hnsw->mappings[i][0];
-            if (edges[j].ignore) {
-                edges[j] = edges[edges.size() - 1];
-                edges.pop_back();
+            vector<Edge>& neighbors = hnsw->mappings[i][0];
+            if (neighbors[j].ignore) {
+                neighbors[j] = neighbors[neighbors.size() - 1];
+                neighbors.pop_back();
             }
         }
     }
@@ -86,7 +86,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float search_range_max = avg_w - max_min.second;
 
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
-    cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
+    cout << "Mu: " << mu << endl;
 
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
@@ -98,25 +98,21 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
 
 }
 
-void sample_subgraph(Config* config, HNSW* hnsw, float lambda) {
+void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
     mt19937 gen(config->graph_seed);
     uniform_real_distribution<float> dis(0, 1);
     int count = 0;
-     for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k< hnsw->mappings[i][0].size(); k++){
-            if((1 - hnsw->mappings[i][0][k].probability_edge) < dis(gen)){
-                hnsw->mappings[i][0][k].ignore = true; 
-                count++;
-            }
-            else 
-                hnsw->mappings[i][0][k].ignore = false; 
+    for(Edge* edge : edges) {
+        if ((1 - edge->probability_edge) < dis(gen)) {
+            edge->ignore = true;
+            count++;
+        } else {
+            edge->ignore = false; 
         }
     }
-
     cout << "Number of edges ignored: " << count << endl;
-
 }
 
 float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c) {
@@ -147,7 +143,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
                 max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
+    cout << "Min Prob: " << lowest_percentage <<  " Max Prob: " <<  max_probability << " Min Weight: " << min_w << " Max Weight: " << max_w << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }
@@ -155,6 +151,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
     const double EPSILON = 1e-6; // Tolerance for convergence
     float sum_of_probabilities = 0;
+    cout << "Range: " << left << " " << right << " Target: " << target;
     //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
     //sum of probabilites gets as close as lambda*E.
     while (right - left > EPSILON) {
