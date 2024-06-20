@@ -59,8 +59,8 @@ public:
     // Grasp/benchmark_grasp.cpp parameters
     std::vector<int> benchmark_learning_rate = {1, 3};
     std::vector<int> benchmark_initial_temperature = {1, 10 , 100 , 1000, 10000, 100000};
-    std::vector<int> benchmark_decay_factor = {2, 4, 6, 8 , 10};
-    std::vector<int> benchmark_final_keep_ratio = {2,4,6,8,10};
+    std::vector<float> benchmark_decay_factor = {0.2, 0.4 , 0.6, 0.8, 0.9};
+    std::vector<float> benchmark_final_keep_ratio = {.2,.4,.6,0.8,0.10};
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 50, 100};
     std::string benchmark_file_grasp = "./Grasp/runs/grasp_results.txt";
     bool export_benchmark_grasp = true;

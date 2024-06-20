@@ -66,11 +66,11 @@ void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** n
         cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;
     }
 }
-
-void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_values, const string& parameter_name,
+template <typename T>
+void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
         float** nodes, float** queries, ofstream* results_file) {
 
-    int default_parameter = parameter;
+    T default_parameter = parameter;
     if (config->export_benchmark) {
         *results_file << "\nVarying " << parameter_name;
     }
