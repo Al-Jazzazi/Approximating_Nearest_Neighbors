@@ -71,13 +71,13 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         float** nodes, float** queries, ofstream* results_file) {
 
     T default_parameter = parameter;
-    if (config->export_benchmark_hnsw) {
+    if (config->export_benchmark_grasp) {
         *results_file << "\nVarying " << parameter_name;
     }
 
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        if (config->export_benchmark_hnsw) {
+        if (config->export_benchmark_grasp) {
             *results_file << endl << parameter << ", ";
         }
         // Sanity checks
@@ -117,11 +117,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             float** training = new float*[config->num_training];
             load_training(config, nodes, training);
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            cout << "Edges: " << edges.size() << endl;
             learn_edge_importance(config, hnsw, edges, training);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
             edges = hnsw->get_layer_edges(config, 0);
-            cout << "Edges: " << edges.size() << endl;
 
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -209,14 +207,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;
 
-        if (config->export_benchmark_hnsw) {
+        if (config->export_benchmark_grasp) {
             *results_file << search_dist_comp / config->num_queries << ", "
             << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
 
         delete hnsw;
     }
-    if (config->export_benchmark_hnsw) {
+    if (config->export_benchmark_grasp) {
         *results_file << endl;
     }
     parameter = default_parameter;
@@ -239,8 +237,8 @@ int main() {
 
     // Initialize output file
     ofstream* results_file = NULL;
-    if (config->export_benchmark_hnsw) {
-        results_file = new ofstream(config->benchmark_file);
+    if (config->export_benchmark_grasp) {
+        results_file = new ofstream(config->benchmark_file_grasp);
         *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor

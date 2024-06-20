@@ -1,0 +1,10 @@
+Size 1000
+Default Parameters: opt_con = 20, max_con = 20, max_con_0 = 20, ef_con = 100, scaling_factor = 0.368, ef_search = 300, num_return = 50
+parameter, dist_comps/query, recall, runtime/query (ms)
+
+Varying Learning Rate:
+1, 461, 0.99822, 0.097, 4.121
+3, 461, 0.99822, 0.096, 4.189
+
+Varying Initial Temperature:
+0.25, 461, 0.99822, 0.097, 4.136
