@@ -5,6 +5,7 @@
 #include <utility>
 #include <random>
 #include <cfloat> 
+#include <algorithm>
 #include "../HNSW/hnsw.h"
 
 using namespace std;
@@ -28,17 +29,30 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             pair<int, float*> query = make_pair(i, queries[i]);
             vector<vector<Edge*>> sample_path;
             vector<vector<Edge*>> original_path;
-            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1, true);
-            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1, false);
+            int numOfNN = 10;
+            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, numOfNN, true);
+            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, numOfNN, false);
             
+            int similarNodes = 0;
+            for (const auto& element : sample_nearest) {
+             // Count occurrences of each element 
+                if (find(original_nearest.begin(), original_nearest.end(), element) != original_nearest.end()) 
+                    similarNodes++;
+            }
+
+
             // If the nearest neighbor differs, increase the weight importances
-            if (original_nearest[0].second != sample_nearest[0].second) {
+           
+          //  if (original_nearest[0].second != sample_nearest[0].second) {
+           if( similarNodes/static_cast<float>(numOfNN) < 0.99 ) {
                 float sample_distance = calculate_l2_sq(nodes[sample_nearest[0].second], queries[i], config->dimensions, 0);
                 float original_distance = calculate_l2_sq(nodes[original_nearest[0].second], queries[i], config->dimensions, 0);
                 num_diff++;
                 if (original_distance != 0) {
                     for (int j = 0; j < original_path[0].size(); j++) {
-                        original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
+
+                        if(  find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+                            original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
                     }
                 }
             }
@@ -141,15 +155,15 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
             if(min_w > hnsw->mappings[i][0][k].weight)
                 min_w = hnsw->mappings[i][0][k].weight;
 
+            //Used to check edge probability behaviour at each iteration
+            // if (lowest_percentage > hnsw->mappings[i][0][k].probability_edge)
+            //     lowest_percentage = hnsw->mappings[i][0][k].probability_edge;
 
-            if (lowest_percentage > hnsw->mappings[i][0][k].probability_edge)
-                lowest_percentage = hnsw->mappings[i][0][k].probability_edge;
-
-            if(max_probability < hnsw->mappings[i][0][k].probability_edge)
-                max_probability = hnsw->mappings[i][0][k].probability_edge;
+            // if(max_probability < hnsw->mappings[i][0][k].probability_edge)
+            //     max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
+    //cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }
@@ -226,8 +240,8 @@ void load_training(Config* config, float** nodes, float** training) {
     cout << "Generating queries based on file " << config->load_file << endl;
     float* lower_bound = new float[config->dimensions];
     float* upper_bound = new float[config->dimensions];
-    copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
-    copy(nodes[0], nodes[0] + config->dimensions, upper_bound);
+    std::copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
+    std::copy(nodes[0], nodes[0] + config->dimensions, upper_bound);
 
     // Calculate lowest and highest value for each dimension using graph_nodes
     for (int i = 1; i < config->num_nodes; i++) {
