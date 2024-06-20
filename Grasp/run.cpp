@@ -32,7 +32,7 @@ int main() {
     // Optimize HNSW using GraSP
     vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
     cout << "Edges: " << edges.size() << endl;
-    learn_edge_importance(config, hnsw, edges, nodes, training);
+    learn_edge_importance(config, hnsw, edges, training);
     prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
     edges = hnsw->get_layer_edges(config, 0);
     cout << "Edges: " << edges.size() << endl;

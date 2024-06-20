@@ -4,7 +4,7 @@
 #include "../HNSW/hnsw.h"
 
 // Main algorithms
-void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** nodes, float** queries);
+void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** queries);
 void prune_edges(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, int num_keep);
 
 // Helper functions

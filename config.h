@@ -18,11 +18,11 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
-    int optimal_connections = 10;
-    int max_connections = 30;
-    int max_connections_0 = 30;
-    int ef_construction = 50;
+    int num_nodes = 100000;
+    int optimal_connections = 20;
+    int max_connections = 20;
+    int max_connections_0 = 20;
+    int ef_construction = 100;
     double scaling_factor = 0.368;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -31,17 +31,17 @@ public:
     // HNSW Search
     int ef_search = 300;
     int num_queries = 1000;
-    int num_return = 20;
+    int num_return = 50;
 
     // HNSW/benchmark.cpp parameters
-    std::vector<int> benchmark_optimal_connections = {3, 7, 10, 20, 30};
-    std::vector<int> benchmark_max_connections = {10, 20, 30, 40, 50};
-    std::vector<int> benchmark_max_connections_0 = {10, 20, 30, 40, 50};
-    std::vector<int> benchmark_ef_construction = {10, 30, 50, 70, 90};
+    std::vector<int> benchmark_optimal_connections = {3, 7, 10, 15, 20};
+    std::vector<int> benchmark_max_connections = {20, 30, 40, 50, 60};
+    std::vector<int> benchmark_max_connections_0 = {20, 30, 40, 50, 60};
+    std::vector<int> benchmark_ef_construction = {25, 50, 75, 100, 125};
     std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
     std::vector<int> benchmark_num_return = {10, 50, 100, 150, 200};
-    std::string benchmark_file = "./HNSW/runs/hnsw_results.txt";
-    bool export_benchmark = true;
+    std::string benchmark_file = "./HNSW/runs/benchmark_results.txt";
+    bool export_benchmark_hnsw = true;
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
 
@@ -57,12 +57,13 @@ public:
     int grasp_iterations = 20;
 
     // Grasp/benchmark_grasp.cpp parameters
-    std::vector<int> benchmark_learning_rate = {1, 3};
-    std::vector<int> benchmark_initial_temperature = {1, 10 , 100 , 1000, 10000, 100000};
-    std::vector<float> benchmark_decay_factor = {0.2, 0.4 , 0.6, 0.8, 0.9};
-    std::vector<float> benchmark_final_keep_ratio = {.2,.4,.6,0.8,0.10};
-    std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 50, 100};
-    std::string benchmark_file_grasp = "./Grasp/runs/grasp_results.txt";
+    std::vector<float> benchmark_learning_rate = {1, 3};
+    std::vector<float> benchmark_initial_temperature = {0.25, 0.5, 0.75, 1, 5};
+    std::vector<float> benchmark_decay_factor = {0.25, 0.5, 0.75, 1, 5};
+    std::vector<float> benchmark_initial_keep_ratio = {0.25, 0.5, 0.75, 1};
+    std::vector<float> benchmark_final_keep_ratio = {0.25, 0.5, 0.75, 1};
+    std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};
+    std::string benchmark_file_grasp = "./Grasp/runs/benchmark_results.txt";
     bool export_benchmark_grasp = true;
 
     // Generation Settings

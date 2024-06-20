@@ -71,13 +71,13 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         float** nodes, float** queries, ofstream* results_file) {
 
     T default_parameter = parameter;
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         *results_file << "\nVarying " << parameter_name;
     }
 
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        if (config->export_benchmark) {
+        if (config->export_benchmark_hnsw) {
             *results_file << endl << parameter << ", ";
         }
         // Sanity checks
@@ -118,7 +118,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             load_training(config, nodes, training);
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
             cout << "Edges: " << edges.size() << endl;
-            learn_edge_importance(config, hnsw, edges, nodes, training);
+            learn_edge_importance(config, hnsw, edges, training);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
             edges = hnsw->get_layer_edges(config, 0);
             cout << "Edges: " << edges.size() << endl;
@@ -209,14 +209,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;
 
-        if (config->export_benchmark) {
+        if (config->export_benchmark_hnsw) {
             *results_file << search_dist_comp / config->num_queries << ", "
             << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
 
         delete hnsw;
     }
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         *results_file << endl;
     }
     parameter = default_parameter;
@@ -239,7 +239,7 @@ int main() {
 
     // Initialize output file
     ofstream* results_file = NULL;
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         results_file = new ofstream(config->benchmark_file);
         *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
@@ -249,16 +249,18 @@ int main() {
     }
 
     // Run benchmarks
-    // run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
-    //     "Optimal Connections:", nodes, queries, results_file);
-    // run_benchmark(config, config->max_connections, config->benchmark_max_connections,
-    //     "Max Connections:", nodes, queries, results_file);
-    // run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
-    //     "Max Connections 0:", nodes, queries, results_file);
-    // run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
-    //     "ef Construction:", nodes, queries, results_file);
-    // run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
-    //     queries, results_file);
+    run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",
+        nodes, queries, results_file);
+    run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "Initial Temperature:",
+        nodes, queries, results_file);
+    run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "Decay Factor:",
+        nodes, queries, results_file);
+    run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "Initial Keep Ratio:",
+        nodes, queries, results_file);
+    run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
+        nodes, queries, results_file);
+    run_benchmark(config, config->grasp_iterations, config->benchmark_grasp_iterations, "Grasp Iterations:",
+        nodes, queries, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, results_file);
 

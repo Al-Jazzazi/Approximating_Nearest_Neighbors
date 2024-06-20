@@ -70,13 +70,13 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         float** nodes, float** queries, ofstream* results_file) {
 
     int default_parameter = parameter;
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         *results_file << "\nVarying " << parameter_name;
     }
 
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        if (config->export_benchmark) {
+        if (config->export_benchmark_hnsw) {
             *results_file << endl << parameter << ", ";
         }
         // Sanity checks
@@ -198,14 +198,14 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;
 
-        if (config->export_benchmark) {
+        if (config->export_benchmark_hnsw) {
             *results_file << search_dist_comp / config->num_queries << ", "
             << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
 
         delete hnsw;
     }
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         *results_file << endl;
     }
     parameter = default_parameter;
@@ -228,7 +228,7 @@ int main() {
 
     // Initialize output file
     ofstream* results_file = NULL;
-    if (config->export_benchmark) {
+    if (config->export_benchmark_hnsw) {
         results_file = new ofstream(config->benchmark_file);
         *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0

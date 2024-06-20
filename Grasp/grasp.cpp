@@ -12,12 +12,16 @@ using namespace std;
 
 /**
  * Alg 1
+ * Given an HNSW, a list of its weighted edges, and a list of training nodes,
+ * learn the importance of the HNSW's edges and increase their weights accordingly.
+ * Note: This will shuffle the training set.
  */
-void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** nodes, float** queries) {
+void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training) {
     float temperature = config->initial_temperature;
     float lambda = 0;
     mt19937 gen(config->graph_seed);
 
+    // Run the training loop
     for (int k = 0; k < config->grasp_iterations; k++) {
         int num_diff = 0;
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
@@ -26,7 +30,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
 
         for (int i = 0; i < config->num_training; i++) {
             // Find the nearest neighbor using both the original and sampled graphs
-            pair<int, float*> query = make_pair(i, queries[i]);
+            pair<int, float*> query = make_pair(i, training[i]);
             vector<vector<Edge*>> sample_path;
             vector<vector<Edge*>> original_path;
             int numOfNN = 10;
@@ -45,8 +49,8 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
            
           //  if (original_nearest[0].second != sample_nearest[0].second) {
            if( similarNodes/static_cast<float>(numOfNN) < 0.99 ) {
-                float sample_distance = calculate_l2_sq(nodes[sample_nearest[0].second], queries[i], config->dimensions, 0);
-                float original_distance = calculate_l2_sq(nodes[original_nearest[0].second], queries[i], config->dimensions, 0);
+                float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
+                float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
                 num_diff++;
                 if (original_distance != 0) {
                     for (int j = 0; j < original_path[0].size(); j++) {
@@ -58,12 +62,16 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             }
         }
         temperature = config->initial_temperature * pow(config->decay_factor, k);
-        std::shuffle(queries, queries + config->num_training, gen);
+        std::shuffle(training, training + config->num_training, gen);
         //cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
        // cout << "Num Different: " << num_diff << endl;
     }
 }
 
+/**
+ * Given an HNSW and a list of its edges, keep its num_keep highest weighted
+ * edges and remove the rest of its edges.
+ */
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
     // Mark lowest weight edges for deletion
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge; };
@@ -92,19 +100,20 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 
 /**
  * Alg 2
+ * Normalize the edge weights in the HNSW according to a normalization factor,
+ * which is computed from the weight range, lambda, and temperature
  */
 void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
+    // Compute normalizing factor mu
     float target = lambda * edges.size();
     pair<float,float> max_min = find_max_min(config, hnsw);
-    // float avg_w = (max_min.second  +  max_min.first)/2;
     float avg_w = temperature * log(lambda / (1 - lambda));
-
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
-
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
    // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
 
+    // Normalize edge weights and probabilities
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             Edge& edge = hnsw->mappings[i][0][k];
@@ -115,6 +124,9 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
 
 }
 
+/**
+ * Randomly disable edges in the provided list of edges
+ */
 void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
@@ -135,13 +147,12 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
 
 }
 
+// Calculate lambda according to a formula
 float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c) {
     return final_keep + (initial_keep - final_keep) * pow(1 - static_cast<float>(k) / num_iterations, c);
 }
  
-/**
- * Alg 2 helper Functions 
- */
+// Find the maximum and minimum weights in the HNSW
 pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     float max_w = 0.0f; 
     float min_w = FLT_MAX; 
@@ -152,6 +163,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             if(max_w < hnsw->mappings[i][0][k].weight)
                 max_w = hnsw->mappings[i][0][k].weight;
+            
             if(min_w > hnsw->mappings[i][0][k].weight)
                 min_w = hnsw->mappings[i][0][k].weight;
 
@@ -168,12 +180,17 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
     return max_min;
 }
 
+/**
+ * Binary search for the mu value that makes the sum of edge probabilities
+ * equal lambda * mu
+ */
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
     const double EPSILON = 1e-6; // Tolerance for convergence
     float sum_of_probabilities = 0;
     // cout << "Range: " << left << " " << right << " Target: " << target;
-    //The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
-    //sum of probabilites gets as close as lambda*E.
+
+    // The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
+    // sum of probabilites gets as close as lambda * E.
     while (right - left > EPSILON) {
         double mid = left + (right - left) / 2;
         for (const Edge* edge : edges) {
@@ -189,7 +206,6 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
     }
 
     return left + (right - left) / 2;
-
 }
 
 // Load training set from training file or randomly generate them from nodes
@@ -197,12 +213,12 @@ void load_training(Config* config, float** nodes, float** training) {
     mt19937 gen(config->training_seed);
     if (config->training_file != "") {
         if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
-            // Load queries from fvecs file
+            // Load training from fvecs file
             load_fvecs(config->training_file, "training", training, config->num_training, config->dimensions, config->groundtruth_file != "");
             return;
         }
 
-        // Load queries from file
+        // Load training from file
         ifstream f(config->training_file, ios::in);
         if (!f) {
             cout << "File " << config->training_file << " not found!" << endl;
@@ -222,7 +238,7 @@ void load_training(Config* config, float** nodes, float** training) {
     }
 
     if (config->load_file == "") {
-        // Generate random queries (same as get_nodes)
+        // Generate random training nodes
         cout << "Generating " << config->num_training << " random training points" << endl;
         uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
 
@@ -236,8 +252,8 @@ void load_training(Config* config, float** nodes, float** training) {
         return;
     }
     
-    // Generate queries randomly based on bounds of graph_nodes
-    cout << "Generating queries based on file " << config->load_file << endl;
+    // Generate training set randomly based on bounds of graph_nodes
+    cout << "Generating training set based on file " << config->load_file << endl;
     float* lower_bound = new float[config->dimensions];
     float* upper_bound = new float[config->dimensions];
     std::copy(nodes[0], nodes[0] + config->dimensions, lower_bound);
@@ -259,7 +275,7 @@ void load_training(Config* config, float** nodes, float** training) {
         dis_array[i] = uniform_real_distribution<float>(lower_bound[i], upper_bound[i]);
     }
 
-    // Generate queries based on the range of values in each dimension
+    // Generate training set based on the range of values in each dimension
     for (int i = 0; i < config->num_training; i++) {
         training[i] = new float[config->dimensions];
         for (int j = 0; j < config->dimensions; j++) {
