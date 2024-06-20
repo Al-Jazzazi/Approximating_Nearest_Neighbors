@@ -58,7 +58,7 @@ public:
 
     // Grasp/benchmark_grasp.cpp parameters
     std::vector<float> benchmark_learning_rate = {0.25, 0.5, 0.75, 1, 5};
-    std::vector<float> benchmark_initial_temperature = {0.25, 0.5, 0.75, 1, 5};
+    std::vector<float> benchmark_initial_temperature = {0.5, 1, 5, 100, 500};
     std::vector<float> benchmark_decay_factor = {0.25, 0.5, 0.75, 1};
     std::vector<float> benchmark_initial_keep_ratio = {0.25, 0.5, 0.75, 1};
     std::vector<float> benchmark_final_keep_ratio = {0.25, 0.5, 0.75, 1};

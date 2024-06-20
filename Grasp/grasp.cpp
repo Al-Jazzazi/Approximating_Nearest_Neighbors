@@ -33,7 +33,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             pair<int, float*> query = make_pair(i, training[i]);
             vector<vector<Edge*>> sample_path;
             vector<vector<Edge*>> original_path;
-            int numOfNN = 10;
+            int numOfNN = 1000;
             vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, numOfNN, true);
             vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, numOfNN, false);
             
@@ -47,8 +47,8 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
 
             // If the nearest neighbor differs, increase the weight importances
            
-          //  if (original_nearest[0].second != sample_nearest[0].second) {
-           if( similarNodes/static_cast<float>(numOfNN) < 0.99 ) {
+          // if (original_nearest[0].second != sample_nearest[0].second) {
+           if( similarNodes/static_cast<float>(numOfNN) < 0.9 ) {
                 float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
                 float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
                 num_diff++;
