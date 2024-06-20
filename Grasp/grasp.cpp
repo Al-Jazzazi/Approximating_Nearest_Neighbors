@@ -26,7 +26,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
         sample_subgraph(config, edges, lambda);
-        update_weights(config, hnsw, training, 10);
+        update_weights(config, hnsw, training, config->num_return);
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(training, training + config->num_training, gen);
         // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
@@ -95,18 +95,19 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
  */
 void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors) {
     int num_updates = 0;
-    int num_non_updates = 0;
     for (int i = 0; i < config->num_training; i++) {
         int similar_nodes = 0;
 
         // Find the nearest neighbor and paths taken using the original and sampled graphs
         pair<int, float*> query = make_pair(i, training[i]);
-        int sample_distance = 0;
-        int original_distance = 0;
         vector<vector<Edge*>> sample_path;
         vector<vector<Edge*>> original_path;
         vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true);
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false);
+
+        // Calculate the average distance between nearest neighbors and the training point
+        float sample_distance = 0;
+        float original_distance = 0;
         for (int j = 0; j < num_neighbors; j++) {
             sample_distance += sample_nearest[j].first;
             original_distance += original_nearest[j].first;
@@ -116,34 +117,17 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         if (sample_distance != original_distance) {
             for (int j = 0; j < original_path[0].size(); j++) {
-                if(find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
-                    original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
+                if (find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end()) {
+                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                }
             }
             num_updates++;
-        } else {
-            num_non_updates++;
         }
-
-        // for (const auto& element : sample_nearest) {
-        //     // Count occurrences of each element 
-        //     if (find(original_nearest.begin(), original_nearest.end(), element) != original_nearest.end()) 
-        //         similar_nodes++;
-        // }
-        // If the nearest neighbor differs, increase the weight importances
-        // if (original_nearest[0].second != sample_nearest[0].second) {
-        // if(similar_nodes / static_cast<float>(num_neighbors) < 0.99) {
-        //     float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
-        //     float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
-        //     num_diff++;
-        //     if (original_distance != 0) {
-        //         for (int j = 0; j < original_path[0].size(); j++) {
-        //             if(find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
-        //                 original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
-        //         }
-        //     }
-        // }
+        
     }
-    cout << "Num Weight Updates: " << num_updates << ", Num Non-Updates: " << num_non_updates << endl;
+    if (config->print_weight_updates) {
+        cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << endl;
+    }
 }
 
 /**

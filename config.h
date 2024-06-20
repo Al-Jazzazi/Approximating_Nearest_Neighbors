@@ -50,9 +50,9 @@ public:
     int num_training = 1000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
-    float decay_factor = 0.8;
+    float decay_factor = 0.5;
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.7;
+    float final_keep_ratio = 0.6;
     int keep_exponent = 3;
     int grasp_iterations = 20;
 
@@ -65,6 +65,7 @@ public:
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};
     std::string benchmark_file_grasp = "./Grasp/runs/benchmark_results.txt";
     bool export_benchmark_grasp = true;
+    bool print_weight_updates = true;
 
     // Generation Settings
     int graph_seed = 0;
