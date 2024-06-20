@@ -46,7 +46,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(queries, queries + config->num_training, gen);
         //cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
-        cout << "Num Different: " << num_diff << endl;
+       // cout << "Num Different: " << num_diff << endl;
     }
 }
 
@@ -105,7 +105,7 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
     mt19937 gen(config->graph_seed);
-    uniform_real_distribution<float> dis(0, 1);
+    uniform_real_distribution<float> dis(0, lambda);
     int count = 0;
     for(Edge* edge : edges) {
         if (dis(gen) < (1 - edge->probability_edge)) {
@@ -114,6 +114,7 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
         } else {
             edge->ignore = false; 
         }
+        
     }
 
    // cout << "Number of edges ignored: " << count << endl;
@@ -148,7 +149,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
                 max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    //cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
+    cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }
