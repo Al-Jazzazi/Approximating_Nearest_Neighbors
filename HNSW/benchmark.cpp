@@ -88,6 +88,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
         vector<vector<pair<float, int>>> neighbors;
+        double construction_duration;
         double search_duration;
         long long search_dist_comp;
         HNSW* hnsw = NULL;
@@ -116,6 +117,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";
             cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
             cout << "Distance computations (top layers): " << upper_dist_comps << endl;
+            construction_duration = duration / 1000.0;
         }
 
         if (config->ef_search < config->num_return) {
@@ -198,7 +200,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
 
         if (config->export_benchmark) {
             *results_file << search_dist_comp / config->num_queries << ", "
-            << recall << ", " << search_duration / config->num_queries;
+            << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
 
         delete hnsw;
@@ -236,16 +238,16 @@ int main() {
     }
 
     // Run benchmarks
-    // run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
-    //     "Optimal Connections:", nodes, queries, results_file);
-    // run_benchmark(config, config->max_connections, config->benchmark_max_connections,
-    //     "Max Connections:", nodes, queries, results_file);
-    // run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
-    //     "Max Connections 0:", nodes, queries, results_file);
-    // run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
-    //     "ef Construction:", nodes, queries, results_file);
-    // run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
-    //     queries, results_file);
+    run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
+        "Optimal Connections:", nodes, queries, results_file);
+    run_benchmark(config, config->max_connections, config->benchmark_max_connections,
+        "Max Connections:", nodes, queries, results_file);
+    run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
+        "Max Connections 0:", nodes, queries, results_file);
+    run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
+        "ef Construction:", nodes, queries, results_file);
+    run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
+        queries, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, results_file);
 

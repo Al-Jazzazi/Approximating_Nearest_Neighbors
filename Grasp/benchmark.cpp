@@ -1,15 +1,11 @@
 #include <iostream>
-#include <chrono>
 #include <algorithm>
+#include <chrono>
 #include <unordered_set>
 #include "grasp.h"
 #include "../HNSW/hnsw.h"
 
 using namespace std;
-
-//Parameters: learninb rate, starting temprature, decay factor, keep ratio, max iteration, cadidate queue size 
-
-
 
 void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
     bool use_groundtruth = config->groundtruth_file != "";
@@ -71,18 +67,17 @@ void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** n
     }
 }
 
-
 void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_values, const string& parameter_name,
         float** nodes, float** queries, ofstream* results_file) {
 
     int default_parameter = parameter;
-    if (config->export_benchmark_grasp) {
+    if (config->export_benchmark) {
         *results_file << "\nVarying " << parameter_name;
     }
 
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        if (config->export_benchmark_grasp) {
+        if (config->export_benchmark) {
             *results_file << endl << parameter << ", ";
         }
         // Sanity checks
@@ -94,6 +89,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
         vector<vector<pair<float, int>>> neighbors;
+        double construction_duration;
         double search_duration;
         long long search_dist_comp;
         HNSW* hnsw = NULL;
@@ -103,41 +99,26 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
         if (config->load_graph_file) {
             hnsw = init_hnsw(config, nodes);
             load_hnsw_file(config, hnsw, nodes, true);
-
-            //running Grasp 
-            auto start = chrono::high_resolution_clock::now();
-            vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            cout << "Edges: " << edges.size() << endl;
-            learn_edge_importance(config, hnsw, edges, nodes, queries);
-            prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
-            edges = hnsw->get_layer_edges(config, 0);
-            cout << "Edges: " << edges.size() << endl;
-
-
         } else {
             // Insert nodes into HNSW
-            
-
-            cout << "Benchmarking with parameters: "
-                << "learning_rate = " <<  config->learning_rate << ", initial_temperature = "
-                << config->initial_temperature << ", decay_factor = " << config->decay_factor
-                << ", initial_keep_ratio = " << config->initial_keep_ratio << ", final_keep_ratio = "
-                << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations << endl; 
-
             auto start = chrono::high_resolution_clock::now();
 
+            cout << "Benchmarking with parameters: "
+                << "opt_con = " <<  config->optimal_connections << ", max_con = "
+                << config->max_connections << ", max_con_0 = " << config->max_connections_0
+                << ", ef_construction = " << config->ef_construction << ", ef_search = "
+                << config->ef_search << ", num_return = " << config->num_return << endl; 
             hnsw = init_hnsw(config, nodes);
             for (int i = 1; i < config->num_nodes; i++) {
                 hnsw->insert(config, i);
             }
 
-
-
-             
-             //running Grasp
+            // Run GraSP
+            float** training = new float*[config->num_training];
+            load_training(config, nodes, training);
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
             cout << "Edges: " << edges.size() << endl;
-            learn_edge_importance(config, hnsw, edges, nodes, queries);
+            learn_edge_importance(config, hnsw, edges, nodes, training);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
             edges = hnsw->get_layer_edges(config, 0);
             cout << "Edges: " << edges.size() << endl;
@@ -147,6 +128,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";
             cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
             cout << "Distance computations (top layers): " << upper_dist_comps << endl;
+            construction_duration = duration / 1000.0;
         }
 
         if (config->ef_search < config->num_return) {
@@ -223,60 +205,68 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
             }
         }
 
-
-    
         double recall = (double) similar / (config->num_queries * config->num_return);
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;
-        hnsw->search_queries(config, queries);
 
-
-        if (config->export_benchmark_grasp) {
+        if (config->export_benchmark) {
             *results_file << search_dist_comp / config->num_queries << ", "
-            << recall << ", " << search_duration / config->num_queries;
+            << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
 
         delete hnsw;
     }
-    if (config->export_benchmark_grasp) {
+    if (config->export_benchmark) {
         *results_file << endl;
     }
     parameter = default_parameter;
 }
 
-
-
-
-
-
+/**
+ * This class is used to run HNSW with different parameters, comparing the recall
+ * versus ideal for each set of parameters.
+*/
 int main() {
-     time_t now = time(0);
+    time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
     Config* config = new Config();
 
-     float** nodes = new float*[config->num_nodes];
+    // Get graph nodes and queries
+    float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
 
-    
-     ofstream* results_file = NULL;
-    if (config->export_benchmark_grasp) {
-        results_file = new ofstream(config->benchmark_file_grasp);
-        *results_file << "Size " << config->num_nodes << "\nDefault Parameters: learning_rate = " <<  config->learning_rate << ", initial_temperature = "
-                << config->initial_temperature << ", decay_factor = " << config->decay_factor
-                << ", initial_keep_ratio = " << config->initial_keep_ratio << ", final_keep_ratio = "
-                << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations << endl; 
+    // Initialize output file
+    ofstream* results_file = NULL;
+    if (config->export_benchmark) {
+        results_file = new ofstream(config->benchmark_file);
+        *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
+            << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
+            << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
+            << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
+            << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
     }
 
-        run_benchmark(config, config->grasp_iterations , config->benchmark_grasp_iterations , "grasp_iterations :",
+    // Run benchmarks
+    // run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
+    //     "Optimal Connections:", nodes, queries, results_file);
+    // run_benchmark(config, config->max_connections, config->benchmark_max_connections,
+    //     "Max Connections:", nodes, queries, results_file);
+    // run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
+    //     "Max Connections 0:", nodes, queries, results_file);
+    // run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
+    //     "ef Construction:", nodes, queries, results_file);
+    // run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
+    //     queries, results_file);
+    run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, results_file);
- 
-      // Clean up
+
+    // Clean up
     if (results_file != NULL) {
         results_file->close();
         delete results_file;
-        cout << "Results exported to " << config->benchmark_file_grasp << endl;
+        cout << "Results exported to " << config->benchmark_file << endl;
     }
     for (int i = 0; i < config->num_nodes; i++)
         delete nodes[i];
@@ -289,5 +279,4 @@ int main() {
     // Print time elapsed
     now = time(0);
     cout << "Benchmark run ended at " << ctime(&now);
-
 }

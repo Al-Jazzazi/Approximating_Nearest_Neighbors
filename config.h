@@ -18,11 +18,11 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 100000;
-    int optimal_connections = 7;
-    int max_connections = 11;
-    int max_connections_0 = 14;
-    int ef_construction = 21;
+    int num_nodes = 10000;
+    int optimal_connections = 10;
+    int max_connections = 30;
+    int max_connections_0 = 30;
+    int ef_construction = 50;
     double scaling_factor = 0.368;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -31,7 +31,19 @@ public:
     // HNSW Search
     int ef_search = 300;
     int num_queries = 1000;
-    int num_return = 50;
+    int num_return = 20;
+
+    // HNSW/benchmark.cpp parameters
+    std::vector<int> benchmark_optimal_connections = {3, 7, 10, 20, 30};
+    std::vector<int> benchmark_max_connections = {10, 20, 30, 40, 50};
+    std::vector<int> benchmark_max_connections_0 = {10, 20, 30, 40, 50};
+    std::vector<int> benchmark_ef_construction = {10, 30, 50, 70, 90};
+    std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
+    std::vector<int> benchmark_num_return = {10, 50, 100, 150, 200};
+    std::string benchmark_file = "./HNSW/runs/hnsw_results.txt";
+    bool export_benchmark = true;
+    bool benchmark_print_neighbors = false;
+    bool benchmark_print_missing = false;
 
     // GraSP Training
     std::string training_file = "./exports/sift/sift_query.fvecs";
@@ -50,7 +62,7 @@ public:
     std::vector<int> benchmark_decay_factor = {2, 4, 6, 8 , 10};
     std::vector<int> benchmark_final_keep_ratio = {2,4,6,8,10};
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 50, 100};
-    std::string benchmark_file_grasp = "./Grasp/runs/random_graph_results.txt";
+    std::string benchmark_file_grasp = "./Grasp/runs/grasp_results.txt";
     bool export_benchmark_grasp = true;
 
     // Generation Settings
@@ -80,18 +92,6 @@ public:
     bool export_queries = true;
     bool export_indiv = true;
     int debug_query_search_index = -1;
-
-    // HNSW/benchmark.cpp parameters
-    std::vector<int> benchmark_optimal_connections = {3, 7, 10, 20, 30};
-    std::vector<int> benchmark_max_connections = {10, 20, 30, 40, 50};
-    std::vector<int> benchmark_max_connections_0 = {10, 20, 30, 40, 50};
-    std::vector<int> benchmark_ef_construction = {10, 30, 50, 70, 90};
-    std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
-    std::vector<int> benchmark_num_return = {10, 50, 100, 150, 200};
-    std::string benchmark_file = "./HNSW/runs/random_graph_results.txt";
-    bool export_benchmark = true;
-    bool benchmark_print_neighbors = false;
-    bool benchmark_print_missing = false;
 
     // HNSW/save_hnsw.cpp parameters
     std::vector<int> save_optimal_connections = {7, 14, 25};
