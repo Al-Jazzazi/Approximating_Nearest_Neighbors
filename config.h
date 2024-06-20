@@ -22,7 +22,7 @@ public:
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
-    int ef_construction = 100;
+    int ef_construction = 50;
     double scaling_factor = 0.368;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -31,7 +31,7 @@ public:
     // HNSW Search
     int ef_search = 300;
     int num_queries = 1000;
-    int num_return = 50;
+    int num_return = 100;
 
     // HNSW/benchmark.cpp parameters
     std::vector<int> benchmark_optimal_connections = {3, 7, 10, 15, 20};
@@ -51,7 +51,7 @@ public:
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.8;
-    float initial_keep_ratio = 0.1;
+    float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
     int keep_exponent = 3;
     int grasp_iterations = 20;
