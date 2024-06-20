@@ -104,10 +104,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             auto start = chrono::high_resolution_clock::now();
 
             cout << "Benchmarking with parameters: "
-                << "opt_con = " <<  config->optimal_connections << ", max_con = "
-                << config->max_connections << ", max_con_0 = " << config->max_connections_0
-                << ", ef_construction = " << config->ef_construction << ", ef_search = "
-                << config->ef_search << ", num_return = " << config->num_return << endl; 
+                << "learning_rate = " <<  config->learning_rate << ", initial_temperature = "
+                << config->initial_temperature << ", decay_factor = " << config->decay_factor
+                << ", initial_keep_ratio = " << config->initial_keep_ratio << ", final_keep_ratio = "
+                << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations
+                << ", num_return = " << config->num_return << endl; 
             hnsw = init_hnsw(config, nodes);
             for (int i = 1; i < config->num_nodes; i++) {
                 hnsw->insert(config, i);
@@ -243,6 +244,9 @@ int main() {
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
+            << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
+            << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
+            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations
             << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
     }
 

@@ -57,9 +57,9 @@ public:
     int grasp_iterations = 20;
 
     // Grasp/benchmark_grasp.cpp parameters
-    std::vector<float> benchmark_learning_rate = {1, 3};
+    std::vector<float> benchmark_learning_rate = {0.25, 0.5, 0.75, 1, 5};
     std::vector<float> benchmark_initial_temperature = {0.25, 0.5, 0.75, 1, 5};
-    std::vector<float> benchmark_decay_factor = {0.25, 0.5, 0.75, 1, 5};
+    std::vector<float> benchmark_decay_factor = {0.25, 0.5, 0.75, 1};
     std::vector<float> benchmark_initial_keep_ratio = {0.25, 0.5, 0.75, 1};
     std::vector<float> benchmark_final_keep_ratio = {0.25, 0.5, 0.75, 1};
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};

@@ -1,4 +1,5 @@
 *.out
 exports
 HNSW/runs
+Grasp/runs
 venv
