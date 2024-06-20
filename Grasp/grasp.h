@@ -5,11 +5,12 @@
 
 // Main algorithms
 void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** queries);
-void prune_edges(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, int num_keep);
+void normalize_weights(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float lambda, float temperature);
 
 // Helper functions
-void sample_subgraph(Config* config, std::vector<Edge*>& edges, float lambda); 
-void normalize_weights(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float lambda, float temperature);
+void prune_edges(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, int num_keep);
+void sample_subgraph(Config* config, std::vector<Edge*>& edges, float lambda);
+void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors);
 float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c);
 std::pair<float,float> find_max_min(Config* config, HNSW* hnsw);
 float binary_search(Config* config, std::vector<Edge*>& edges, float left, float right, float target, float temperature);

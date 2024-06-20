@@ -23,49 +23,41 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
 
     // Run the training loop
     for (int k = 0; k < config->grasp_iterations; k++) {
-        int num_diff = 0;
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
         sample_subgraph(config, edges, lambda);
-
-        for (int i = 0; i < config->num_training; i++) {
-            // Find the nearest neighbor using both the original and sampled graphs
-            pair<int, float*> query = make_pair(i, training[i]);
-            vector<vector<Edge*>> sample_path;
-            vector<vector<Edge*>> original_path;
-            int numOfNN = 1000;
-            vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, numOfNN, true);
-            vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, numOfNN, false);
-            
-            int similarNodes = 0;
-            for (const auto& element : sample_nearest) {
-             // Count occurrences of each element 
-                if (find(original_nearest.begin(), original_nearest.end(), element) != original_nearest.end()) 
-                    similarNodes++;
-            }
-
-
-            // If the nearest neighbor differs, increase the weight importances
-           
-          // if (original_nearest[0].second != sample_nearest[0].second) {
-           if( similarNodes/static_cast<float>(numOfNN) < 0.9 ) {
-                float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
-                float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
-                num_diff++;
-                if (original_distance != 0) {
-                    for (int j = 0; j < original_path[0].size(); j++) {
-
-                        if(  find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
-                            original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
-                    }
-                }
-            }
-        }
+        update_weights(config, hnsw, training, 10);
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(training, training + config->num_training, gen);
-        //cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
-       // cout << "Num Different: " << num_diff << endl;
+        // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
+        // cout << "Num Different: " << num_diff << endl;
     }
+}
+
+/**
+ * Alg 2
+ * Normalize the edge weights in the HNSW according to a normalization factor,
+ * which is computed from the weight range, lambda, and temperature
+ */
+void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
+    // Compute normalizing factor mu
+    float target = lambda * edges.size();
+    pair<float,float> max_min = find_max_min(config, hnsw);
+    float avg_w = temperature * log(lambda / (1 - lambda));
+    float search_range_min = avg_w - max_min.first;
+    float search_range_max = avg_w - max_min.second;
+    float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
+    // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
+
+    // Normalize edge weights and probabilities
+    for(int i = 0; i < config->num_nodes ; i++){
+        for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
+            Edge& edge = hnsw->mappings[i][0][k];
+            edge.weight += mu;
+            edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
+        }
+    }
+
 }
 
 /**
@@ -99,29 +91,47 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 }
 
 /**
- * Alg 2
- * Normalize the edge weights in the HNSW according to a normalization factor,
- * which is computed from the weight range, lambda, and temperature
+ * Compare the nearest neighbors and paths taken on the sampled graph with
+ * the original graph, and increase edge weights accordingly
  */
-void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float lambda, float temperature) {
-    // Compute normalizing factor mu
-    float target = lambda * edges.size();
-    pair<float,float> max_min = find_max_min(config, hnsw);
-    float avg_w = temperature * log(lambda / (1 - lambda));
-    float search_range_min = avg_w - max_min.first;
-    float search_range_max = avg_w - max_min.second;
-    float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
-   // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
+void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors) {
+    for (int i = 0; i < config->num_training; i++) {
+        int num_diff = 0;
+        int similar_nodes = 0;
 
-    // Normalize edge weights and probabilities
-    for(int i = 0; i < config->num_nodes ; i++){
-        for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
-            Edge& edge = hnsw->mappings[i][0][k];
-            edge.weight += mu;
-            edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
+        // Find the nearest neighbor and paths taken using the original and sampled graphs
+        pair<int, float*> query = make_pair(i, training[i]);
+        vector<vector<Edge*>> sample_path;
+        vector<vector<Edge*>> original_path;
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false);
+        
+        // for (const pair<float, int>& neighbor : sample_nearest) {
+        //     if (find(original_nearest.begin(), original_nearest.end(), neighbor) != original_nearest.end()) {
+        //         float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
+        //         float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
+        //     }
+        // }
+
+        for (const auto& element : sample_nearest) {
+            // Count occurrences of each element 
+            if (find(original_nearest.begin(), original_nearest.end(), element) != original_nearest.end()) 
+                similar_nodes++;
+        }
+        // If the nearest neighbor differs, increase the weight importances
+        // if (original_nearest[0].second != sample_nearest[0].second) {
+        if(similar_nodes / static_cast<float>(num_neighbors) < 0.99) {
+            float sample_distance = calculate_l2_sq(hnsw->nodes[sample_nearest[0].second], training[i], config->dimensions, 0);
+            float original_distance = calculate_l2_sq(hnsw->nodes[original_nearest[0].second], training[i], config->dimensions, 0);
+            num_diff++;
+            if (original_distance != 0) {
+                for (int j = 0; j < original_path[0].size(); j++) {
+                    if(find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+                        original_path[0][j]->weight = original_path[0][j]->weight + (sample_distance / original_distance - 1) * config->learning_rate;
+                }
+            }
         }
     }
-
 }
 
 /**
