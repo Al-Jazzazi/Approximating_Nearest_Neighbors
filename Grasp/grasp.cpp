@@ -117,7 +117,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         if (sample_distance != original_distance) {
             for (int j = 0; j < original_path[0].size(); j++) {
-                if (find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end()) {
+                if (original_path[0][j]->ignore) {
                     original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
                 }
             }
