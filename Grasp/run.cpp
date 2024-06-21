@@ -12,6 +12,12 @@ int main() {
     cout << "GraSP run started at " << ctime(&now);
     Config* config = new Config();
 
+    // Clear histogram file if it exists
+    if (!config->histogram_prob_file.empty()) {
+        ofstream histogram = ofstream(config->histogram_prob_file);
+        histogram.close();
+    }
+
     // Load nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);

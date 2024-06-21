@@ -119,6 +119,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             learn_edge_importance(config, hnsw, edges, training);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
             edges = hnsw->get_layer_edges(config, 0);
+            if (!config->histogram_prob_file.empty()) {
+                ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
+                histogram << endl;
+                histogram.close();
+            }
 
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -237,7 +242,7 @@ int main() {
     load_training(config, nodes, training);
     remove_duplicates(config, training, queries);
 
-    // Initialize output file
+    // Initialize output files
     ofstream* results_file = NULL;
     if (config->export_benchmark_grasp) {
         results_file = new ofstream(config->benchmark_file_grasp);
@@ -249,6 +254,11 @@ int main() {
             << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
             << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations
             << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
+
+        if (!config->histogram_prob_file.empty()) {
+            ofstream histogram = ofstream(config->histogram_prob_file);
+            histogram.close();
+        }
     }
 
     // Run benchmarks

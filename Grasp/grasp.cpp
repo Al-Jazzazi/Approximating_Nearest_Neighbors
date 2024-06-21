@@ -21,12 +21,6 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     float lambda = 0;
     mt19937 gen(config->graph_seed);
 
-    // Clear histogram file if it exists
-    if (!config->histogram_prob_file.empty()) {
-        ofstream histogram = ofstream(config->histogram_prob_file);
-        histogram.close();
-    }
-
     // Run the training loop
     for (int k = 0; k < config->grasp_iterations; k++) {
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
@@ -54,8 +48,8 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
     // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
     
-    int* counts = new int[10];
-    for (int i = 0; i < 10; i++) {
+    int* counts = new int[20];
+    for (int i = 0; i < 20; i++) {
         counts[i] = 0;
     }
 
@@ -63,7 +57,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             Edge& edge = hnsw->mappings[i][0][k];
-            int count_position = edge.probability_edge == 1 ? 9 : edge.probability_edge * 10;
+            int count_position = edge.probability_edge == 1 ? 19 : edge.probability_edge * 20;
             edge.weight += mu;
             edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
             counts[count_position]++;
@@ -72,7 +66,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     // Record probability distribution in histogram text file
     if (!config->histogram_prob_file.empty()) {
         ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             histogram << counts[i] << ",";
         }
         histogram << endl;
