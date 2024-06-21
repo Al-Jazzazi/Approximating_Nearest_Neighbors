@@ -65,7 +65,7 @@ public:
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};
     std::string benchmark_file_grasp = "./Grasp/runs/benchmark_results.txt";
     bool export_benchmark_grasp = true;
-    bool print_weight_updates = true;
+    bool print_weight_updates = false;
 
     // Generation Settings
     int graph_seed = 0;
