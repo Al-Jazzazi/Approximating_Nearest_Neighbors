@@ -5,7 +5,7 @@ SRCS := $(wildcard HNSW/*.cpp Grasp/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
 TARGETS := benchmark_hnsw run_hnsw save_hnsw dataset_metrics benchmark_grasp run_grasp
 BUILD_PATH := build
-MAKE_DIRECTORIES := $(shell mkdir -p build)
+MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 
 .PHONY: all clean
 

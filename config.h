@@ -11,9 +11,9 @@ public:
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
     std::string groundtruth_file = "";
-    std::string export_dir = "./HNSW/runs/";
-    std::string hnsw_graph_file = "./HNSW/runs/random_graph_graph_0.bin";
-    std::string hnsw_info_file = "./HNSW/runs/random_graph_info_0.txt";
+    std::string export_dir = "./runs/";
+    std::string hnsw_graph_file = "./runs/random_graph_graph_0.bin";
+    std::string hnsw_info_file = "./runs/random_graph_info_0.txt";
     bool load_graph_file = false;
 
     // HNSW Construction
@@ -40,7 +40,7 @@ public:
     std::vector<int> benchmark_ef_construction = {25, 50, 75, 100, 125};
     std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
     std::vector<int> benchmark_num_return = {10, 50, 100, 150, 200};
-    std::string benchmark_file = "./HNSW/runs/benchmark_results.txt";
+    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
     bool export_benchmark_hnsw = true;
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
@@ -63,7 +63,7 @@ public:
     std::vector<float> benchmark_initial_keep_ratio = {0.25, 0.5, 0.75, 1};
     std::vector<float> benchmark_final_keep_ratio = {0.25, 0.5, 0.75, 1};
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};
-    std::string benchmark_file_grasp = "./Grasp/runs/benchmark_results.txt";
+    std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
     bool export_benchmark_grasp = true;
     bool print_weight_updates = false;
 
@@ -100,11 +100,11 @@ public:
     std::vector<int> save_max_connections = {11, 18, 30};
     std::vector<int> save_max_connections_0 = {14, 28, 50};
     std::vector<int> save_ef_constructions = {21, 42, 75};
-    std::string save_file_prefix = "./HNSW/runs/random_graph";
+    std::string save_file_prefix = "./runs/random_graph";
     int num_graphs_saved = 3;
 
     // HNSW/dataset_metrics parameters
-    std::string metrics_file = "runs/dataset_metrics.txt";
+    std::string metrics_file = "./runs/dataset_metrics.txt";
     std::string metrics_dataset1_prefix = "./exports/sift/sift_base";
     std::string metrics_dataset2_prefix = "./exports/sift/sift_query";
     bool compare_datasets = true;

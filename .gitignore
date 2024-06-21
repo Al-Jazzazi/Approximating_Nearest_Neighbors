@@ -1,5 +1,5 @@
 *.out
 exports
-HNSW/runs
-Grasp/runs
+slurm
+runs
 venv
