@@ -52,13 +52,13 @@ int main() {
 
         // Delete queries
         for (int i = 0; i < config->num_queries; ++i)
-            delete queries[i];
+            delete[] queries[i];
         delete[] queries;
     }
 
     // Clean up
     for (int i = 0; i < config->num_nodes; i++)
-        delete nodes[i];
+        delete[] nodes[i];
     delete[] nodes;
     delete hnsw;
     delete config;

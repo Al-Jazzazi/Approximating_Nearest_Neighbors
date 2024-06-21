@@ -228,8 +228,11 @@ void calculate_stats(Config* config, const string& name, float** nodes, bool dis
     float hopkins = calculate_hopkins(config, nodes, config->hopkins_sample_size, min, max);
 
     float* cluster_sizes = new float[config->cluster_k];
+    for (int i = 0; i < config->cluster_k; i++) {
+        cluster_sizes[i] = 0;
+    }
     float wcss = 0;
-    k_means_cluster(config, cluster_sizes, wcss, nodes, config->cluster_k);
+    // k_means_cluster(config, cluster_sizes, wcss, nodes, config->cluster_k);
 
     int num_same = 0;
     if (config->compare_datasets) {

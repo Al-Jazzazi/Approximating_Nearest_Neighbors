@@ -21,6 +21,12 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     float lambda = 0;
     mt19937 gen(config->graph_seed);
 
+    // Clear histogram file if it exists
+    if (!config->histogram_prob_file.empty()) {
+        ofstream histogram = ofstream(config->histogram_prob_file);
+        histogram.close();
+    }
+
     // Run the training loop
     for (int k = 0; k < config->grasp_iterations; k++) {
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
@@ -47,16 +53,32 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float search_range_max = avg_w - max_min.second;
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
     // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
+    
+    int* counts = new int[10];
+    for (int i = 0; i < 10; i++) {
+        counts[i] = 0;
+    }
 
     // Normalize edge weights and probabilities
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             Edge& edge = hnsw->mappings[i][0][k];
+            int count_position = edge.probability_edge == 1 ? 9 : edge.probability_edge * 10;
             edge.weight += mu;
             edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
+            counts[count_position]++;
         }
     }
-
+    // Record probability distribution in histogram text file
+    if (!config->histogram_prob_file.empty()) {
+        ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
+        for (int i = 0; i < 10; i++) {
+            histogram << counts[i] << ",";
+        }
+        histogram << endl;
+        histogram.close();
+    }
+    delete[] counts;
 }
 
 /**
@@ -117,9 +139,10 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         if (sample_distance != original_distance) {
             for (int j = 0; j < original_path[0].size(); j++) {
-                if (original_path[0][j]->ignore) {
-                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
-                }
+                // if (original_path[0][j]->ignore) {
+                //     original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                // }
+                original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
             }
             num_updates++;
         }
@@ -292,4 +315,28 @@ void load_training(Config* config, float** nodes, float** training) {
     delete[] lower_bound;
     delete[] upper_bound;
     delete[] dis_array;
+}
+
+// Remove training points that are also found in queries
+void remove_duplicates(Config* config, float** training, float** queries) {
+    int num_training_filtered = config->num_training;
+    for (int i = config->num_training - 1; i >= 0; i--) {
+        for (int j = 0; j < config->num_queries; j++) {
+            bool is_same = true;
+            for (int d = 0; d < config->dimensions; d++) {
+                if (training[i][d] != queries[j][d]) {
+                    is_same = false;
+                    break;
+                }
+            }
+            if (is_same) {
+                delete[] training[i];
+                training[i] = training[num_training_filtered - 1];
+                training[num_training_filtered - 1] = nullptr;
+                num_training_filtered--;
+                break;
+            }
+        }
+    }
+    config->num_training = num_training_filtered;
 }

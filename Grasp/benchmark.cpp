@@ -68,7 +68,7 @@ void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** n
 }
 template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
-        float** nodes, float** queries, ofstream* results_file) {
+        float** nodes, float** queries, float** training, ofstream* results_file) {
 
     T default_parameter = parameter;
     if (config->export_benchmark_grasp) {
@@ -115,8 +115,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             }
 
             // Run GraSP
-            float** training = new float*[config->num_training];
-            load_training(config, nodes, training);
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
             learn_edge_importance(config, hnsw, edges, training);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
@@ -230,11 +228,14 @@ int main() {
     cout << "Benchmark run started at " << ctime(&now);
     Config* config = new Config();
 
-    // Get graph nodes and queries
+    // Load nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
+    float** training = new float*[config->num_training];
+    load_training(config, nodes, training);
+    remove_duplicates(config, training, queries);
 
     // Initialize output file
     ofstream* results_file = NULL;
@@ -252,19 +253,19 @@ int main() {
 
     // Run benchmarks
     run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "Initial Temperature:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "Decay Factor:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "Initial Keep Ratio:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->grasp_iterations, config->benchmark_grasp_iterations, "Grasp Iterations:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
-        nodes, queries, results_file);
+        nodes, queries, training, results_file);
 
     // Clean up
     if (results_file != NULL) {
@@ -273,11 +274,14 @@ int main() {
         cout << "Results exported to " << config->benchmark_file << endl;
     }
     for (int i = 0; i < config->num_nodes; i++)
-        delete nodes[i];
+        delete[] nodes[i];
     delete[] nodes;
     for (int i = 0; i < config->num_queries; ++i)
-        delete queries[i];
+        delete[] queries[i];
     delete[] queries;
+    for (int i = 0; i < config->num_training; i++)
+        delete[] training[i];
+    delete[] training;
     delete config;
 
     // Print time elapsed

@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
+    int num_nodes = 1000000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
@@ -30,8 +30,8 @@ public:
 
     // HNSW Search
     int ef_search = 300;
-    int num_queries = 1000;
-    int num_return = 100;
+    int num_queries = 10000;
+    int num_return = 50;
 
     // HNSW/benchmark.cpp parameters
     std::vector<int> benchmark_optimal_connections = {3, 7, 10, 15, 20};
@@ -46,8 +46,9 @@ public:
     bool benchmark_print_missing = false;
 
     // GraSP Training
-    std::string training_file = "./exports/sift/sift_query.fvecs";
-    int num_training = 1000;
+    std::string training_file = "./exports/sift/sift_learn.fvecs";
+    std::string histogram_prob_file = "./runs/histogram_prob.txt";
+    int num_training = 100000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
@@ -55,6 +56,7 @@ public:
     float final_keep_ratio = 0.6;
     int keep_exponent = 3;
     int grasp_iterations = 20;
+    bool print_weight_updates = false;
 
     // Grasp/benchmark_grasp.cpp parameters
     std::vector<float> benchmark_learning_rate = {0.25, 0.5, 0.75, 1, 5};
@@ -65,7 +67,6 @@ public:
     std::vector<int> benchmark_grasp_iterations = {10, 20, 30, 40, 50};
     std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
     bool export_benchmark_grasp = true;
-    bool print_weight_updates = false;
 
     // Generation Settings
     int graph_seed = 0;
@@ -105,10 +106,10 @@ public:
 
     // HNSW/dataset_metrics parameters
     std::string metrics_file = "./runs/dataset_metrics.txt";
-    std::string metrics_dataset1_prefix = "./exports/sift/sift_base";
+    std::string metrics_dataset1_prefix = "./exports/sift/sift_learn";
     std::string metrics_dataset2_prefix = "./exports/sift/sift_query";
     bool compare_datasets = true;
-    int comparison_num_nodes = 1000;
+    int comparison_num_nodes = 10000;
     int hopkins_sample_size = 1000;
     int cluster_k = 400;
     int cluster_iterations = 20;

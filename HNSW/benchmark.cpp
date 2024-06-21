@@ -258,10 +258,10 @@ int main() {
         cout << "Results exported to " << config->benchmark_file << endl;
     }
     for (int i = 0; i < config->num_nodes; i++)
-        delete nodes[i];
+        delete[] nodes[i];
     delete[] nodes;
     for (int i = 0; i < config->num_queries; ++i)
-        delete queries[i];
+        delete[] queries[i];
     delete[] queries;
     delete config;
 
