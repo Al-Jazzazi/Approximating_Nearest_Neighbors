@@ -31,6 +31,7 @@ public:
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
     bool use_heuristic = true;
+    
 
     // GraSP Training
     std::string training_file = "./exports/sift/sift_learn.fvecs";
@@ -47,6 +48,7 @@ public:
     int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
+    float stinkyValue = 0.25;
 
     // Benchmark parameters
     std::string benchmark_file = "./runs/hnsw_benchmark.txt";

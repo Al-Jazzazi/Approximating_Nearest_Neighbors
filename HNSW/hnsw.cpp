@@ -234,6 +234,8 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 // or if the size of found is less than num_to_return,
                 // add to candidates and found
                 float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], num_dimensions, layer_num);
+                if(layer_num == 0)
+                    neighbors[i].weight -= config->stinkyValue;
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
