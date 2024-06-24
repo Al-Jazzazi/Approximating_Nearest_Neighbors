@@ -24,16 +24,20 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     mt19937 gen(config->graph_seed);
 
     // Run the training loop
-    for (int k = 0; k < config->grasp_iterations; k++) {
-        lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
-        normalize_weights(config, hnsw, edges, lambda, temperature);
-        if (!config->use_dynamic_sampling) {
-            sample_subgraph(config, edges, lambda);
+    for (int k = 0; k < config->grasp_loops; k++) {
+        for (int j = 0; j < config->grasp_subloops; j++) {
+            lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_loops, config->keep_exponent);
+            if (j == config->grasp_subloops - 1) {
+                normalize_weights(config, hnsw, edges, lambda, temperature);
+            }
+            if (!config->use_dynamic_sampling) {
+                sample_subgraph(config, edges, lambda);
+            }
+            update_weights(config, hnsw, training, config->num_return);
+            temperature = config->initial_temperature * pow(config->decay_factor, k);
+            std::shuffle(training, training + config->num_training, gen);
+            // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
-        update_weights(config, hnsw, training, config->num_return);
-        temperature = config->initial_temperature * pow(config->decay_factor, k);
-        std::shuffle(training, training + config->num_training, gen);
-        // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
     }
 }
 
@@ -149,8 +153,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         
     }
     if (config->print_weight_updates) {
-        cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << endl;
-        cout << "# of edges updated: " << num_of_edges_updated << "\n"<< endl; 
+        cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 
     }
 }
 

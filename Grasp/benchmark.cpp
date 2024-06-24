@@ -107,7 +107,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 << "learning_rate = " <<  config->learning_rate << ", initial_temperature = "
                 << config->initial_temperature << ", decay_factor = " << config->decay_factor
                 << ", initial_keep_ratio = " << config->initial_keep_ratio << ", final_keep_ratio = "
-                << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations
+                << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops
                 << ", num_return = " << config->num_return << endl; 
             hnsw = init_hnsw(config, nodes);
             for (int i = 1; i < config->num_nodes; i++) {
@@ -252,7 +252,7 @@ int main() {
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
             << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
             << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
-            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_iterations = " << config->grasp_iterations
+            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops
             << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
 
         if (!config->histogram_prob_file.empty()) {
@@ -272,7 +272,7 @@ int main() {
     //     nodes, queries, training, results_file);
     // run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
     //     nodes, queries, training, results_file);
-    // run_benchmark(config, config->grasp_iterations, config->benchmark_grasp_iterations, "Grasp Iterations:",
+    // run_benchmark(config, config->grasp_loops, config->benchmark_grasp_loops, "Grasp Loops:",
     //     nodes, queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, training, results_file);
