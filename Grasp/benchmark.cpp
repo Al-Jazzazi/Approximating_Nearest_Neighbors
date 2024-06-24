@@ -167,18 +167,25 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
 
         int similar = 0;
+        float total_ndcg = 0;
         for (int j = 0; j < config->num_queries; ++j) {
             // Find similar neighbors
             unordered_set<int> actual_set(actual_neighbors[j].begin(), actual_neighbors[j].end());
             unordered_set<int> intersection;
+            float actual_gain = 0;
+            float ideal_gain = 0;
 
             for (size_t k = 0; k < neighbors[j].size(); ++k) {
                 auto n_pair = neighbors[j][k];
+                float gain = 1 / log2(k + 2);
+                ideal_gain += gain;
                 if (actual_set.find(n_pair.second) != actual_set.end()) {
                     intersection.insert(n_pair.second);
+                    actual_gain += gain;
                 }
             }
             similar += intersection.size();
+            total_ndcg += actual_gain / ideal_gain;
 
             // Print out neighbors[i][j]
             if (config->benchmark_print_neighbors) {
@@ -210,6 +217,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         double recall = (double) similar / (config->num_queries * config->num_return);
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;
+
+        double average_ndcg = (double) total_ndcg / config->num_queries;
+        cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
 
         if (config->export_benchmark_grasp) {
             *results_file << search_dist_comp / config->num_queries << ", "
