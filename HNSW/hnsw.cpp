@@ -144,7 +144,7 @@ void HNSW::insert(Config* config, int query) {
  * SEARCH-LAYER(hnsw, q, ep, ef, lc)
  * Note: Result is stored in entry_points (ep)
 */
-void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring) {
+void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky) {
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<pair<float, int>> found;
@@ -234,7 +234,10 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 // or if the size of found is less than num_to_return,
                 // add to candidates and found
                 float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], num_dimensions, layer_num);
-                if(layer_num == 0)
+                
+                //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
+                //discovered some stinky points 
+                if(add_stinky && layer_num == 0)
                     neighbors[i].weight -= config->stinkyValue;
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
@@ -357,7 +360,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
  * K-NN-SEARCH(hnsw, q, K, ef)
  * This also stores the traversed edges in the path parameter
 */
-vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, bool is_ignoring) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, bool is_ignoring, bool add_stinky) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
@@ -381,7 +384,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_ignoring);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_ignoring, add_stinky);
     
     if (config->gt_dist_log)
         log_neighbors = false;
