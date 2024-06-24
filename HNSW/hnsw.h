@@ -41,9 +41,9 @@ public:
     int num_nodes;
     int num_dimensions;
     
-    // Layer probability function
-    std::mt19937 layer_rand;
-    std::uniform_real_distribution<double> layer_dis;
+    // Probability function
+    std::mt19937 gen;
+    std::uniform_real_distribution<double> dis;
     double normal_factor;
 
     HNSW(Config* config, float** nodes);

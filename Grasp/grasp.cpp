@@ -25,7 +25,9 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     for (int k = 0; k < config->grasp_iterations; k++) {
         lambda = compute_lambda(config->final_keep_ratio, config->initial_keep_ratio, k, config->grasp_iterations, config->keep_exponent);
         normalize_weights(config, hnsw, edges, lambda, temperature);
-        sample_subgraph(config, edges, lambda);
+        if (!config->use_dynamic_sampling) {
+            sample_subgraph(config, edges, lambda);
+        }
         update_weights(config, hnsw, training, config->num_return);
         temperature = config->initial_temperature * pow(config->decay_factor, k);
         std::shuffle(training, training + config->num_training, gen);
@@ -128,15 +130,15 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             sample_distance += sample_nearest[j].first;
             original_distance += original_nearest[j].first;
         }
-        sample_distance /= num_neighbors;
-        original_distance /= num_neighbors;
 
         if (sample_distance != original_distance) {
             for (int j = 0; j < original_path[0].size(); j++) {
-                // if (original_path[0][j]->ignore) {
-                //     original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
-                // }
-                original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                if ((config->weight_selection_method == 0) ||
+                    (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
+                    (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+                ) {
+                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                }
             }
             num_updates++;
         }
@@ -208,7 +210,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
  * equal lambda * mu
  */
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
-    const double EPSILON = 1e-6; // Tolerance for convergence
+    const double EPSILON = 1e-3; // Tolerance for convergence
     float sum_of_probabilities = 0;
     // cout << "Range: " << left << " " << right << " Target: " << target;
 

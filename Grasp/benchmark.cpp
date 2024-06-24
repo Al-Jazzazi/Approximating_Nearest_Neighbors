@@ -262,18 +262,18 @@ int main() {
     }
 
     // Run benchmarks
-    run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",
-        nodes, queries, training, results_file);
-    run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "Initial Temperature:",
-        nodes, queries, training, results_file);
-    run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "Decay Factor:",
-        nodes, queries, training, results_file);
-    run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "Initial Keep Ratio:",
-        nodes, queries, training, results_file);
-    run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
-        nodes, queries, training, results_file);
-    run_benchmark(config, config->grasp_iterations, config->benchmark_grasp_iterations, "Grasp Iterations:",
-        nodes, queries, training, results_file);
+    // run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",
+    //     nodes, queries, training, results_file);
+    // run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "Initial Temperature:",
+    //     nodes, queries, training, results_file);
+    // run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "Decay Factor:",
+    //     nodes, queries, training, results_file);
+    // run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "Initial Keep Ratio:",
+    //     nodes, queries, training, results_file);
+    // run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
+    //     nodes, queries, training, results_file);
+    // run_benchmark(config, config->grasp_iterations, config->benchmark_grasp_iterations, "Grasp Iterations:",
+    //     nodes, queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, training, results_file);
 

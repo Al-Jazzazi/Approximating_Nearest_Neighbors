@@ -14,13 +14,13 @@ rm gist.tar.gz
 mkdir glove
 cd glove 
 wget http://ann-benchmarks.com/glove-25-angular.hdf5
-python3 ../../conversions/convert_hdf5.py glove-25-angular.hdf5
+python3 ../../utils/convert_hdf5.py glove-25-angular.hdf5
 rm glove-25-angular.hdf5
 cd ..
 # Download MNIST
 mkdir mnist
 cd mnist
 wget http://ann-benchmarks.com/mnist-784-euclidean.hdf5
-python3 ../../conversions/convert_hdf5.py mnist-784-euclidean.hdf5
+python3 ../../utils/convert_hdf5.py mnist-784-euclidean.hdf5
 rm mnist-784-euclidean.hdf5
 cd ../..

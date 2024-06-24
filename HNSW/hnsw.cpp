@@ -33,12 +33,11 @@ bool Edge::operator<(const Edge& rhs) const {
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           layer_rand(config->insertion_seed), layer_dis(0.0000001, 0.9999999) {}
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999) {}
 
 /**
  * Alg 1
  * INSERT(hnsw, q, M, Mmax, efConstruction, mL)
- * Extra arguments: rand (for generating random value between 0 and 1)
  * Note: max_con is not used for layer 0, instead max_connections_0 is used
 */
 void HNSW::insert(Config* config, int query) {
@@ -48,7 +47,7 @@ void HNSW::insert(Config* config, int query) {
     int top = num_layers - 1;
 
     // Get node layer
-    int node_layer = -log(layer_dis(layer_rand)) * normal_factor;;
+    int node_layer = -log(dis(gen)) * normal_factor;;
     mappings[query].resize(node_layer + 1);
 
     // Update layer count
@@ -224,7 +223,8 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
 
         for (int i = 0; i < neighbors.size(); i++) {
             int neighbor = neighbors[i].target;
-            if ((!is_ignoring || !neighbors[i].ignore) && visited.find(neighbor) == visited.end()) {
+            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < neighbors[i].probability_edge) : neighbors[i].ignore;
+            if (!(is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
                 // Get furthest element in found to query
