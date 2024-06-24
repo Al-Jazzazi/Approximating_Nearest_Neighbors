@@ -18,37 +18,23 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
+    int num_nodes = 1000000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
     int ef_construction = 100;
     double scaling_factor = 0.368;
-    // Enforces a single entry point for graph construction. Searching will always be single entry point
-    bool single_entry_point = true;
-    bool use_heuristic = true;
-
     // HNSW Search
     int ef_search = 300;
     int num_queries = 1000;
     int num_return = 50;
-
-    // HNSW/benchmark.cpp parameters
-    std::vector<int> benchmark_optimal_connections = {3, 7, 10, 15, 20};
-    std::vector<int> benchmark_max_connections = {20, 30, 40, 50, 60};
-    std::vector<int> benchmark_max_connections_0 = {20, 30, 40, 50, 60};
-    std::vector<int> benchmark_ef_construction = {25, 50, 75, 100, 125};
-    std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
-    std::vector<int> benchmark_num_return = {10, 50, 100};
-    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
-    bool export_benchmark_hnsw = true;
-    bool benchmark_print_neighbors = false;
-    bool benchmark_print_missing = false;
+    // Enforces a single entry point for graph construction. Searching will always be single entry point
+    bool single_entry_point = true;
+    bool use_heuristic = true;
 
     // GraSP Training
     std::string training_file = "./exports/sift/sift_learn.fvecs";
-    std::string histogram_prob_file = "./runs/histogram_prob.txt";
-    int num_training = 1000;
+    int num_training = 100000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
@@ -62,15 +48,26 @@ public:
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
 
-    // Grasp/benchmark_grasp.cpp parameters
-    std::vector<float> benchmark_learning_rate = {0.25, 0.5, 0.75, 1, 5};
-    std::vector<float> benchmark_initial_temperature = {0.5, 1, 5, 100, 500};
-    std::vector<float> benchmark_decay_factor = {0.25, 0.5, 0.75, 1};
-    std::vector<float> benchmark_initial_keep_ratio = {0.25, 0.5, 0.75, 1};
-    std::vector<float> benchmark_final_keep_ratio = {0.25, 0.5, 0.75, 1};
-    std::vector<int> benchmark_grasp_loops = {10, 20, 30, 40, 50};
+    // Benchmark parameters
+    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
+    bool export_benchmark_hnsw = true;
     std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
     bool export_benchmark_grasp = true;
+    std::string histogram_prob_file = "./runs/histogram_prob.txt";
+    std::vector<int> benchmark_num_return = {10, 50, 100};
+    std::vector<int> benchmark_optimal_connections = {};
+    std::vector<int> benchmark_max_connections = {};
+    std::vector<int> benchmark_max_connections_0 = {};
+    std::vector<int> benchmark_ef_construction = {};
+    std::vector<int> benchmark_ef_search = {};
+    std::vector<float> benchmark_learning_rate = {};
+    std::vector<float> benchmark_initial_temperature = {};
+    std::vector<float> benchmark_decay_factor = {};
+    std::vector<float> benchmark_initial_keep_ratio = {};
+    std::vector<float> benchmark_final_keep_ratio = {};
+    std::vector<int> benchmark_grasp_loops = {};
+    bool benchmark_print_neighbors = false;
+    bool benchmark_print_missing = false;
 
     // Generation Settings
     int graph_seed = 0;
@@ -81,7 +78,7 @@ public:
     int gen_max = 100000;
     int gen_decimals = 2;
 
-    // HNSW/hnsw.cpp parameters
+    // HNSW Flags
     // Note: Distance ties will make the found percentage lower
     bool run_search = true;
     bool print_results = false;
@@ -100,7 +97,7 @@ public:
     bool export_indiv = true;
     int debug_query_search_index = -1;
 
-    // HNSW/save_hnsw.cpp parameters
+    // HNSW Save Parameters
     std::vector<int> save_optimal_connections = {7, 14, 25};
     std::vector<int> save_max_connections = {11, 18, 30};
     std::vector<int> save_max_connections_0 = {14, 28, 50};
@@ -108,7 +105,7 @@ public:
     std::string save_file_prefix = "./runs/random_graph";
     int num_graphs_saved = 3;
 
-    // HNSW/dataset_metrics parameters
+    // Dataset Metrics Parameters
     std::string metrics_file = "./runs/dataset_metrics.txt";
     std::string metrics_dataset1_prefix = "./exports/sift/sift_learn";
     std::string metrics_dataset2_prefix = "./exports/sift/sift_query";
