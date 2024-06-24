@@ -238,16 +238,16 @@ int main() {
     }
 
     // Run benchmarks
-    run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
-        "Optimal Connections:", nodes, queries, results_file);
-    run_benchmark(config, config->max_connections, config->benchmark_max_connections,
-        "Max Connections:", nodes, queries, results_file);
-    run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
-        "Max Connections 0:", nodes, queries, results_file);
-    run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
-        "ef Construction:", nodes, queries, results_file);
-    run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
-        queries, results_file);
+    // run_benchmark(config, config->optimal_connections, config->benchmark_optimal_connections,
+    //     "Optimal Connections:", nodes, queries, results_file);
+    // run_benchmark(config, config->max_connections, config->benchmark_max_connections,
+    //     "Max Connections:", nodes, queries, results_file);
+    // run_benchmark(config, config->max_connections_0, config->benchmark_max_connections_0,
+    //     "Max Connections 0:", nodes, queries, results_file);
+    // run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
+    //     "ef Construction:", nodes, queries, results_file);
+    // run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef Search:", nodes,
+    //     queries, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
         nodes, queries, results_file);
 

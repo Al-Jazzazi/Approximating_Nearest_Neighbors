@@ -39,7 +39,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {20, 30, 40, 50, 60};
     std::vector<int> benchmark_ef_construction = {25, 50, 75, 100, 125};
     std::vector<int> benchmark_ef_search = {100, 300, 500, 700, 1000};
-    std::vector<int> benchmark_num_return = {10, 50, 100, 150, 200};
+    std::vector<int> benchmark_num_return = {10, 50, 100};
     std::string benchmark_file = "./runs/hnsw_benchmark.txt";
     bool export_benchmark_hnsw = true;
     bool benchmark_print_neighbors = false;

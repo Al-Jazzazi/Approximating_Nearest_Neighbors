@@ -6,6 +6,8 @@
 #include <random>
 #include <cfloat> 
 #include <algorithm>
+#include <iomanip>
+
 #include "../HNSW/hnsw.h"
 
 using namespace std;
@@ -113,6 +115,7 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
  */
 void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors) {
     int num_updates = 0;
+    int num_of_edges_updated = 0;
     for (int i = 0; i < config->num_training; i++) {
         int similar_nodes = 0;
 
@@ -138,6 +141,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
                 ) {
                     original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                    num_of_edges_updated++;
                 }
             }
             num_updates++;
@@ -146,6 +150,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << endl;
+        cout << "# of edges updated: " << num_of_edges_updated << "\n"<< endl; 
     }
 }
 
@@ -212,12 +217,12 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
     const double EPSILON = 1e-3; // Tolerance for convergence
     float sum_of_probabilities = 0;
-    // cout << "Range: " << left << " " << right << " Target: " << target;
+     
 
     // The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
     // sum of probabilites gets as close as lambda * E.
     while (right - left > EPSILON) {
-        double mid = left + (right - left) / 2;
+        float mid = left + (right - left) / 2;
         for (const Edge* edge : edges) {
             sum_of_probabilities += 1/(1 + exp(-(edge->weight + mid) / temperature));
         }
@@ -228,6 +233,9 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
          else 
             right = mid; 
         sum_of_probabilities = 0;
+
+        //std::cout << std::setprecision(11);
+       //cout << "left: " << left << " Right " << right << " MID" << mid << endl;
     }
 
     return left + (right - left) / 2;
