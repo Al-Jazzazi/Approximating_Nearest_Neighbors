@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
+    int num_nodes = 1000000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
@@ -30,7 +30,7 @@ public:
 
     // HNSW Search
     int ef_search = 300;
-    int num_queries = 1000;
+    int num_queries = 10000;
     int num_return = 50;
 
     // HNSW/benchmark.cpp parameters
@@ -48,7 +48,7 @@ public:
     // GraSP Training
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     std::string histogram_prob_file = "./runs/histogram_prob.txt";
-    int num_training = 1000;
+    int num_training = 100000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
