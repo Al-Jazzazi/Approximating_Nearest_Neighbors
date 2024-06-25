@@ -127,8 +127,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         pair<int, float*> query = make_pair(i, training[i]);
         vector<vector<Edge*>> sample_path;
         vector<vector<Edge*>> original_path;
-        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, true);
-        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, true);
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, config->use_stinky_points);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
 
         // Calculate the average distance between nearest neighbors and the training point
         float sample_distance = 0;
@@ -138,12 +138,15 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             original_distance += original_nearest[j].first;
         }
 
-        for (int j = 0; j < sample_path[0].size(); j++) 
-            sample_path[0][j]->weight += config->stinkyValue;
-
+        if(config->use_stinky_points){
+            for (int j = 0; j < sample_path[0].size(); j++) 
+                sample_path[0][j]->weight += config->stinkyValue;
+        }
         
         for (int j = 0; j < original_path[0].size(); j++) {
-            original_path[0][j]->weight += config->stinkyValue;
+            
+            if(config->use_stinky_points)
+                original_path[0][j]->weight += config->stinkyValue;
 
             if ((config->weight_selection_method == 0) ||
                 (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
