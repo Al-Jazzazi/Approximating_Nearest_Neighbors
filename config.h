@@ -48,7 +48,7 @@ public:
     int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
-    bool use_stinky_points = false; 
+    bool use_stinky_points = true; 
     float stinkyValue = 0.025;
 
     // Benchmark parameters

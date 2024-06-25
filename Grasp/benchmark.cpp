@@ -262,7 +262,12 @@ int main() {
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
             << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
             << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
-            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops
+            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops 
+            
+            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+            << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
+            << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method  
+           
             << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
 
         if (!config->histogram_prob_file.empty()) {
@@ -270,6 +275,7 @@ int main() {
             histogram.close();
         }
     }
+
 
     // Run benchmarks
     run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",

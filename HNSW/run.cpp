@@ -8,6 +8,8 @@ using namespace std;
  * This class is used to run a single instance of the HNSW algorithm.
 */
 int main() {
+
+    
     // Initialize time and config
     auto begin_time = chrono::high_resolution_clock::now();
     time_t now = time(NULL);

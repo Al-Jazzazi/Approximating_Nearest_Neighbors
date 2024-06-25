@@ -12,6 +12,19 @@ int main() {
     cout << "GraSP run started at " << ctime(&now);
     Config* config = new Config();
 
+
+     cout   << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
+            << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
+            << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
+            << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
+            << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
+            << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
+            << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
+
+            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+            << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
+            << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
+
     // Clear histogram file if it exists
     if (!config->histogram_prob_file.empty()) {
         ofstream histogram = ofstream(config->histogram_prob_file);
