@@ -1,6 +1,8 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+#include <cpuid.h>
+#include <string.h>
 #include <unordered_set>
 #include "hnsw.h"
 
@@ -216,6 +218,27 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
  * versus ideal for each set of parameters.
 */
 int main() {
+    
+    char CPUBrandString[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+
+    memset(CPUBrandString, 0, sizeof(CPUBrandString));
+
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i)
+        {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+
+        if (i == 0x80000002)
+            memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+        }
+
     time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
     Config* config = new Config();
