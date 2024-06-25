@@ -138,22 +138,24 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             original_distance += original_nearest[j].first;
         }
 
-             for (int j = 0; j < sample_path[0].size(); j++) 
-                 sample_path[0][j]->weight += config->stinkyValue;
+        for (int j = 0; j < sample_path[0].size(); j++) 
+            sample_path[0][j]->weight += config->stinkyValue;
 
-            for (int j = 0; j < original_path[0].size(); j++) {
-                 original_path[0][j]->weight += config->stinkyValue;
+        
+        for (int j = 0; j < original_path[0].size(); j++) {
+            original_path[0][j]->weight += config->stinkyValue;
 
-                if ((config->weight_selection_method == 0) ||
-                    (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
-                    (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
-                ) {
-                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
-                    num_of_edges_updated++;
-                }
-    
-            num_updates++;
+            if ((config->weight_selection_method == 0) ||
+                (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
+                (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+            ) {
+                original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                num_of_edges_updated++;
+            }
+
+            
         }
+        if(sample_distance != original_distance) num_updates++;
         
     }
     if (config->print_weight_updates) {

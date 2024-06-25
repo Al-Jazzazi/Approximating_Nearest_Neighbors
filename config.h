@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 1000000;
+    int num_nodes = 100000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
@@ -26,7 +26,7 @@ public:
     double scaling_factor = 0.368;
     // HNSW Search
     int ef_search = 300;
-    int num_queries = 1000;
+    int num_queries = 10000;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -35,7 +35,7 @@ public:
 
     // GraSP Training
     std::string training_file = "./exports/sift/sift_learn.fvecs";
-    int num_training = 100000;
+    int num_training = 10000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
@@ -45,10 +45,10 @@ public:
     int grasp_loops = 20;
     int grasp_subloops = 1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
-    int weight_selection_method = 0;
+    int weight_selection_method = 2;
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
-    float stinkyValue = 0.25;
+    float stinkyValue = 0.025;
 
     // Benchmark parameters
     std::string benchmark_file = "./runs/hnsw_benchmark.txt";
