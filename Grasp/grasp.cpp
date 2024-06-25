@@ -144,7 +144,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         }
         
         for (int j = 0; j < original_path[0].size(); j++) {
-            
             if(config->use_stinky_points)
                 original_path[0][j]->weight += config->stinkyValue;
 
@@ -155,8 +154,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                 original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
                 num_of_edges_updated++;
             }
-
-            
         }
         if(sample_distance != original_distance) num_updates++;
         
@@ -186,7 +183,6 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     }
 
    // cout << "Number of edges ignored: " << count << endl;
-
 }
 
 // Calculate lambda according to a formula
@@ -209,7 +205,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
             if(min_w > hnsw->mappings[i][0][k].weight)
                 min_w = hnsw->mappings[i][0][k].weight;
 
-            //Used to check edge probability behaviour at each iteration
+            // Used to check edge probability behaviour at each iteration
             // if (lowest_percentage > hnsw->mappings[i][0][k].probability_edge)
             //     lowest_percentage = hnsw->mappings[i][0][k].probability_edge;
 
@@ -223,17 +219,16 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
 }
 
 /**
- * Binary search for the mu value that makes the sum of edge probabilities
- * equal lambda * mu
+ * Binary search for the mu value (mid) that makes the sum of probabilities
+ * equal lambda * E.
  */
 float binary_search(Config* config, vector<Edge*>& edges, float left, float right, float target, float temperature) {
-    const double EPSILON = 1e-3; // Tolerance for convergence
     float sum_of_probabilities = 0;
-     
-
-    // The function keeps updating value of mu -mid in this case- to recalculating the probabilities such that 
-    // sum of probabilites gets as close as lambda * E.
-    while (right - left > EPSILON) {
+    int count = 0;
+    // Stops when the difference between endpoints is less than the specified precision
+    // or when the number of iterations reaches the specified limit
+    while ((right - left > 1e-3) && count < 1000) {
+        count++;
         float mid = left + (right - left) / 2;
         for (const Edge* edge : edges) {
             sum_of_probabilities += 1/(1 + exp(-(edge->weight + mid) / temperature));
@@ -246,9 +241,10 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
             right = mid; 
         sum_of_probabilities = 0;
 
-        //std::cout << std::setprecision(11);
-       //cout << "left: " << left << " Right " << right << " MID" << mid << endl;
+        // std::cout << std::setprecision(11);
+        // cout << "left: " << left << " Right " << right << " MID" << mid << endl;
     }
+    cout << "Count: " << count << " ";
 
     return left + (right - left) / 2;
 }

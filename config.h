@@ -45,7 +45,7 @@ public:
     int grasp_loops = 20;
     int grasp_subloops = 1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
-    int weight_selection_method = 2;
+    int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
