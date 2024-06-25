@@ -99,7 +99,7 @@ void run_benchmark(Config* config, int& parameter, const vector<int>& parameter_
 
         if (config->load_graph_file) {
             hnsw = init_hnsw(config, nodes);
-            load_hnsw_file(config, hnsw, nodes, true);
+            load_hnsw_files(config, hnsw, nodes, true);
         } else {
             // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();

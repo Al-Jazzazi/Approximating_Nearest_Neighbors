@@ -756,7 +756,7 @@ void load_ivecs(const string& file, vector<vector<int>>& results, int num, int n
     f.close();
 }
 
-void load_hnsw_file(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
+void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
     // Check file and parameters
     ifstream graph_file(config->hnsw_graph_file);
     ifstream info_file(config->hnsw_info_file);
@@ -847,6 +847,52 @@ void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_no
     int entry_point;
     graph_file.read(reinterpret_cast<char*>(&entry_point), sizeof(entry_point));
     hnsw->entry_point = entry_point;
+}
+
+void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int duration) {
+    // Export graph to file
+    ofstream graph_file(config->save_file_prefix + "_graph_" + name + ".bin");
+
+    // Export edges
+    for (int i = 0; i < config->num_nodes; ++i) {
+        int layers = hnsw->mappings[i].size();
+
+        // Write number of layers
+        graph_file.write(reinterpret_cast<const char*>(&layers), sizeof(layers));
+
+        // Write layers
+        for (int j = 0; j < layers; ++j) {
+            int num_neighbors = hnsw->mappings[i][j].size();
+
+            // Write number of neighbors
+            graph_file.write(reinterpret_cast<const char*>(&num_neighbors), sizeof(num_neighbors));
+
+            // Write neighbors
+            for (int k = 0; k < num_neighbors; ++k) {
+                auto n_pair = hnsw->mappings[i][j][k];
+                
+                // Write index and distance
+                graph_file.write(reinterpret_cast<const char*>(&n_pair.target), sizeof(n_pair.target));
+                graph_file.write(reinterpret_cast<const char*>(&n_pair.distance), sizeof(n_pair.distance));
+            }
+        }
+    }
+
+    // Save entry point
+    graph_file.write(reinterpret_cast<const char*>(&hnsw->entry_point), sizeof(hnsw->entry_point));
+    graph_file.close();
+
+    // Export construction parameters
+    ofstream info_file(config->save_file_prefix + "_info_" + name + ".txt");
+    info_file << config->optimal_connections << " " << config->max_connections << " "
+              << config->max_connections_0 << " " << config->ef_construction << endl;
+    info_file << config->num_nodes << endl;
+    info_file << hnsw->num_layers << endl;
+    info_file << layer0_dist_comps << endl;
+    info_file << upper_dist_comps << endl;
+    info_file << duration << endl;
+
+    cout << "Exported graph to " << config->save_file_prefix + "_graph_" + name + ".bin" << endl;
 }
 
 void load_nodes(Config* config, float** nodes) {

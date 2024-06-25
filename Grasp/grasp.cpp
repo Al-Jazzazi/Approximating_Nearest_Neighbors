@@ -18,7 +18,7 @@ using namespace std;
  * learn the importance of the HNSW's edges and increase their weights accordingly.
  * Note: This will shuffle the training set.
  */
-void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training) {
+void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, ofstream* results_file) {
     float temperature = config->initial_temperature;
     float lambda = 0;
     mt19937 gen(config->graph_seed);
@@ -34,7 +34,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
                 sample_subgraph(config, edges, lambda);
             }
             int num_return = config->num_return_training == -1 ? config->num_return : config->num_return_training;
-            update_weights(config, hnsw, training, num_return);
+            update_weights(config, hnsw, training, num_return, results_file);
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
             // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
@@ -118,7 +118,7 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
  * Compare the nearest neighbors and paths taken on the sampled graph with
  * the original graph, and increase edge weights accordingly
  */
-void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors) {
+void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors, ofstream* results_file) {
     int num_updates = 0;
     int num_of_edges_updated = 0;
     for (int i = 0; i < config->num_training; i++) {
@@ -142,25 +142,27 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path[0].size(); j++) 
                 sample_path[0][j]->weight += config->stinkyValue;
-        }
-        
-        for (int j = 0; j < original_path[0].size(); j++) {
-            if(config->use_stinky_points)
+            for (int j = 0; j < original_path[0].size(); j++)
                 original_path[0][j]->weight += config->stinkyValue;
-
-            if ((config->weight_selection_method == 0) ||
-                (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
-                (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
-            ) {
-                original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
-                num_of_edges_updated++;
-            }
         }
-        if(sample_distance != original_distance) num_updates++;
-        
+        if(sample_distance != original_distance) {
+            for (int j = 0; j < original_path[0].size(); j++) {
+                if ((config->weight_selection_method == 0) ||
+                    (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
+                    (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+                ) {
+                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                    num_of_edges_updated++;
+                }
+            }
+            num_updates++;
+        }
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 
+    }
+    if (config->export_weight_updates && results_file != nullptr) {
+        *results_file << num_updates << ", " << num_of_edges_updated << endl; 
     }
 }
 

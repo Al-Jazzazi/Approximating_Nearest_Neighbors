@@ -55,7 +55,7 @@ int main() {
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = init_hnsw(config, nodes);
     if (config->load_graph_file) {
-        load_hnsw_file(config, hnsw, nodes);
+        load_hnsw_files(config, hnsw, nodes);
     } else {
         for (int i = 1; i < config->num_nodes; i++) {
             hnsw->insert(config, i);

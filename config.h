@@ -10,15 +10,27 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "";
+    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    std::string training_file = "./exports/sift/sift_learn.fvecs";
+    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
+    std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
+    std::string histogram_prob_file = "./runs/histogram_prob.txt";
     std::string export_dir = "./runs/";
+    std::string save_file_prefix = "./runs/grasp";
+    bool export_benchmark_hnsw = true;
+    bool export_benchmark_grasp = true;
+    bool export_grasp_graph = true;
+    int dimensions = 128;
+    int num_nodes = 1000000;
+    int num_training = 10000;
+    int num_queries = 1000;
+
+    // Load HNSW
     std::string hnsw_graph_file = "./runs/random_graph_graph_0.bin";
     std::string hnsw_info_file = "./runs/random_graph_info_0.txt";
     bool load_graph_file = false;
 
     // HNSW Construction
-    int dimensions = 128;
-    int num_nodes = 1000000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
@@ -26,16 +38,12 @@ public:
     double scaling_factor = 0.368;
     // HNSW Search
     int ef_search = 300;
-    int num_queries = 10000;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
     bool use_heuristic = true;
     
-
     // GraSP Training
-    std::string training_file = "./exports/sift/sift_learn.fvecs";
-    int num_training = 100000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
@@ -49,17 +57,13 @@ public:
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
     bool print_weight_updates = true;
+    bool export_weight_updates = true;
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
     float stinkyValue = 0.025;
 
     // Benchmark parameters
-    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
-    bool export_benchmark_hnsw = true;
-    std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
-    bool export_benchmark_grasp = true;
-    std::string histogram_prob_file = "./runs/histogram_prob.txt";
-    std::vector<int> benchmark_num_return = {10, 50, 100};
+    std::vector<int> benchmark_num_return = {10, 100};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -73,7 +77,6 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
 
@@ -110,7 +113,6 @@ public:
     std::vector<int> save_max_connections = {11, 18, 30};
     std::vector<int> save_max_connections_0 = {14, 28, 50};
     std::vector<int> save_ef_constructions = {21, 42, 75};
-    std::string save_file_prefix = "./runs/random_graph";
     int num_graphs_saved = 3;
 
     // Dataset Metrics Parameters

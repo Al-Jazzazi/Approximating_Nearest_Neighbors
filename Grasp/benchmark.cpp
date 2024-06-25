@@ -9,7 +9,7 @@
 
 using namespace std;
 
-void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
+void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
@@ -68,20 +68,21 @@ void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** n
         cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;
     }
 }
+
 template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
         float** nodes, float** queries, float** training, ofstream* results_file) {
 
+    if (parameter_values.empty()) {
+        return;
+    }
     T default_parameter = parameter;
     if (config->export_benchmark_grasp) {
-        *results_file << "\nVarying " << parameter_name;
+        *results_file << "\nVarying " << parameter_name << ":" << endl;
     }
 
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        if (config->export_benchmark_grasp) {
-            *results_file << endl << parameter << ", ";
-        }
         // Sanity checks
         if(!config->sanity_checks()) {
             cout << "Config error!" << endl;
@@ -96,11 +97,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         long long search_dist_comp;
         HNSW* hnsw = NULL;
         vector<vector<int>> actual_neighbors;
-        knn_search(config, actual_neighbors, nodes, queries);
+        get_actual_neighbors(config, actual_neighbors, nodes, queries);
 
         if (config->load_graph_file) {
             hnsw = init_hnsw(config, nodes);
-            load_hnsw_file(config, hnsw, nodes, true);
+            load_hnsw_files(config, hnsw, nodes, true);
         } else {
             // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();
@@ -118,7 +119,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
             // Run GraSP
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            learn_edge_importance(config, hnsw, edges, training);
+            learn_edge_importance(config, hnsw, edges, training, results_file);
             prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
             edges = hnsw->get_layer_edges(config, 0);
             if (!config->histogram_prob_file.empty()) {
@@ -224,16 +225,40 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
 
         if (config->export_benchmark_grasp) {
-            *results_file << search_dist_comp / config->num_queries << ", "
+            *results_file << parameter << ", " << search_dist_comp / config->num_queries << ", "
             << recall << ", " << search_duration / config->num_queries << ", " << construction_duration;
         }
+        string name = parameter_name + "_" + to_string(parameter_values[i]);
+        save_hnsw_files(config, hnsw, name, construction_duration);
 
         delete hnsw;
     }
     if (config->export_benchmark_grasp) {
-        *results_file << endl;
+        *results_file << endl << endl;
     }
     parameter = default_parameter;
+}
+
+string get_cpu_brand() {
+    char CPUBrand[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+
+    memset(CPUBrand, 0, sizeof(CPUBrand));
+
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+        if (i == 0x80000002)
+            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
+    }
+    string output(CPUBrand);
+    return output;
 }
 
 /**
@@ -242,28 +267,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 */
 int main() {
 
-    char CPUBrandString[0x40];
-    unsigned int CPUInfo[4] = {0,0,0,0};
-
-    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-    unsigned int nExIds = CPUInfo[0];
-
-    memset(CPUBrandString, 0, sizeof(CPUBrandString));
-
-    for (unsigned int i = 0x80000000; i <= nExIds; ++i)
-        {
-        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-
-        if (i == 0x80000002)
-            memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000003)
-            memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000004)
-            memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
-        }
-
-    
-
+    string CPUBrand = get_cpu_brand();
 
     time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
@@ -282,7 +286,7 @@ int main() {
     ofstream* results_file = NULL;
     if (config->export_benchmark_grasp) {
         results_file = new ofstream(config->benchmark_file_grasp);
-        *results_file << "Size " << config->num_nodes << ", CPU TYPE  "  << CPUBrandString << "\nDefault Parameters: opt_con = "
+        *results_file << "Size " << config->num_nodes << ", CPU TYPE  "  << CPUBrand << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
@@ -290,7 +294,7 @@ int main() {
             << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
             << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops 
             
-            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" << config->stinkyValue <<"]" 
             << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
             << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method  
            
@@ -304,19 +308,19 @@ int main() {
 
 
     // Run benchmarks
-    run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "Learning Rate:",
+    run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "Initial Temperature:",
+    run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "initial_temperature",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "Decay Factor:",
+    run_benchmark(config, config->decay_factor, config->benchmark_decay_factor, "decay_factor",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "Initial Keep Ratio:",
+    run_benchmark(config, config->initial_keep_ratio, config->benchmark_initial_keep_ratio, "initial_keep_ratio",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "Final Keep Ratio:",
+    run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "final_keep_ratio",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->grasp_loops, config->benchmark_grasp_loops, "Grasp Loops:",
+    run_benchmark(config, config->grasp_loops, config->benchmark_grasp_loops, "grasp_loops",
         nodes, queries, training, results_file);
-    run_benchmark(config, config->num_return, config->benchmark_num_return, "Num Return:",
+    run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
 
     // Clean up
