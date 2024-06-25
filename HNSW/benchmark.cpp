@@ -230,7 +230,7 @@ int main() {
     ofstream* results_file = NULL;
     if (config->export_benchmark_hnsw) {
         results_file = new ofstream(config->benchmark_file);
-        *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
+        *results_file << "Size " << config->num_nodes  << ", CPU TYPE  "  << CPUBrandString << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return

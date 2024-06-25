@@ -101,7 +101,7 @@ public:
     bool debug_search = false;
     bool print_graph = false;
     bool export_graph = true;
-    bool export_queries = true;
+    bool export_queries = false;
     bool export_indiv = true;
     int debug_query_search_index = -1;
 

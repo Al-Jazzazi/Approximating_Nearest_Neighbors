@@ -10,6 +10,9 @@ using namespace std;
 
 int main() {
 
+
+    
+
     // Initialize time and config
     auto begin_time = chrono::high_resolution_clock::now();
     time_t now = time(NULL);

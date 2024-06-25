@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <chrono>
 #include <unordered_set>
+#include <cpuid.h>
+#include <string.h>
 #include "grasp.h"
 #include "../HNSW/hnsw.h"
 
@@ -239,6 +241,30 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
  * versus ideal for each set of parameters.
 */
 int main() {
+
+    char CPUBrandString[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+
+    memset(CPUBrandString, 0, sizeof(CPUBrandString));
+
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i)
+        {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+
+        if (i == 0x80000002)
+            memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+        }
+
+    
+
+
     time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
     Config* config = new Config();
@@ -256,7 +282,7 @@ int main() {
     ofstream* results_file = NULL;
     if (config->export_benchmark_grasp) {
         results_file = new ofstream(config->benchmark_file_grasp);
-        *results_file << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
+        *results_file << "Size " << config->num_nodes << ", CPU TYPE  "  << CPUBrandString << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
             << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
