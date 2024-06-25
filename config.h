@@ -18,7 +18,7 @@ public:
 
     // HNSW Construction
     int dimensions = 128;
-    int num_nodes = 10000;
+    int num_nodes = 1000000;
     int optimal_connections = 20;
     int max_connections = 20;
     int max_connections_0 = 20;
@@ -26,7 +26,7 @@ public:
     double scaling_factor = 0.368;
     // HNSW Search
     int ef_search = 300;
-    int num_queries = 1000;
+    int num_queries = 10000;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -35,7 +35,7 @@ public:
 
     // GraSP Training
     std::string training_file = "./exports/sift/sift_learn.fvecs";
-    int num_training = 1000;
+    int num_training = 100000;
     float learning_rate = 0.3;
     float initial_temperature = 1;
     float decay_factor = 0.5;
@@ -44,11 +44,12 @@ public:
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
+    int num_neighbours_training = 100;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool use_dynamic_sampling = false;
-    bool use_stinky_points = true; 
+    bool use_stinky_points = false; 
     float stinkyValue = 0.025;
 
     // Benchmark parameters
@@ -68,7 +69,10 @@ public:
     std::vector<float> benchmark_decay_factor = {};
     std::vector<float> benchmark_initial_keep_ratio = {};
     std::vector<float> benchmark_final_keep_ratio = {};
+    std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
+    std::vector<int> benchmark_grasp_subloops = {};
+
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
 

@@ -33,7 +33,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             if (!config->use_dynamic_sampling) {
                 sample_subgraph(config, edges, lambda);
             }
-            update_weights(config, hnsw, training, config->num_return);
+            update_weights(config, hnsw, training, config->num_neighbours_training);
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
             // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;

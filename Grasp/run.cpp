@@ -1,11 +1,15 @@
 #include <iostream>
 #include <chrono>
+#include <cpuid.h>
+#include <string.h>
 #include "grasp.h"
 #include "../HNSW/hnsw.h"
 
 using namespace std;
 
+
 int main() {
+
     // Initialize time and config
     auto begin_time = chrono::high_resolution_clock::now();
     time_t now = time(NULL);
@@ -24,6 +28,10 @@ int main() {
             <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
             << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
             << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
+
+    
+
+
 
     // Clear histogram file if it exists
     if (!config->histogram_prob_file.empty()) {
