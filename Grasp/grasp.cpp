@@ -244,7 +244,6 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
         // std::cout << std::setprecision(11);
         // cout << "left: " << left << " Right " << right << " MID" << mid << endl;
     }
-    cout << "Count: " << count << " ";
 
     return left + (right - left) / 2;
 }
