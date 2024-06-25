@@ -44,7 +44,8 @@ public:
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
-    int num_neighbours_training = 100;
+    // -1 = use num_return instead of num_return_training
+    int num_return_training = 100;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
     bool print_weight_updates = true;
