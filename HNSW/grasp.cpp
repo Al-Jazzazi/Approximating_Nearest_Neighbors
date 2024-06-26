@@ -66,10 +66,8 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     
     int* counts_prob = new int[20];
     int* counts_w = new int [20];
-    for (int i = 0; i < 20; i++) {
-        counts_prob[i] = 0;
-        counts_w[i] = 0; 
-    }
+    std::fill(counts_prob, counts_prob + 20, 0);
+    std::fill(counts_w, counts_w + 20, 0);
   
     // Normalize edge weights and probabilities
     for(int i = 0; i < config->num_nodes ; i++){
@@ -146,6 +144,7 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors, ofstream* results_file) {
     int num_updates = 0;
     int num_of_edges_updated = 0;
+ 
     for (int i = 0; i < config->num_training; i++) {
         int similar_nodes = 0;
 
@@ -163,13 +162,16 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             sample_distance += sample_nearest[j].first;
             original_distance += original_nearest[j].first;
         }
-
+        
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path[0].size(); j++) 
                 sample_path[0][j]->weight += config->stinkyValue;
             for (int j = 0; j < original_path[0].size(); j++)
                 original_path[0][j]->weight += config->stinkyValue;
         }
+
+        //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
+        //will differ 
         if(sample_distance != original_distance) {
             for (int j = 0; j < original_path[0].size(); j++) {
                 if ((config->weight_selection_method == 0) ||
@@ -184,13 +186,32 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             num_updates++;
         }
 
-        for(int j = 0; j < config->num_nodes ; j++){
-            for(int k = 0; k < hnsw->mappings[j][0].size(); k++){
-            Edge& edge = hnsw->mappings[j][0][k];
-            
+    
+       
+    }
 
+     if(!config->histogram_num_of_edges_updated_file.empty()){
+        int* count_updates = new int [20];
+        std::fill(count_updates, count_updates + 20, 0);
+        for(int j = 0; j < config->num_nodes ; j++){
+                for(int k = 0; k < hnsw->mappings[j][0].size(); k++){
+                Edge& edge = hnsw->mappings[j][0][k];
+                if(edge.num_of_updates == 0 ) count_updates[0]++;
+                else {
+                    int count_position = edge.num_of_updates > 18*50 ? 19 : edge.num_of_updates/50+1;
+                    count_updates[count_position]++;
+                }   
+
+                }
             }
-         }
+    
+        ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file, std::ios::app);
+        for (int i = 0; i < 20; i++) {
+            histogram << count_updates[i] << "," ;
+        }
+        histogram << endl; 
+        histogram.close();
+        delete[] count_updates;
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 
@@ -198,6 +219,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
     if (config->export_weight_updates && results_file != nullptr) {
         *results_file << "\t\t\t" <<num_updates << "\t\t\t\t" << num_of_edges_updated  <<endl; 
     }
+    
 }
 
 /**

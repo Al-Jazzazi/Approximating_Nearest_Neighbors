@@ -13,9 +13,9 @@ public:
     std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    int num_nodes = 100000;
+    int num_training = 10000;
+    int num_queries = 1000;
 
     // Save/Load Files
     std::string runs_dir = "./runs/";

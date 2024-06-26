@@ -37,6 +37,11 @@ int main() {
         histogram.close();
     }
 
+    if (!config->histogram_num_of_edges_updated_file.empty()) {
+        ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file);
+        histogram.close();
+    }
+
     // Load nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
