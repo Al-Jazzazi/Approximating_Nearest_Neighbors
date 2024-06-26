@@ -81,13 +81,8 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             if(edge.weight < 0)
                 counts_w[0]++;
             else{
-<<<<<<< HEAD
             count_position = edge.weight >=19*config->interval_for_weight_histogram ? 19: edge.weight/config->interval_for_weight_histogram +1; 
             counts_w[count_position]++;
-=======
-                count_position = edge.weight >=19*1 ? 19: edge.weight/1 +1; 
-                counts_w[count_position]++;
->>>>>>> 417c869 (fix weight change overflow)
             }
         }
     }
@@ -190,7 +185,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             }
             num_updates++;
         }
-<<<<<<< HEAD
 
     
        
@@ -218,8 +212,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         histogram << endl; 
         histogram.close();
         delete[] count_updates;
-=======
->>>>>>> 417c869 (fix weight change overflow)
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 
