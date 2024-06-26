@@ -198,7 +198,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                 Edge& edge = hnsw->mappings[j][0][k];
                 if(edge.num_of_updates == 0 ) count_updates[0]++;
                 else {
-                    int count_position = edge.num_of_updates > 18*50 ? 19 : edge.num_of_updates/50+1;
+                    int count_position = edge.num_of_updates > 18*config->interval_for_num_of_updates_histogram ? 19 : edge.num_of_updates/config->interval_for_num_of_updates_histogram+1;
                     count_updates[count_position]++;
                 }   
 
