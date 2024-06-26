@@ -83,7 +83,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             if(edge.weight < 0)
                 counts_w[0]++;
             else{
-            count_position = edge.weight >=19*1 ? 19: edge.weight/1 +1; 
+            count_position = edge.weight >=19*config->interval_for_weight_histogram ? 19: edge.weight/config->interval_for_weight_histogram +1; 
             counts_w[count_position]++;
             }
         }

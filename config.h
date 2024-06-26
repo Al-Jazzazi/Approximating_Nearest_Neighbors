@@ -62,6 +62,7 @@ public:
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
     float stinkyValue = 0.025;
+    int interval_for_weight_histogram = 1; 
 
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {1, 10, 50};
