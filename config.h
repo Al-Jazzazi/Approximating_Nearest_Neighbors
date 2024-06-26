@@ -10,7 +10,7 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     std::string benchmark_file = "./runs/hnsw_benchmark.txt";
     std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
@@ -21,8 +21,8 @@ public:
     bool export_benchmark_grasp = true;
     bool export_grasp_graph = true;
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 10000;
+    int num_nodes = 100000;
+    int num_training = 1000;
     int num_queries = 1000;
 
     // Load HNSW

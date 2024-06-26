@@ -23,6 +23,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     float lambda = 0;
     mt19937 gen(config->graph_seed);
 
+    *results_file << "iteration\t# of Weights updated\t# of Edges updated\n"; 
     // Run the training loop
     for (int k = 0; k < config->grasp_loops; k++) {
         for (int j = 0; j < config->grasp_subloops; j++) {
@@ -34,7 +35,9 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
                 sample_subgraph(config, edges, lambda);
             }
             int num_return = config->num_return_training == -1 ? config->num_return : config->num_return_training;
+            *results_file << k ;
             update_weights(config, hnsw, training, num_return, results_file);
+
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
             // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
@@ -162,7 +165,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 
     }
     if (config->export_weight_updates && results_file != nullptr) {
-        *results_file << num_updates << ", " << num_of_edges_updated << endl; 
+        *results_file << "\t\t\t" <<num_updates << "\t\t\t\t" << num_of_edges_updated  <<endl; 
     }
 }
 
