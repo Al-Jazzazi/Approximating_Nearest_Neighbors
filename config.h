@@ -10,37 +10,37 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "";
+    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
-    std::string benchmark_file = "./runs/hnsw_benchmark.txt";
-    std::string benchmark_file_grasp = "./runs/grasp_benchmark.txt";
-    std::string histogram_prob_file = "./runs/histogram_prob.txt";
-    std::string export_dir = "./runs/";
-    std::string save_file_prefix = "./runs/grasp";
-    bool export_benchmark = true;
-    bool enable_grasp = true;
     int dimensions = 128;
-    int num_nodes = 100000;
-    int num_training = 1000;
-    int num_queries = 1000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
+    int num_queries = 10000;
 
-    // Load HNSW
-    std::string hnsw_graph_file = "./runs/random_graph_graph_0.bin";
-    std::string hnsw_info_file = "./runs/random_graph_info_0.txt";
-    bool load_graph_file = false;
+    // Save/Load Files
+    std::string runs_dir = "./runs/";
+    std::string benchmark_file = "./runs/grasp_benchmark.txt";
+    std::string histogram_prob_file = "./runs/histogram_prob.txt";
+    std::string save_file_prefix = "./runs/grasp";
+    std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
+    std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
+    bool load_graph_file = true;
+    bool export_benchmark = true;
+    bool export_graph = false;
 
     // HNSW Construction
-    int optimal_connections = 20;
-    int max_connections = 20;
-    int max_connections_0 = 20;
-    int ef_construction = 100;
+    int optimal_connections = 14;
+    int max_connections = 14;
+    int max_connections_0 = 14;
+    int ef_construction = 400;
     double scaling_factor = 0.368;
     // HNSW Search
-    int ef_search = 300;
+    int ef_search = 500;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
     bool use_heuristic = true;
+    bool use_grasp = true;
     
     // GraSP Training
     float learning_rate = 0.3;
@@ -102,7 +102,6 @@ public:
     bool debug_insert = false;
     bool debug_search = false;
     bool print_graph = false;
-    bool export_graph = true;
     bool export_queries = false;
     bool export_indiv = true;
     int debug_query_search_index = -1;

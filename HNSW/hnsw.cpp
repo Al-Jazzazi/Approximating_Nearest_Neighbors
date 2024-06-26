@@ -47,7 +47,7 @@ void HNSW::insert(Config* config, int query) {
     int top = num_layers - 1;
 
     // Get node layer
-    int node_layer = -log(dis(gen)) * normal_factor;;
+    int node_layer = -log(dis(gen)) * normal_factor;
     mappings[query].resize(node_layer + 1);
 
     // Update layer count
@@ -379,7 +379,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     }
 
     if (config->debug_query_search_index == query.first) {
-        debug_file = new ofstream(config->export_dir + "query_search.txt");
+        debug_file = new ofstream(config->runs_dir + "query_search.txt");
     }
     if (config->gt_dist_log)
         log_neighbors = true;
@@ -392,7 +392,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
         debug_file->close();
         delete debug_file;
         debug_file = NULL;
-        cout << "Exported query search data to " << config->export_dir << "query_search.txt for query " << query.first << endl;
+        cout << "Exported query search data to " << config->runs_dir << "query_search.txt for query " << query.first << endl;
     }
 
     if (config->debug_search) {
@@ -407,47 +407,17 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     return entry_points;
 }
 
-void HNSW::export_graph(Config* config) {
-    ofstream file(config->export_dir + "graph.txt");
-
-    // Export number of layers
-    file << num_layers << endl;
-
-    // Export nodes
-    file << "Nodes" << endl;
-    for (int i = 0; i < num_nodes; ++i) {
-        file << i << " " << mappings[i].size() - 1 << ": " << nodes[i][0];
-        for (int dim = 1; dim < num_dimensions; ++dim)
-            file << "," << nodes[i][dim];
-        file << endl;
-    }
-
-    // Export edges
-    file << "Edges" << endl;
-    for (int i = 0; i < config->num_nodes; ++i) {
-        file << i << endl;
-        for (int layer = 0; layer < mappings[i].size(); ++layer) {
-            for (auto n_pair : mappings[i][layer])
-                file << n_pair.target << ",";
-            file << endl;
-        }
-    }
-
-    file.close();
-    cout << "Exported graph to " << config->export_dir << "graph.txt" << endl;
-}
-
 void HNSW::search_queries(Config* config, float** queries) {
     ofstream* export_file = NULL;
     if (config->export_queries)
-        export_file = new ofstream(config->export_dir + "queries.txt");
+        export_file = new ofstream(config->runs_dir + "queries.txt");
     
     ofstream* indiv_file = NULL;
     if (config->export_indiv)
-        indiv_file = new ofstream(config->export_dir + "indiv.txt");
+        indiv_file = new ofstream(config->runs_dir + "indiv.txt");
 
     if (config->gt_dist_log)
-        when_neigh_found_file = new ofstream(config->export_dir + "when_neigh_found.txt");
+        when_neigh_found_file = new ofstream(config->runs_dir + "when_neigh_found.txt");
 
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
@@ -568,18 +538,18 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (export_file != NULL) {
         export_file->close();
         delete export_file;
-        cout << "Exported queries to " << config->export_dir << "queries.txt" << endl;
+        cout << "Exported queries to " << config->runs_dir << "queries.txt" << endl;
     }
     if (indiv_file != NULL) {
         indiv_file->close();
         delete indiv_file;
-        cout << "Exported individual query results to " << config->export_dir << "indiv.txt" << endl;
+        cout << "Exported individual query results to " << config->runs_dir << "indiv.txt" << endl;
     }
 
     if (config->gt_dist_log) {
         when_neigh_found_file->close();
         delete when_neigh_found_file;
-        cout << "Exported when neighbors were found to " << config->export_dir << "when_neigh_found.txt" << endl;
+        cout << "Exported when neighbors were found to " << config->runs_dir << "when_neigh_found.txt" << endl;
     }
 }
 
@@ -698,10 +668,10 @@ void load_fvecs(const string& file, const string& type, float** nodes, int num, 
             << num << " > " << f.tellg() / (dim * 4 + 4) << endl;
         exit(-1);
     }
-    if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
-        cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
-        exit(-1);
-    }
+    // if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
+    //     cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
+    //     exit(-1);
+    // }
 
     f.seekg(0, ios::beg);
     for (int i = 0; i < num; i++) {

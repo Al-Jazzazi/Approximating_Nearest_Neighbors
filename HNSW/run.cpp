@@ -37,9 +37,6 @@ int main() {
     load_nodes(config, nodes);
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
-    float** training = new float*[config->num_training];
-    load_training(config, nodes, training);
-    remove_duplicates(config, training, queries);
     
     // Construct HNSW
     cout << "Beginning HNSW construction" << endl;
@@ -50,27 +47,27 @@ int main() {
         for (int i = 1; i < config->num_nodes; i++) {
             hnsw->insert(config, i);
         }
-    }
+        // Optimize HNSW using GraSP
+        if (config->use_grasp) {
+            float** training = new float*[config->num_training];
+            load_training(config, nodes, training);
+            remove_duplicates(config, training, queries);
 
-    // Optimize HNSW using GraSP
-    if (config->enable_grasp) {
-        vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-        cout << "Starting Edges: " << edges.size() << endl;
-        learn_edge_importance(config, hnsw, edges, training);
-        prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
-        edges = hnsw->get_layer_edges(config, 0);
-        cout << "Final Edges: " << edges.size() << endl;
-        for (int i = 0; i < config->num_training; i++)
-            delete[] training[i];
-        delete[] training;
+            vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
+            learn_edge_importance(config, hnsw, edges, training);
+            prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
+            for (int i = 0; i < config->num_training; i++)
+                delete[] training[i];
+            delete[] training;
+        }
     }
 
     // Print and export HNSW graph
     if (config->print_graph) {
         cout << hnsw;
     }
-    if (config->export_graph) {
-        hnsw->export_graph(config);
+    if (config->export_graph && !config->load_graph_file) {
+        save_hnsw_files(config, hnsw, "run", -1);
     }
 
     // Run queries

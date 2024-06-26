@@ -47,7 +47,6 @@ public:
     double normal_factor;
 
     HNSW(Config* config, float** nodes);
-    void export_graph(Config* config);
     void search_queries(Config* config, float** queries);
     std::vector<Edge*> get_layer_edges(Config* config, int layer);
     

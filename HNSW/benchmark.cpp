@@ -118,7 +118,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             }
 
             // Run GraSP
-            if (config->enable_grasp) {
+            if (config->use_grasp) {
                 vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
                 learn_edge_importance(config, hnsw, edges, training, results_file);
                 prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
@@ -235,7 +235,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             lines.push_back(line);
         }
         string name = parameter_name + "_" + to_string(parameter_values[i]);
-        save_hnsw_files(config, hnsw, name, construction_duration);
+        if (config->export_graph && !config->load_graph_file) {
+            save_hnsw_files(config, hnsw, name, construction_duration);
+        }
 
         delete hnsw;
     }
@@ -287,14 +289,17 @@ int main() {
     load_nodes(config, nodes);
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
-    float** training = new float*[config->num_training];
-    load_training(config, nodes, training);
-    remove_duplicates(config, training, queries);
+    float** training = nullptr;
+    if (config->use_grasp) {
+        training = new float*[config->num_training];
+        load_training(config, nodes, training);
+        remove_duplicates(config, training, queries);
+    }
 
     // Initialize output files
     ofstream* results_file = NULL;
     if (config->export_benchmark) {
-        results_file = new ofstream(config->benchmark_file_grasp);
+        results_file = new ofstream(config->benchmark_file);
         *results_file << "Size " << config->num_nodes << ", CPU TYPE  "  << CPUBrand << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
@@ -330,7 +335,7 @@ int main() {
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
     
-    if (config->enable_grasp) {
+    if (config->use_grasp) {
         run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",
             nodes, queries, training, results_file);
         run_benchmark(config, config->initial_temperature, config->benchmark_initial_temperature, "initial_temperature",
