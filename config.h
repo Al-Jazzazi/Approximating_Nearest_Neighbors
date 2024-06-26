@@ -21,10 +21,12 @@ public:
     std::string runs_dir = "./runs/";
     std::string benchmark_file = "./runs/grasp_benchmark.txt";
     std::string histogram_prob_file = "./runs/histogram_prob.txt";
+    std::string histogram_weights_file = "./runs/histogram_weights.txt";
+    std::string histogram_num_of_edges_updated_file = "./runs/histogram_num_of_edges_updated.txt";
     std::string save_file_prefix = "./runs/grasp";
     std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
-    bool load_graph_file = true;
+    bool load_graph_file = false;
     bool export_benchmark = true;
     bool export_graph = false;
 
@@ -103,7 +105,7 @@ public:
     bool debug_search = false;
     bool print_graph = false;
     bool export_queries = false;
-    bool export_indiv = false;
+    bool export_indiv = true;
     int debug_query_search_index = -1;
 
     // HNSW Save Parameters

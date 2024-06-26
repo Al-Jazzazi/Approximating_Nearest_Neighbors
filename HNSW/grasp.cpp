@@ -64,11 +64,13 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
     // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
     
-    int* counts = new int[20];
+    int* counts_prob = new int[20];
+    int* counts_w = new int [20];
     for (int i = 0; i < 20; i++) {
-        counts[i] = 0;
+        counts_prob[i] = 0;
+        counts_w[i] = 0; 
     }
-
+  
     // Normalize edge weights and probabilities
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
@@ -76,19 +78,35 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             int count_position = edge.probability_edge == 1 ? 19 : edge.probability_edge * 20;
             edge.weight += mu;
             edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
-            counts[count_position]++;
+            counts_prob[count_position]++;
+
+            if(edge.weight < 0)
+                counts_w[0]++;
+            else{
+            count_position = edge.weight >=19*1 ? 19: edge.weight/1 +1; 
+            counts_w[count_position]++;
+            }
         }
     }
     // Record probability distribution in histogram text file
     if (!config->histogram_prob_file.empty()) {
         ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
         for (int i = 0; i < 20; i++) {
-            histogram << counts[i] << ",";
+            histogram << counts_prob[i] << ",";
         }
         histogram << endl;
         histogram.close();
     }
-    delete[] counts;
+    if(!config->histogram_weights_file.empty()){
+        ofstream histogram = ofstream(config->histogram_weights_file, std::ios::app);
+        for (int i = 0; i < 20; i++) {
+            histogram << counts_w[i] << "," ;
+        }
+        histogram << "\t\t\t" << "Min W :" << max_min.second <<  " Max W is: " <<  max_min.first << endl;
+        histogram.close();
+    }
+    delete[] counts_prob;
+    delete[] counts_w;
 }
 
 /**
@@ -165,6 +183,14 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             }
             num_updates++;
         }
+
+        for(int j = 0; j < config->num_nodes ; j++){
+            for(int k = 0; k < hnsw->mappings[j][0].size(); k++){
+            Edge& edge = hnsw->mappings[j][0][k];
+            
+
+            }
+         }
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 

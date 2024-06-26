@@ -32,6 +32,11 @@ int main() {
         histogram.close();
     }
 
+    if (!config->histogram_weights_file.empty()) {
+        ofstream histogram = ofstream(config->histogram_weights_file);
+        histogram.close();
+    }
+
     // Load nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
