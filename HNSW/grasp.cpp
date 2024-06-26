@@ -81,8 +81,13 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             if(edge.weight < 0)
                 counts_w[0]++;
             else{
+<<<<<<< HEAD
             count_position = edge.weight >=19*config->interval_for_weight_histogram ? 19: edge.weight/config->interval_for_weight_histogram +1; 
             counts_w[count_position]++;
+=======
+                count_position = edge.weight >=19*1 ? 19: edge.weight/1 +1; 
+                counts_w[count_position]++;
+>>>>>>> 417c869 (fix weight change overflow)
             }
         }
     }
@@ -156,8 +161,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
 
         // Calculate the average distance between nearest neighbors and the training point
-        float sample_distance = 0;
-        float original_distance = 0;
+        int sample_distance = 0;
+        int original_distance = 0;
         for (int j = 0; j < num_neighbors; j++) {
             sample_distance += sample_nearest[j].first;
             original_distance += original_nearest[j].first;
@@ -178,13 +183,14 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
                     (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
                 ) {
-                    original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                    original_path[0][j]->weight += (static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate;
                     original_path[0][j]->num_of_updates++;
                     num_of_edges_updated++;
                 }
             }
             num_updates++;
         }
+<<<<<<< HEAD
 
     
        
@@ -212,6 +218,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         histogram << endl; 
         histogram.close();
         delete[] count_updates;
+=======
+>>>>>>> 417c869 (fix weight change overflow)
     }
     if (config->print_weight_updates) {
         cout << "# of Weight Updates: " << num_updates << " / " << config->num_training << ", # of Edges Updated: " << num_of_edges_updated << endl; 

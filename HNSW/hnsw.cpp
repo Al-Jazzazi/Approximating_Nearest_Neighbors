@@ -668,10 +668,10 @@ void load_fvecs(const string& file, const string& type, float** nodes, int num, 
             << num << " > " << f.tellg() / (dim * 4 + 4) << endl;
         exit(-1);
     }
-    // if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
-    //     cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
-    //     exit(-1);
-    // }
+    if (type == "nodes" && num != f.tellg() / (dim * 4 + 4) && has_groundtruth) {
+        cout << "You must load all " << f.tellg() / (dim * 4 + 4) << " nodes if you want to use a groundtruth file" << endl;
+        exit(-1);
+    }
 
     f.seekg(0, ios::beg);
     for (int i = 0; i < num; i++) {

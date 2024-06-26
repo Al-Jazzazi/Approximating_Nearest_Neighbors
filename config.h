@@ -49,7 +49,7 @@ public:
     float initial_temperature = 1;
     float decay_factor = 0.8;
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.5;
+    float final_keep_ratio = 0.7;
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
