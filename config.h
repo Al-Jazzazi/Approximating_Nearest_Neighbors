@@ -51,8 +51,8 @@ public:
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
     int keep_exponent = 3;
-    int grasp_loops = 20;
-    int grasp_subloops = 1;
+    int grasp_loops = 10;
+    int grasp_subloops = 2;
     // -1 = use num_return instead of num_return_training
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
@@ -63,7 +63,7 @@ public:
     bool use_stinky_points = false; 
     float stinkyValue = 0.025;
     int interval_for_weight_histogram = 1; 
-    int interval_for_num_of_updates_histogram = 50; 
+    int interval_for_num_of_updates_histogram = 10; 
 
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {1, 10, 50};
