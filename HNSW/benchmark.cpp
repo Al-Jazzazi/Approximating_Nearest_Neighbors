@@ -132,6 +132,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                     ofstream histogram = ofstream(config->histogram_weights_file);
                     histogram.close();
                 }
+                if (!config->histogram_num_of_edges_updated_file.empty()) {
+                    ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file);
+                    histogram.close();
+                }
             }
 
             auto end = chrono::high_resolution_clock::now();
