@@ -20,6 +20,7 @@ public:
     int target;
     float distance;
     float weight; 
+    float stinky;
     bool ignore;
     float probability_edge;
     unsigned int num_of_updates; 

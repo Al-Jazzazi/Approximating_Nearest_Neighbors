@@ -18,10 +18,10 @@ bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
-Edge::Edge() : target(-1), distance(-1), weight(-1), ignore(false), probability_edge(1/2), num_of_updates(0){}
+Edge::Edge() : target(-1), distance(-1), weight(-1), ignore(false), probability_edge(1/2), num_of_updates(0), stinky(0){}
 
 Edge::Edge(int target, float distance, float weight, bool ignore, float probability_edge) : target(target),
-           distance(distance), weight(weight), ignore(ignore), probability_edge(probability_edge), num_of_updates(0){}
+           distance(distance), weight(weight), ignore(ignore), probability_edge(probability_edge), num_of_updates(0), stinky(0){}
 
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;
@@ -238,7 +238,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
                 //discovered some stinky points 
                 if(add_stinky && layer_num == 0)
-                    neighbors[i].weight -= config->stinkyValue;
+                    neighbors[i].stinky -= config->stinkyValue;
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);

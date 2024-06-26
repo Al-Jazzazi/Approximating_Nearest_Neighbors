@@ -114,6 +114,8 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
     // Mark lowest weight edges for deletion
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge; };
+    //Alternative for stinky values 
+   // auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge- lhs->stinky > rhs->probability_edge-lhs->stinky;};
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
@@ -165,9 +167,9 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path[0].size(); j++) 
-                sample_path[0][j]->weight += config->stinkyValue;
+                sample_path[0][j]->stinky += config->stinkyValue;
             for (int j = 0; j < original_path[0].size(); j++)
-                original_path[0][j]->weight += config->stinkyValue;
+                original_path[0][j]->stinky += config->stinkyValue;
         }
 
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
@@ -190,6 +192,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
        
     }
 
+    //Creating a histogram the accumlative change in the frequency in which the edges are being updated 
      if(!config->histogram_num_of_edges_updated_file.empty()){
         int* count_updates = new int [20];
         std::fill(count_updates, count_updates + 20, 0);
@@ -204,7 +207,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
                 }
             }
-    
+
         ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file, std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << count_updates[i] << "," ;

@@ -10,11 +10,11 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 100000;
-    int num_training = 10000;
+    int num_nodes = 10000;
+    int num_training = 1000;
     int num_queries = 1000;
 
     // Save/Load Files
@@ -51,7 +51,7 @@ public:
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
     int keep_exponent = 3;
-    int grasp_loops = 10;
+    int grasp_loops = 20;
     int grasp_subloops = 2;
     // -1 = use num_return instead of num_return_training
     int num_return_training = -1;
@@ -59,9 +59,9 @@ public:
     int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool export_weight_updates = true;
-    bool use_dynamic_sampling = false;
+    bool use_dynamic_sampling = true;
     bool use_stinky_points = false; 
-    float stinkyValue = 0.025;
+    float stinkyValue = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
 
