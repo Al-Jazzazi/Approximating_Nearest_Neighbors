@@ -26,7 +26,7 @@ benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/gras
 
 benchmark_slurm: HNSW/benchmark.cpp HNSW/grasp.cpp HNSW/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
-	ln -sf ${BUILD_PATH}/$@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 clean:
 	rm -f $(OBJS) $(TARGETS)
