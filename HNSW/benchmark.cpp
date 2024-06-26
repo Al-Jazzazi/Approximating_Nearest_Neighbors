@@ -106,12 +106,16 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();
 
-            cout << "Benchmarking with parameters: "
-                << "learning_rate = " <<  config->learning_rate << ", initial_temperature = "
-                << config->initial_temperature << ", decay_factor = " << config->decay_factor
-                << ", initial_keep_ratio = " << config->initial_keep_ratio << ", final_keep_ratio = "
-                << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops
-                << ", num_return = " << config->num_return << endl; 
+            cout << "Size " << config->num_nodes << "\nBenchmarking with Parameters: opt_con = "
+                 << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
+                 << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
+                 << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
+                 << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
+                 << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
+                 << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
+                 <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+                 << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
+                 << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
             hnsw = init_hnsw(config, nodes);
             for (int i = 1; i < config->num_nodes; i++) {
                 hnsw->insert(config, i);

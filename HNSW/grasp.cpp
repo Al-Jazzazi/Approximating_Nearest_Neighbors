@@ -44,7 +44,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
 
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
-            cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
+            // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
     }
 }
@@ -275,7 +275,9 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
             //     max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    cout << "Min W :" << min_w <<  " Max W is: " <<  max_w << endl;
+    if (config->print_weight_updates) {
+        cout << "Min W :" << min_w <<  " Max W is: " <<  max_w << endl;
+    }
     max_min = make_pair(max_w, min_w);
     return max_min;
 }
