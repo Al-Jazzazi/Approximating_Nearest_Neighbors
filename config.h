@@ -103,7 +103,7 @@ public:
     bool debug_search = false;
     bool print_graph = false;
     bool export_queries = false;
-    bool export_indiv = true;
+    bool export_indiv = false;
     int debug_query_search_index = -1;
 
     // HNSW Save Parameters

@@ -159,6 +159,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
                 ) {
                     original_path[0][j]->weight += (sample_distance / original_distance - 1) * config->learning_rate;
+                    original_path[0][j]->num_of_updates++;
                     num_of_edges_updated++;
                 }
             }
@@ -223,7 +224,7 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
             //     max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
-    //cout << "lowest prob is :" << lowest_percentage <<  " Max prob is: " <<  max_probability << endl;
+    cout << "Min W :" << min_w <<  " Max W is: " <<  max_w << endl;
     max_min = make_pair(max_w, min_w);
     return max_min;
 }

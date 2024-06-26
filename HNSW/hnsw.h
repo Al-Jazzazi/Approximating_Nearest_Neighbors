@@ -22,6 +22,7 @@ public:
     float weight; 
     bool ignore;
     float probability_edge;
+    unsigned int num_of_updates; 
 
     Edge();
     Edge(int target, float distance, float weight = 50, bool ignore = false, float probability_edge = 0.5);
