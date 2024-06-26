@@ -17,9 +17,8 @@ public:
     std::string histogram_prob_file = "./runs/histogram_prob.txt";
     std::string export_dir = "./runs/";
     std::string save_file_prefix = "./runs/grasp";
-    bool export_benchmark_hnsw = true;
-    bool export_benchmark_grasp = true;
-    bool export_grasp_graph = true;
+    bool export_benchmark = true;
+    bool enable_grasp = true;
     int dimensions = 128;
     int num_nodes = 100000;
     int num_training = 1000;

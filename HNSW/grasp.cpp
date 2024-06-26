@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <iomanip>
 
-#include "../HNSW/hnsw.h"
+#include "grasp.h"
 
 using namespace std;
 
@@ -23,7 +23,9 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
     float lambda = 0;
     mt19937 gen(config->graph_seed);
 
-    *results_file << "iteration\t# of Weights updated\t# of Edges updated\n"; 
+    if (results_file != nullptr) {
+        *results_file << "iteration\t# of Weights updated\t# of Edges updated\n"; 
+    }
     // Run the training loop
     for (int k = 0; k < config->grasp_loops; k++) {
         for (int j = 0; j < config->grasp_subloops; j++) {
@@ -35,12 +37,14 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
                 sample_subgraph(config, edges, lambda);
             }
             int num_return = config->num_return_training == -1 ? config->num_return : config->num_return_training;
-            *results_file << k ;
+            if (results_file != nullptr) {
+                *results_file << k;
+            }
             update_weights(config, hnsw, training, num_return, results_file);
 
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
-            // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
+            cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
     }
 }
