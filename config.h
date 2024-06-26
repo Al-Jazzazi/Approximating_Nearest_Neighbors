@@ -32,10 +32,10 @@ public:
     int optimal_connections = 14;
     int max_connections = 14;
     int max_connections_0 = 14;
-    int ef_construction = 400;
-    double scaling_factor = 0.368;
+    int ef_construction = 500;
+    double scaling_factor = 0.379;
     // HNSW Search
-    int ef_search = 500;
+    int ef_search = 400;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
@@ -43,16 +43,16 @@ public:
     bool use_grasp = true;
     
     // GraSP Training
-    float learning_rate = 0.3;
+    float learning_rate = 0.1;
     float initial_temperature = 1;
-    float decay_factor = 0.5;
+    float decay_factor = 0.8;
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.6;
+    float final_keep_ratio = 0.5;
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
     // -1 = use num_return instead of num_return_training
-    int num_return_training = 100;
+    int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
     bool print_weight_updates = true;
@@ -62,7 +62,7 @@ public:
     float stinkyValue = 0.025;
 
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {10, 100};
+    std::vector<int> benchmark_num_return = {1, 10, 50};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
