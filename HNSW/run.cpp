@@ -27,18 +27,12 @@ int main() {
          << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
 
     // Clear histogram file if it exists
-    if (!config->histogram_prob_file.empty()) {
-        ofstream histogram = ofstream(config->histogram_prob_file);
+    if (!config->histogram_prefix.empty()) {
+        ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt");
         histogram.close();
-    }
-
-    if (!config->histogram_weights_file.empty()) {
-        ofstream histogram = ofstream(config->histogram_weights_file);
+        histogram = ofstream(config->histogram_prefix + "_weights.txt");
         histogram.close();
-    }
-
-    if (!config->histogram_num_of_edges_updated_file.empty()) {
-        ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file);
+        histogram = ofstream(config->histogram_prefix + "_edge_updates.txt");
         histogram.close();
     }
 

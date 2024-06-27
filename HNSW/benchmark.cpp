@@ -127,17 +127,15 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 learn_edge_importance(config, hnsw, edges, training, results_file);
                 prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
                 edges = hnsw->get_layer_edges(config, 0);
-                if (!config->histogram_prob_file.empty()) {
-                    ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
+                if (!config->histogram_prefix.empty()) {
+                    ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt", std::ios::app);
                     histogram << endl;
                     histogram.close();
-                }
-                 if (!config->histogram_weights_file.empty()) {
-                    ofstream histogram = ofstream(config->histogram_weights_file);
+                    histogram = ofstream(config->histogram_prefix + "_weights.txt", std::ios::app);
+                    histogram << endl;
                     histogram.close();
-                }
-                if (!config->histogram_num_of_edges_updated_file.empty()) {
-                    ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file);
+                    histogram = ofstream(config->histogram_prefix + "_edge_updates.txt", std::ios::app);
+                    histogram << endl;
                     histogram.close();
                 }
             }
@@ -326,8 +324,12 @@ int main() {
            
            
 
-        if (!config->histogram_prob_file.empty()) {
-            ofstream histogram = ofstream(config->histogram_prob_file);
+        if (!config->histogram_prefix.empty()) {
+            ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt");
+            histogram.close();
+            histogram = ofstream(config->histogram_prefix + "_weights.txt");
+            histogram.close();
+            histogram = ofstream(config->histogram_prefix + "_edge_updates.txt");
             histogram.close();
         }
     }

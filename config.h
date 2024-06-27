@@ -20,9 +20,7 @@ public:
     // Save/Load Files
     std::string runs_dir = "./runs/";
     std::string benchmark_file = "./runs/grasp_benchmark.txt";
-    std::string histogram_prob_file = "./runs/histogram_prob.txt";
-    std::string histogram_weights_file = "./runs/histogram_weights.txt";
-    std::string histogram_num_of_edges_updated_file = "./runs/histogram_num_of_edges_updated.txt";
+    std::string histogram_prefix = "./runs/histogram";
     std::string save_file_prefix = "./runs/grasp";
     std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
@@ -52,7 +50,7 @@ public:
     float final_keep_ratio = 0.7;
     int keep_exponent = 3;
     int grasp_loops = 20;
-    int grasp_subloops = 2;
+    int grasp_subloops = 1;
     // -1 = use num_return instead of num_return_training
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path

@@ -87,17 +87,16 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             }
         }
     }
-    // Record probability distribution in histogram text file
-    if (!config->histogram_prob_file.empty()) {
-        ofstream histogram = ofstream(config->histogram_prob_file, std::ios::app);
+    // Record distributions in histogram text files
+    if (!config->histogram_prefix.empty()) {
+        ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << counts_prob[i] << ",";
         }
         histogram << endl;
         histogram.close();
-    }
-    if(!config->histogram_weights_file.empty()){
-        ofstream histogram = ofstream(config->histogram_weights_file, std::ios::app);
+
+        histogram = ofstream(config->histogram_prefix + "_weights.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << counts_w[i] << "," ;
         }
@@ -194,7 +193,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
     }
 
     //Creating a histogram the accumlative change in the frequency in which the edges are being updated 
-     if(!config->histogram_num_of_edges_updated_file.empty()){
+     if(!config->histogram_prefix.empty()){
         int* count_updates = new int [20];
         std::fill(count_updates, count_updates + 20, 0);
         for(int j = 0; j < config->num_nodes ; j++){
@@ -209,7 +208,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                 }
             }
 
-        ofstream histogram = ofstream(config->histogram_num_of_edges_updated_file, std::ios::app);
+        ofstream histogram = ofstream(config->histogram_prefix + "_edge_updates.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << count_updates[i] << "," ;
         }
