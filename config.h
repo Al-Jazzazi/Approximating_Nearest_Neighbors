@@ -11,11 +11,11 @@ public:
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
     std::string groundtruth_file = "";
-    std::string training_file = "";
+    std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 10000;
-    int num_training = 1000;
-    int num_queries = 1000;
+    int num_nodes = 100000;
+    int num_training = 10000;
+    int num_queries = 10000;
 
     // Save/Load Files
     std::string runs_dir = "./runs/";
@@ -24,6 +24,7 @@ public:
     std::string save_file_prefix = "./runs/grasp";
     std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
+    std::string training_set = "";
     bool load_graph_file = false;
     bool export_benchmark = true;
     bool export_graph = false;
@@ -42,6 +43,7 @@ public:
     bool use_heuristic = true;
     bool use_grasp = true;
     
+    
     // GraSP Training
     float learning_rate = 0.1;
     float initial_temperature = 1;
@@ -55,10 +57,13 @@ public:
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
-    bool print_weight_updates = true;
+    bool print_weight_updates = false;
     bool export_weight_updates = true;
+    bool export_training_queries = false; 
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
+    bool generate_our_training = true;
+    bool regenerate_each_iteration = true;
     float stinkyValue = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
@@ -104,7 +109,7 @@ public:
     bool debug_insert = false;
     bool debug_search = false;
     bool print_graph = false;
-    bool export_queries = false;
+    bool export_queries = true;
     bool export_indiv = true;
     int debug_query_search_index = -1;
 

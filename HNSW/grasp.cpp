@@ -46,7 +46,11 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             std::shuffle(training, training + config->num_training, gen);
             // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
-        load_training(config, hnsw->nodes, training );
+        //Each loop, generate a new set training sets
+        if(config->generate_our_training && config->regenerate_each_iteration){
+            load_training(config, hnsw->nodes, training );
+            //cout << "training" << training[10][10] << endl;
+        }
     }
 }
 
@@ -232,7 +236,7 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
     mt19937 gen(config->graph_seed);
-    uniform_real_distribution<float> dis(0, lambda);
+    normal_distribution<float> dis(0, lambda);
     int count = 0;
     for(Edge* edge : edges) {
         if (dis(gen) < (1 - edge->probability_edge)) {
@@ -314,8 +318,11 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
 
 // Load training set from training file or randomly generate them from nodes
 void load_training(Config* config, float** nodes, float** training) {
-    mt19937 gen(config->training_seed);
-    if (config->training_file != "") {
+    std::random_device rd;
+    mt19937 gen(rd());
+    
+   
+    if ( !config->generate_our_training && config->training_file != "") {
         if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
             // Load training from fvecs file
             load_fvecs(config->training_file, "training", training, config->num_training, config->dimensions, config->groundtruth_file != "");
@@ -334,17 +341,20 @@ void load_training(Config* config, float** nodes, float** training) {
             training[i] = new float[config->dimensions];
             for (int j = 0; j < config->dimensions; j++) {
                 f >> training[i][j];
+
+    
             }
+       
         }
 
         f.close();
         return;
     }
 
-    if (config->load_file == "") {
+    if (!config->generate_our_training && config->load_file == "") {
         // Generate random training nodes
         cout << "Generating " << config->num_training << " random training points" << endl;
-        uniform_real_distribution<float> dis(config->gen_min, config->gen_max);
+        normal_distribution<float> dis(config->gen_min, config->gen_max);
 
         for (int i = 0; i < config->num_training; i++) {
             training[i] = new float[config->dimensions];
@@ -374,9 +384,9 @@ void load_training(Config* config, float** nodes, float** training) {
             }
         }
     }
-    uniform_real_distribution<float>* dis_array = new uniform_real_distribution<float>[config->dimensions];
+    normal_distribution<float>* dis_array = new normal_distribution<float>[config->dimensions];
     for (int i = 0; i < config->dimensions; i++) {
-        dis_array[i] = uniform_real_distribution<float>(lower_bound[i], upper_bound[i]);
+        dis_array[i] = normal_distribution<float>(lower_bound[i], upper_bound[i]);
     }
 
     // Generate training set based on the range of values in each dimension
@@ -384,12 +394,16 @@ void load_training(Config* config, float** nodes, float** training) {
         training[i] = new float[config->dimensions];
         for (int j = 0; j < config->dimensions; j++) {
             training[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
+        
+           
         }
+
     }
 
     delete[] lower_bound;
     delete[] upper_bound;
     delete[] dis_array;
+
 }
 
 // Remove training points that are also found in queries

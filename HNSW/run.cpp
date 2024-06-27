@@ -55,6 +55,20 @@ int main() {
         if (config->use_grasp) {
             float** training = new float*[config->num_training];
             load_training(config, nodes, training);
+            if (config->export_training_queries) {
+                ofstream histogram = ofstream(config->training_set, std::ios::app);
+                for (int i = 0; i < config->num_training; i++) {
+                    for (int j = 0; j < config->dimensions; j++) {
+                        histogram  << training[i][j] << ", "; 
+                    }
+                if  (!config->training_set.empty()) 
+                    histogram  << endl; 
+                }
+
+                histogram << "endddd with itration \n\n\n";
+                histogram.close();
+        }
+
             remove_duplicates(config, training, queries);
 
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
