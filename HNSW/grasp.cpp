@@ -46,6 +46,7 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             std::shuffle(training, training + config->num_training, gen);
             // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
+        load_training(config, hnsw->nodes, training );
     }
 }
 

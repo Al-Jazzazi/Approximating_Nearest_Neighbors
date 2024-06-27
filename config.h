@@ -11,7 +11,7 @@ public:
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
     std::string groundtruth_file = "";
-    std::string training_file = "./exports/sift/sift_learn.fvecs";
+    std::string training_file = "";
     int dimensions = 128;
     int num_nodes = 10000;
     int num_training = 1000;
@@ -59,7 +59,7 @@ public:
     int weight_selection_method = 0;
     bool print_weight_updates = true;
     bool export_weight_updates = true;
-    bool use_dynamic_sampling = true;
+    bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
     float stinkyValue = 0.00005;
     int interval_for_weight_histogram = 1; 
