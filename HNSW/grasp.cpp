@@ -7,6 +7,7 @@
 #include <cfloat> 
 #include <algorithm>
 #include <iomanip>
+#include <unordered_set>
 
 #include "grasp.h"
 
@@ -160,6 +161,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<vector<Edge*>> original_path;
         vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, config->use_stinky_points);
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
+        unordered_set<Edge*> sample_path_set(sample_path[0].begin(), sample_path[0].end());
 
         // Calculate the average distance between nearest neighbors and the training point
         int sample_distance = 0;
@@ -182,7 +184,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             for (int j = 0; j < original_path[0].size(); j++) {
                 if ((config->weight_selection_method == 0) ||
                     (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
-                    (config->weight_selection_method == 2 && find(sample_path[0].begin(), sample_path[0].end(), original_path[0][j]) == sample_path[0].end())
+                    (config->weight_selection_method == 2 && sample_path_set.find(original_path[0][j]) == sample_path_set.end())
                 ) {
                     original_path[0][j]->weight += (static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate;
                     original_path[0][j]->num_of_updates++;

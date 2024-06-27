@@ -300,7 +300,7 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
     float** training = nullptr;
-    if (config->use_grasp) {
+    if (config->use_grasp && !config->load_graph_file) {
         training = new float*[config->num_training];
         load_training(config, nodes, training);
         remove_duplicates(config, training, queries);
@@ -376,8 +376,9 @@ int main() {
     for (int i = 0; i < config->num_queries; ++i)
         delete[] queries[i];
     delete[] queries;
-    for (int i = 0; i < config->num_training; i++)
-        delete[] training[i];
+    if (config->use_grasp && !config->load_graph_file)
+        for (int i = 0; i < config->num_training; i++)
+            delete[] training[i];
     delete[] training;
     delete config;
 
