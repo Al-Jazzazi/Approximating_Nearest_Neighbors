@@ -13,8 +13,8 @@ public:
     std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 100000;
-    int num_training = 10000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
     int num_queries = 10000;
 
     // Save/Load Files
@@ -57,19 +57,23 @@ public:
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
-    bool print_weight_updates = false;
-    bool export_weight_updates = true;
-    bool export_training_queries = false; 
-    bool use_dynamic_sampling = false;
-    bool use_stinky_points = false; 
-    bool generate_our_training = true;
-    bool regenerate_each_iteration = true;
     float stinkyValue = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
+    bool use_dynamic_sampling = false;
+    bool use_stinky_points = false; 
+    bool generate_our_training = false;
+    bool regenerate_each_iteration = false;
+
+    //Debugging related flags
+    bool print_weight_updates = false;
+    bool export_weight_updates = true;
+    bool export_training_queries = false; 
+
 
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {1, 10, 50};
+    std::vector<int> benchmark_num_return = {};
+  //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -83,6 +87,7 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
+    std::vector<bool> benchmark_enablign_stinky = {true, false}; 
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
 

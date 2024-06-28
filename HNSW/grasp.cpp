@@ -117,10 +117,21 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
  * edges and remove the rest of its edges.
  */
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
+    //update probs 
+    if(config->use_stinky_points ){
+        for (auto e: edges){
+            e->probability_edge -= config->stinkyValue * e->stinky;
+        }
+    }
+    
+    
     // Mark lowest weight edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge; };
-    //Alternative for stinky values 
-   // auto compare = [](Edge* lhs, Edge* rhs) { return lhs->probability_edge- lhs->stinky > rhs->probability_edge-lhs->stinky;};
+    
+    auto compare =[](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge;};
+                           
+   
+         
+
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
@@ -186,6 +197,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
                     (config->weight_selection_method == 2 && sample_path_set.find(original_path[0][j]) == sample_path_set.end())
                 ) {
+                    if((static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate < 0)
+                        *results_file << "error weight is being updates by a negative value" << endl;
                     original_path[0][j]->weight += (static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate;
                     original_path[0][j]->num_of_updates++;
                     num_of_edges_updated++;
