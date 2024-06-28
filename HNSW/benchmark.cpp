@@ -113,7 +113,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                  << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
                  << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
                  << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
-                 <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+                 <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
                  << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
                  << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
             hnsw = init_hnsw(config, nodes);
@@ -127,14 +127,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 learn_edge_importance(config, hnsw, edges, training, results_file);
                 prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
                 edges = hnsw->get_layer_edges(config, 0);
-                if (!config->histogram_prefix.empty()) {
-                    ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt", std::ios::app);
+                if (!config->runs_prefix.empty()) {
+                    ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
                     histogram << endl;
                     histogram.close();
-                    histogram = ofstream(config->histogram_prefix + "_weights.txt", std::ios::app);
+                    histogram = ofstream(config->runs_prefix + "histogram_weights.txt", std::ios::app);
                     histogram << endl;
                     histogram.close();
-                    histogram = ofstream(config->histogram_prefix + "_edge_updates.txt", std::ios::app);
+                    histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
                     histogram << endl;
                     histogram.close();
                 }
@@ -307,7 +307,7 @@ int main() {
     // Initialize output files
     ofstream* results_file = NULL;
     if (config->export_benchmark) {
-        results_file = new ofstream(config->benchmark_file);
+        results_file = new ofstream(config->runs_prefix + "benchmark.txt");
         *results_file << "Size " << config->num_nodes << ", CPU TYPE  "  << CPUBrand << "\nDefault Parameters: opt_con = "
             << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
             << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
@@ -316,18 +316,18 @@ int main() {
             << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
             << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops 
             
-            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" << config->stinkyValue <<"]" 
+            <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" << config->stinky_value <<"]" 
             << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
             << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method  <<endl; 
            
           
 
-        if (!config->histogram_prefix.empty()) {
-            ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt");
+        if (!config->runs_prefix.empty()) {
+            ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
             histogram.close();
-            histogram = ofstream(config->histogram_prefix + "_weights.txt");
+            histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
             histogram.close();
-            histogram = ofstream(config->histogram_prefix + "_edge_updates.txt");
+            histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
             histogram.close();
         }
     }
@@ -368,7 +368,7 @@ int main() {
     if (results_file != NULL) {
         results_file->close();
         delete results_file;
-        cout << "Results exported to " << config->benchmark_file << endl;
+        cout << "Results exported to " << config->runs_prefix << "benchmark.txt" << endl;
     }
     for (int i = 0; i < config->num_nodes; i++)
         delete[] nodes[i];

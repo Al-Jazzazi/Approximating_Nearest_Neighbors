@@ -19,32 +19,32 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_dir = "./runs/";
-    std::string benchmark_file = "./runs/grasp_benchmark.txt";
-    std::string histogram_prefix = "./runs/histogram";
-    std::string save_file_prefix = "./runs/grasp";
+    std::string runs_prefix = "./runs/";
     std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
     std::string training_set = "";
     bool load_graph_file = false;
     bool export_benchmark = true;
     bool export_graph = true;
+    //Debugging related flags
+    bool print_weight_updates = true;
+    bool export_weight_updates = true;
+    bool export_training_queries = false; 
+    bool export_negative_values = false; 
 
-    // HNSW Construction
+    // HNSW Parameters
     int optimal_connections = 14;
     int max_connections = 14;
     int max_connections_0 = 14;
     int ef_construction = 500;
     double scaling_factor = 0.379;
-    // HNSW Search
     int ef_search = 400;
     int num_return = 50;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
     bool use_heuristic = true;
-    bool use_grasp = false;
-    bool use_benefit_cost = true;
-    
+    bool use_grasp = true;
+    bool use_benefit_cost = false;
     
     // GraSP Training
     float learning_rate = 0.1;
@@ -59,19 +59,13 @@ public:
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
-    float stinkyValue = 0.00005;
+    float stinky_value = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
     bool use_dynamic_sampling = true;
     bool use_stinky_points = false; 
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;
-
-    //Debugging related flags
-    bool print_weight_updates = false;
-    bool export_weight_updates = true;
-    bool export_training_queries = false; 
-    bool export_negative_values = false; 
 
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {1, 10 ,50};

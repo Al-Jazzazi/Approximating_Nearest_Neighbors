@@ -51,7 +51,7 @@ int main() {
         cout << "Distance computations (top layers): " << upper_dist_comps << endl;
 
         // Export graph to file
-        ofstream graph_file(config->save_file_prefix + "_graph_" + to_string(i) + ".bin");
+        ofstream graph_file(config->runs_prefix + "graph_" + to_string(i) + ".bin");
 
         // Export edges
         for (int i = 0; i < config->num_nodes; ++i) {
@@ -83,7 +83,7 @@ int main() {
         graph_file.close();
 
         // Export construction parameters
-        ofstream info_file(config->save_file_prefix + "_info_" + to_string(i) + ".txt");
+        ofstream info_file(config->runs_prefix + "info_" + to_string(i) + ".txt");
         info_file << config->optimal_connections << " " << config->max_connections << " "
             << config->max_connections_0 << " " << config->ef_construction << endl;
         info_file << config->num_nodes << endl;
@@ -92,7 +92,7 @@ int main() {
         info_file << upper_dist_comps << endl;
         info_file << duration / 1000.0 << endl;
 
-        cout << "Exported graph to " << config->save_file_prefix + "_graph_" + to_string(i) + ".bin" << endl;
+        cout << "Exported graph to " << config->runs_prefix + "graph_" + to_string(i) + ".bin" << endl;
 
         delete hnsw;
     }

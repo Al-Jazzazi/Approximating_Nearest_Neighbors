@@ -238,7 +238,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
                 //discovered some stinky points 
                 if (add_stinky && layer_num == 0)
-                    neighbors[i].stinky -= config->stinkyValue;
+                    neighbors[i].stinky -= config->stinky_value;
                 if (add_cost && layer_num == 0)
                     neighbors[i].cost++;
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
@@ -381,7 +381,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
     }
 
     if (config->debug_query_search_index == query.first) {
-        debug_file = new ofstream(config->runs_dir + "query_search.txt");
+        debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
     if (config->gt_dist_log)
         log_neighbors = true;
@@ -394,7 +394,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
         debug_file->close();
         delete debug_file;
         debug_file = NULL;
-        cout << "Exported query search data to " << config->runs_dir << "query_search.txt for query " << query.first << endl;
+        cout << "Exported query search data to " << config->runs_prefix << "query_search.txt for query " << query.first << endl;
     }
 
     if (config->debug_search) {
@@ -412,14 +412,14 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& 
 void HNSW::search_queries(Config* config, float** queries) {
     ofstream* export_file = NULL;
     if (config->export_queries)
-        export_file = new ofstream(config->runs_dir + "queries.txt");
+        export_file = new ofstream(config->runs_prefix + "queries.txt");
     
     ofstream* indiv_file = NULL;
     if (config->export_indiv)
-        indiv_file = new ofstream(config->runs_dir + "indiv.txt");
+        indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
 
     if (config->gt_dist_log)
-        when_neigh_found_file = new ofstream(config->runs_dir + "when_neigh_found.txt");
+        when_neigh_found_file = new ofstream(config->runs_prefix + "when_neigh_found.txt");
 
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
@@ -540,18 +540,18 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (export_file != NULL) {
         export_file->close();
         delete export_file;
-        cout << "Exported queries to " << config->runs_dir << "queries.txt" << endl;
+        cout << "Exported queries to " << config->runs_prefix << "queries.txt" << endl;
     }
     if (indiv_file != NULL) {
         indiv_file->close();
         delete indiv_file;
-        cout << "Exported individual query results to " << config->runs_dir << "indiv.txt" << endl;
+        cout << "Exported individual query results to " << config->runs_prefix << "indiv.txt" << endl;
     }
 
     if (config->gt_dist_log) {
         when_neigh_found_file->close();
         delete when_neigh_found_file;
-        cout << "Exported when neighbors were found to " << config->runs_dir << "when_neigh_found.txt" << endl;
+        cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
     }
 }
 
@@ -823,7 +823,7 @@ void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_no
 
 void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int duration) {
     // Export graph to file
-    ofstream graph_file(config->save_file_prefix + "_graph_" + name + ".bin");
+    ofstream graph_file(config->runs_prefix + "graph_" + name + ".bin");
 
     // Export edges
     for (int i = 0; i < config->num_nodes; ++i) {
@@ -855,7 +855,7 @@ void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int du
     graph_file.close();
 
     // Export construction parameters
-    ofstream info_file(config->save_file_prefix + "_info_" + name + ".txt");
+    ofstream info_file(config->runs_prefix + "info_" + name + ".txt");
     info_file << config->optimal_connections << " " << config->max_connections << " "
               << config->max_connections_0 << " " << config->ef_construction << endl;
     info_file << config->num_nodes << endl;
@@ -864,7 +864,7 @@ void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int du
     info_file << upper_dist_comps << endl;
     info_file << duration << endl;
 
-    cout << "Exported graph to " << config->save_file_prefix + "_graph_" + name + ".bin" << endl;
+    cout << "Exported graph to " << config->runs_prefix + "graph_" + name + ".bin" << endl;
 }
 
 void load_nodes(Config* config, float** nodes) {

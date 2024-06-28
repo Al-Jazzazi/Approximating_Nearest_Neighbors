@@ -144,15 +144,15 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
         }
     }
     // Record distributions in histogram text files
-    if (!config->histogram_prefix.empty()) {
-        ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt", std::ios::app);
+    if (!config->runs_prefix.empty()) {
+        ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << counts_prob[i] << ",";
         }
         histogram << endl;
         histogram.close();
 
-        histogram = ofstream(config->histogram_prefix + "_weights.txt", std::ios::app);
+        histogram = ofstream(config->runs_prefix + "histogram_weights.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << counts_w[i] << "," ;
         }
@@ -171,7 +171,7 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
     //update probs 
     if(config->use_stinky_points ){
         for (auto e: edges){
-            e->probability_edge -= config->stinkyValue * e->stinky;
+            e->probability_edge -= config->stinky_value * e->stinky;
         }
     }
     
@@ -245,9 +245,9 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path[0].size(); j++) 
-                sample_path[0][j]->stinky += config->stinkyValue;
+                sample_path[0][j]->stinky += config->stinky_value;
             for (int j = 0; j < original_path[0].size(); j++)
-                original_path[0][j]->stinky += config->stinkyValue;
+                original_path[0][j]->stinky += config->stinky_value;
         }
 
 
@@ -277,7 +277,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
     }
 
     //Creating a histogram the accumlative change in the frequency in which the edges are being updated 
-     if(!config->histogram_prefix.empty()){
+     if(!config->runs_prefix.empty()){
         int* count_updates = new int [20];
         std::fill(count_updates, count_updates + 20, 0);
         for(int j = 0; j < config->num_nodes ; j++){
@@ -292,7 +292,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                 }
             }
 
-        ofstream histogram = ofstream(config->histogram_prefix + "_edge_updates.txt", std::ios::app);
+        ofstream histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << count_updates[i] << "," ;
         }

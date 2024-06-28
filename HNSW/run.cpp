@@ -22,17 +22,17 @@ int main() {
          << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
          << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
          << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
-         <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinkyValue <<"]" 
+         <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
          << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
          << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
 
     // Clear histogram file if it exists
-    if (!config->histogram_prefix.empty()) {
-        ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt");
+    if (!config->runs_prefix.empty()) {
+        ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
         histogram.close();
-        histogram = ofstream(config->histogram_prefix + "_weights.txt");
+        histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
         histogram.close();
-        histogram = ofstream(config->histogram_prefix + "_edge_updates.txt");
+        histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
         histogram.close();
     }
 
