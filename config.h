@@ -66,6 +66,7 @@ public:
     bool use_stinky_points = false; 
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;
+    float generate_ratio = 0;
 
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {1, 10 ,50};
