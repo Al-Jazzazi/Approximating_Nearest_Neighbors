@@ -183,12 +183,12 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         }
 
         float num = (static_cast<double>(sample_distance) / original_distance - 1) * config->learning_rate ;
-        if( num < 0){
-            if(results_file != nullptr)
+        if( config->export_negative_values && num < 0){
+           if(results_file != nullptr)
                 *results_file << "error weight is being updates by a negative value" << endl;
             else
                 cout << "negative value found, num is " << num <<  ", sample distance is " << sample_distance 
-                    << ", original distance is " << original_distance << ", ration is " << static_cast<float>(sample_distance) / original_distance << endl; 
+                << ", original distance is " << original_distance << ", ration is " << static_cast<float>(sample_distance) / original_distance << endl; 
 
         } 
         

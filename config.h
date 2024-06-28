@@ -13,8 +13,8 @@ public:
     std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 100000;
-    int num_training = 10000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
     int num_queries = 10000;
 
     // Save/Load Files
@@ -69,10 +69,10 @@ public:
     bool print_weight_updates = false;
     bool export_weight_updates = true;
     bool export_training_queries = false; 
-
+    bool export_negative_values = false; 
 
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {};
+    std::vector<int> benchmark_num_return = {1, 10 ,50};
   //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
@@ -87,7 +87,7 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-    std::vector<bool> benchmark_enablign_stinky = {true, false}; 
+    std::vector<bool> benchmark_enablign_stinky = {}; 
     bool benchmark_print_neighbors = false;
     bool benchmark_print_missing = false;
 
