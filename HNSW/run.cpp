@@ -61,13 +61,12 @@ int main() {
                     for (int j = 0; j < config->dimensions; j++) {
                         histogram  << training[i][j] << ", "; 
                     }
-                if  (!config->training_set.empty()) 
-                    histogram  << endl; 
+                    if  (!config->training_set.empty()) 
+                        histogram  << endl; 
                 }
-
                 histogram << "endddd with itration \n\n\n";
                 histogram.close();
-        }
+            }
 
             remove_duplicates(config, training, queries);
 
@@ -77,6 +76,16 @@ int main() {
             for (int i = 0; i < config->num_training; i++)
                 delete[] training[i];
             delete[] training;
+        }
+        if (config->use_benefit_cost) {
+            float** training = new float*[config->num_training];
+            vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
+            load_training(config, nodes, training);
+            remove_duplicates(config, training, queries);
+            learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
+            for (int i = 0; i < config->num_training; i++)
+                delete[] training[i];
+            delete[] training;   
         }
     }
 

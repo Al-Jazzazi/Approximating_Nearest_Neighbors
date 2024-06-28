@@ -5,6 +5,7 @@
 
 // Main algorithms
 void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** queries, std::ofstream* results_file = nullptr);
+void learn_cost_benefit(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** training, int num_keep);
 void normalize_weights(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float lambda, float temperature);
 
 // Helper functions

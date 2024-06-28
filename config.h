@@ -10,7 +10,8 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "";
+    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    // std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
     int num_nodes = 1000000;
@@ -27,7 +28,7 @@ public:
     std::string training_set = "";
     bool load_graph_file = false;
     bool export_benchmark = true;
-    bool export_graph = false;
+    bool export_graph = true;
 
     // HNSW Construction
     int optimal_connections = 14;
@@ -41,7 +42,8 @@ public:
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
     bool use_heuristic = true;
-    bool use_grasp = true;
+    bool use_grasp = false;
+    bool use_benefit_cost = true;
     
     
     // GraSP Training
@@ -73,7 +75,7 @@ public:
 
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {1, 10 ,50};
-  //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
+    //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -93,6 +95,8 @@ public:
 
     // Generation Settings
     int graph_seed = 0;
+    int shuffle_seed = 1;
+    int sample_seed = 2;
     int query_seed = 100000;
     int training_seed = 100000;
     int insertion_seed = 1000000;

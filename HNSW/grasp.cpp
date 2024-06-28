@@ -13,6 +13,57 @@
 
 using namespace std;
 
+void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, int num_keep) {
+    // Check how beneficial each edge is
+    for (int i = 0; i < config->num_training; i++) {
+        pair<int, float*> query = make_pair(i, training[i]);
+        vector<vector<Edge*>> path;
+        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, false, true);
+        for (int j = 0; j < path[0].size(); j++) {
+            path[0][j]->benefit++;
+        }
+    }
+    // Print averages
+    float total_cost = 0;
+    float total_benefit = 0;
+    for (int i = 0; i < edges.size(); i++) {
+        total_cost += edges[i]->cost;
+        total_benefit += edges[i]->benefit;
+    }
+    cout << (total_cost / edges.size()) << " " << (total_benefit / edges.size()) << endl;
+    // Mark edges for deletion
+    auto compare = [](Edge* lhs, Edge* rhs) { return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost; };
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
+    for (int i = 0; i < edges.size(); i++) {
+        // Enable edge by default
+        edges[i]->ignore = false;
+        remaining_edges.push(edges[i]);
+        // Disable edge if it is pushed out of remaining edges
+        if (remaining_edges.size() > num_keep) {
+            remaining_edges.top()->ignore = true;
+            remaining_edges.pop();
+        }
+    }
+    // Remove all edges in layer 0 that are marked for deletion
+    for (int i = 0; i < hnsw->num_nodes; i++) {
+        for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
+            vector<Edge>& neighbors = hnsw->mappings[i][0];
+            if (neighbors[j].ignore) {
+                neighbors[j] = neighbors[neighbors.size() - 1];
+                neighbors.pop_back();
+            }
+        }
+    }
+    // Print averages
+    total_cost = 0;
+    total_benefit = 0;
+    for (int i = 0; i < edges.size(); i++) {
+        total_cost += edges[i]->cost;
+        total_benefit += edges[i]->benefit;
+    }
+    cout << (total_cost / edges.size()) << " " << (total_benefit / edges.size()) << endl;
+}
+
 /**
  * Alg 1
  * Given an HNSW, a list of its weighted edges, and a list of training nodes,
@@ -22,7 +73,7 @@ using namespace std;
 void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, ofstream* results_file) {
     float temperature = config->initial_temperature;
     float lambda = 0;
-    mt19937 gen(config->graph_seed);
+    mt19937 gen(config->shuffle_seed);
 
     if (results_file != nullptr) {
         *results_file << "iteration\t# of Weights updated\t# of Edges updated\n"; 
@@ -264,7 +315,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
     //mark any edge less than a randomly created probability as ignored, thus creating a subgraph with less edges 
     //Note: the number is not necessarily lambda * E 
-    mt19937 gen(config->graph_seed);
+    mt19937 gen(config->sample_seed);
     normal_distribution<float> dis(0, lambda);
     int count = 0;
     for(Edge* edge : edges) {
