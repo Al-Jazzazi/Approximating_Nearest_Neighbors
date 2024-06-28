@@ -175,12 +175,22 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         unordered_set<Edge*> sample_path_set(sample_path[0].begin(), sample_path[0].end());
 
         // Calculate the average distance between nearest neighbors and the training point
-        int sample_distance = 0;
-        int original_distance = 0;
+        unsigned long long sample_distance = 0;
+        unsigned long long original_distance = 0;
         for (int j = 0; j < num_neighbors; j++) {
             sample_distance += sample_nearest[j].first;
             original_distance += original_nearest[j].first;
         }
+
+        float num = (static_cast<double>(sample_distance) / original_distance - 1) * config->learning_rate ;
+        if( num < 0){
+            if(results_file != nullptr)
+                *results_file << "error weight is being updates by a negative value" << endl;
+            else
+                cout << "negative value found, num is " << num <<  ", sample distance is " << sample_distance 
+                    << ", original distance is " << original_distance << ", ration is " << static_cast<float>(sample_distance) / original_distance << endl; 
+
+        } 
         
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path[0].size(); j++) 
@@ -188,6 +198,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             for (int j = 0; j < original_path[0].size(); j++)
                 original_path[0][j]->stinky += config->stinkyValue;
         }
+
+
 
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
         //will differ 
@@ -197,8 +209,10 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
                     (config->weight_selection_method == 2 && sample_path_set.find(original_path[0][j]) == sample_path_set.end())
                 ) {
-                    if((static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate < 0)
-                        *results_file << "error weight is being updates by a negative value" << endl;
+                   
+                    if(num < 0)
+                        original_path[0][j]->weight +=  abs(num)*10; 
+                    else 
                     original_path[0][j]->weight += (static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate;
                     original_path[0][j]->num_of_updates++;
                     num_of_edges_updated++;

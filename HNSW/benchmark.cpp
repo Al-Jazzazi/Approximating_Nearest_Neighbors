@@ -236,7 +236,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         double average_ndcg = (double) total_ndcg / config->num_queries;
         cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
 
-        if (config->export_benchmark && !config->export_weight_updates) {
+        if (config->export_benchmark ) {
             std::string line = std::to_string(parameter) + ", " 
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(recall) + ", " 
@@ -244,20 +244,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(construction_duration);
             lines.push_back(line);
         }
-        else{
-              *results_file << parameter << ", " 
-                            << search_dist_comp/config->num_queries << ", "
-                            << recall << ", " << search_duration / config->num_queries
-                            << ", " << construction_duration;
-        }
-        string name = parameter_name + "_" + to_string(parameter_values[i]);
-        if (config->export_graph && !config->load_graph_file) {
-            save_hnsw_files(config, hnsw, name, construction_duration);
-        }
+        
+        
 
         delete hnsw;
     }
-    if (config->export_benchmark && !config->export_weight_updates) {
+    if (config->export_benchmark) {
         *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
@@ -328,8 +320,7 @@ int main() {
             << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
             << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method  <<endl; 
            
-           if(!config->export_weight_updates)
-                *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
+          
 
         if (!config->histogram_prefix.empty()) {
             ofstream histogram = ofstream(config->histogram_prefix + "_prob.txt");

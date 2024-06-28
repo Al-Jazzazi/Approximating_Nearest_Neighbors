@@ -13,8 +13,8 @@ public:
     std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
+    int num_nodes = 100000;
+    int num_training = 10000;
     int num_queries = 10000;
 
     // Save/Load Files
@@ -60,7 +60,7 @@ public:
     float stinkyValue = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
-    bool use_dynamic_sampling = false;
+    bool use_dynamic_sampling = true;
     bool use_stinky_points = false; 
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;
