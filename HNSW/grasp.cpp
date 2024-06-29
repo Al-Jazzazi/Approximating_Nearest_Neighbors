@@ -30,9 +30,27 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         total_cost += edges[i]->cost;
         total_benefit += edges[i]->benefit;
     }
-    cout << "Cost: " << (total_cost / edges.size()) << "Benefit: " << (total_benefit / edges.size()) << endl;
+    cout << "Cost: " << (total_cost / edges.size()) << " Benefit: " << (total_benefit / edges.size()) << endl;
     // Mark edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) { return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost; };
+    auto compare = [](Edge* lhs, Edge* rhs) {
+        if (lhs->cost == 0) {
+            return true;
+        } else if (rhs->cost == 0) {
+            return false;
+        } else {
+            return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
+        }
+    };
+    /*auto compare = [](Edge* lhs, Edge* rhs) {
+        if (lhs->benefit == 0) {
+            return false;
+        } else if (rhs->benefit == 0) {
+            return true;
+        } else {
+            return static_cast<float>(lhs->cost) / lhs->benefit > static_cast<float>(rhs->cost) / rhs->benefit;
+        }
+    };*/
+    // auto compare = [](Edge* lhs, Edge* rhs) { return lhs->benefit - 0.5 * lhs->cost > rhs->benefit - 0.5 * rhs->cost; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
@@ -63,7 +81,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         total_cost += edges[i]->cost;
         total_benefit += edges[i]->benefit;
     }
-    cout << "Cost: " << (total_cost / edges.size()) << "Benefit: " << (total_benefit / edges.size()) << "Removed: " << count << endl;
+    cout << "Cost: " << (total_cost / edges.size()) << " Benefit: " << (total_benefit / edges.size()) << " Removed: " << count << endl;
 }
 
 /**

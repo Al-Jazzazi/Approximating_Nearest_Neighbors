@@ -305,7 +305,7 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
     float** training = nullptr;
-    if (config->use_grasp && !config->load_graph_file) {
+    if ((config->use_grasp || config->use_benefit_cost) && !config->load_graph_file) {
         training = new float*[config->num_training];
         load_training(config, nodes, training);
         remove_duplicates(config, training, queries);
