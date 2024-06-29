@@ -140,6 +140,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
             }
 
+            if (config->use_benefit_cost) {
+                vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
+                learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
+            }
+
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";

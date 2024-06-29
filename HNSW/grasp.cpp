@@ -30,7 +30,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         total_cost += edges[i]->cost;
         total_benefit += edges[i]->benefit;
     }
-    cout << (total_cost / edges.size()) << " " << (total_benefit / edges.size()) << endl;
+    cout << "Cost: " << (total_cost / edges.size()) << "Benefit: " << (total_benefit / edges.size()) << endl;
     // Mark edges for deletion
     auto compare = [](Edge* lhs, Edge* rhs) { return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
@@ -45,12 +45,14 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         }
     }
     // Remove all edges in layer 0 that are marked for deletion
+    int count = 0;
     for (int i = 0; i < hnsw->num_nodes; i++) {
         for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
             vector<Edge>& neighbors = hnsw->mappings[i][0];
             if (neighbors[j].ignore) {
                 neighbors[j] = neighbors[neighbors.size() - 1];
                 neighbors.pop_back();
+                count++;
             }
         }
     }
@@ -61,7 +63,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         total_cost += edges[i]->cost;
         total_benefit += edges[i]->benefit;
     }
-    cout << (total_cost / edges.size()) << " " << (total_benefit / edges.size()) << endl;
+    cout << "Cost: " << (total_cost / edges.size()) << "Benefit: " << (total_benefit / edges.size()) << "Removed: " << count << endl;
 }
 
 /**
