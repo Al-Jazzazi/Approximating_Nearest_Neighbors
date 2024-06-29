@@ -250,7 +250,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             lines.push_back(line);
         }
         
-        
+        if (config->export_graph && !config->load_graph_file) {
+            save_hnsw_files(config, hnsw, parameter_name + "_" + to_string(parameter_values[i]), construction_duration);
+        }
 
         delete hnsw;
     }
