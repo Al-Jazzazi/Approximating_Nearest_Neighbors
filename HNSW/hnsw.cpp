@@ -150,7 +150,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     priority_queue<pair<float, int>> found;
 
     // Re-initialize the path
-    path.clear();
+    if (layer_num == 0) {
+        path.clear();
+    }
 
     // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
@@ -241,7 +243,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
-                    path.push_back(&neighbors[i]);
+                    if (layer_num == 0) {
+                        path.push_back(&neighbors[i]);
+                    }
 
                     if (log_neighbors) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
