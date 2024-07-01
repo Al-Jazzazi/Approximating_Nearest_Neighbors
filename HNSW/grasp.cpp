@@ -531,3 +531,26 @@ void remove_duplicates(Config* config, float** training, float** queries) {
     }
     config->num_training = num_training_filtered;
 }
+
+
+
+void test_queue(){
+    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
+    priority_queue<Edge*, vector<Edge*>, greater<Edge*>> candidates_edges;
+
+    for(int i =0; i< 50; i++ ){
+        mt19937 gen(10);
+        normal_distribution<float> dis(0, 1000);
+        float distance = dis(gen);
+        candidates.emplace(make_pair(distance, i));
+        Edge* new_Edge = new Edge(i, distance);
+        candidates_edges.emplace(new_Edge);
+
+       if(candidates_edges.top()->target != candidates.top().second)
+            cerr << "edge does not match node"  << candidates_edges.top()->target << ", " << candidates.top().second<< endl;
+        else 
+            cout << "it's working" <<endl;
+    }
+    exit(EXIT_FAILURE);
+
+}

@@ -6,6 +6,7 @@
         "deque": "cpp",
         "string": "cpp",
         "chrono": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "functional": "cpp"
     }
 }

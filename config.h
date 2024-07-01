@@ -10,13 +10,13 @@ public:
     // Datasets
     std::string load_file = "./exports/sift/sift_base.fvecs";
     std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    std::string groundtruth_file = "";
     // std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    int num_nodes = 10000;
+    int num_training = 1000;
+    int num_queries = 1000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
@@ -31,6 +31,8 @@ public:
     bool export_weight_updates = true;
     bool export_training_queries = false; 
     bool export_negative_values = false; 
+    
+    bool first_print = true;
 
     // HNSW Parameters
     int optimal_connections = 14;
