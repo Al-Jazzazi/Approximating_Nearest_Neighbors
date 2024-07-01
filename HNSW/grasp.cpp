@@ -17,10 +17,10 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     // Check how beneficial each edge is
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
-        vector<vector<Edge*>> path;
+        vector<Edge*> path;
         vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, false, true);
-        for (int j = 0; j < path[0].size(); j++) {
-            path[0][j]->benefit++;
+        for (int j = 0; j < path.size(); j++) {
+            path[j]->benefit++;
         }
     }
     // Print averages
@@ -230,11 +230,11 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         // Find the nearest neighbor and paths taken using the original and sampled graphs
         pair<int, float*> query = make_pair(i, training[i]);
-        vector<vector<Edge*>> sample_path;
-        vector<vector<Edge*>> original_path;
+        vector<Edge*> sample_path;
+        vector<Edge*> original_path;
         vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, config->use_stinky_points);
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
-        unordered_set<Edge*> sample_path_set(sample_path[0].begin(), sample_path[0].end());
+        unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
         // Calculate the average distances between nearest neighbors and training point incrementally
         double sample_average = 0;
@@ -255,10 +255,10 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         } 
         
         if(config->use_stinky_points){
-            for (int j = 0; j < sample_path[0].size(); j++) 
-                sample_path[0][j]->stinky += config->stinky_value;
-            for (int j = 0; j < original_path[0].size(); j++)
-                original_path[0][j]->stinky += config->stinky_value;
+            for (int j = 0; j < sample_path.size(); j++) 
+                sample_path[j]->stinky += config->stinky_value;
+            for (int j = 0; j < original_path.size(); j++)
+                original_path[j]->stinky += config->stinky_value;
         }
 
 
@@ -266,17 +266,17 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
         //will differ 
         if(sample_average != original_average) {
-            for (int j = 0; j < original_path[0].size(); j++) {
+            for (int j = 0; j < original_path.size(); j++) {
                 if ((config->weight_selection_method == 0) ||
-                    (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
-                    (config->weight_selection_method == 2 && sample_path_set.find(original_path[0][j]) == sample_path_set.end())
+                    (config->weight_selection_method == 1 && original_path[j]->ignore) ||
+                    (config->weight_selection_method == 2 && sample_path_set.find(original_path[j]) == sample_path_set.end())
                 ) {
                    
                     if(num < 0)
-                        original_path[0][j]->weight +=  abs(num)*10; 
+                        original_path[j]->weight +=  abs(num)*10; 
                     else 
-                    original_path[0][j]->weight += (sample_average / original_average - 1) * config->learning_rate;
-                    original_path[0][j]->num_of_updates++;
+                    original_path[j]->weight += (sample_average / original_average - 1) * config->learning_rate;
+                    original_path[j]->num_of_updates++;
                     num_of_edges_updated++;
                 }
             }

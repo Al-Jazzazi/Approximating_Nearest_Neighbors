@@ -165,7 +165,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
         neighbors.reserve(config->num_queries);
-        vector<vector<Edge*>> path;
+        vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
             pair<int, float*> query = make_pair(i, queries[i]);
             neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));

@@ -42,7 +42,7 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nod
 */
 void HNSW::insert(Config* config, int query) {
     vector<pair<float, int>> entry_points;
-    vector<vector<Edge*>> path;
+    vector<Edge*> path;
     entry_points.reserve(config->ef_construction);
     int top = num_layers - 1;
 
@@ -144,16 +144,13 @@ void HNSW::insert(Config* config, int query) {
  * SEARCH-LAYER(hnsw, q, ep, ef, lc)
  * Note: Result is stored in entry_points (ep)
 */
-void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<pair<float, int>> found;
-    
+
     // Re-initialize the path
     path.clear();
-    for (int i = 0; i < num_layers; i++) {
-        path.push_back(vector<Edge*>());
-    }
 
     // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
@@ -223,7 +220,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
 
         for (int i = 0; i < neighbors.size(); i++) {
             int neighbor = neighbors[i].target;
-            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < neighbors[i].probability_edge) : neighbors[i].ignore;
+            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 - neighbors[i].probability_edge)) : neighbors[i].ignore;
             if (!(is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
@@ -244,7 +241,7 @@ void HNSW::search_layer(Config* config, float* query, vector<vector<Edge*>>& pat
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
-                    path[layer_num].push_back(&neighbors[i]);
+                    path.push_back(&neighbors[i]);
 
                     if (log_neighbors) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
@@ -360,9 +357,9 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
 /**
  * Alg 5
  * K-NN-SEARCH(hnsw, q, K, ef)
- * This also stores the traversed edges in the path parameter
+ * This also stores the traversed bottom-layer edges in the path vector
 */
-vector<pair<float, int>> HNSW::nn_search(Config* config, vector<vector<Edge*>>& path, pair<int, float*>& query, int num_to_return, bool is_ignoring, bool add_stinky, bool add_cost) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_ignoring, bool add_stinky, bool add_cost) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
@@ -460,7 +457,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         cur_groundtruth = actual_neighbors[i];
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
-        vector<vector<Edge*>> path;
+        vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
         if (config->gt_dist_log)
             *when_neigh_found_file << endl;
@@ -476,11 +473,8 @@ void HNSW::search_queries(Config* config, float** queries) {
             cout << endl;
             // Print path
             cout << "Path taken: ";
-            for (vector<Edge*>& layer : path) {
-                for (Edge* edge : layer) {
-                    cout << edge->target << " ";
-                }
-                cout << endl;
+            for (Edge* edge : path) {
+                cout << edge->target << " ";
             }
             cout << endl;
         }
@@ -520,10 +514,8 @@ void HNSW::search_queries(Config* config, float** queries) {
             for (auto n_pair : found)
                 *export_file << n_pair.second << ",";
             *export_file << endl;
-            for (vector<Edge*>& layer : path) {
-                for (Edge* edge : layer) {
-                    *export_file << edge->target << ",";
-                }
+            for (Edge* edge : path) {
+                *export_file << edge->target << ",";
             }
             *export_file << endl;
         }
