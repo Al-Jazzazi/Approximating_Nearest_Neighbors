@@ -41,15 +41,6 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
         }
     };
-    /*auto compare = [](Edge* lhs, Edge* rhs) {
-        if (lhs->benefit == 0) {
-            return false;
-        } else if (rhs->benefit == 0) {
-            return true;
-        } else {
-            return static_cast<float>(lhs->cost) / lhs->benefit > static_cast<float>(rhs->cost) / rhs->benefit;
-        }
-    };*/
     // auto compare = [](Edge* lhs, Edge* rhs) { return lhs->benefit - 0.5 * lhs->cost > rhs->benefit - 0.5 * rhs->cost; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
@@ -245,21 +236,21 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
         unordered_set<Edge*> sample_path_set(sample_path[0].begin(), sample_path[0].end());
 
-        // Calculate the average distance between nearest neighbors and the training point
-        unsigned long long sample_distance = 0;
-        unsigned long long original_distance = 0;
+        // Calculate the average distances between nearest neighbors and training point incrementally
+        double sample_average = 0;
+        double original_average = 0;
         for (int j = 0; j < num_neighbors; j++) {
-            sample_distance += sample_nearest[j].first;
-            original_distance += original_nearest[j].first;
+            sample_average += (sample_nearest[j].first - sample_average) / (j + 1);
+            original_average += (original_nearest[j].first - original_average) / (j + 1);
         }
 
-        float num = (static_cast<double>(sample_distance) / original_distance - 1) * config->learning_rate ;
+        double num = (sample_average / original_average - 1) * config->learning_rate;
         if( config->export_negative_values && num < 0){
            if(results_file != nullptr)
                 *results_file << "error weight is being updates by a negative value" << endl;
             else
-                cout << "negative value found, num is " << num <<  ", sample distance is " << sample_distance 
-                << ", original distance is " << original_distance << ", ration is " << static_cast<float>(sample_distance) / original_distance << endl; 
+                cout << "negative value found, num is " << num <<  ", sample distance is " << sample_average 
+                << ", original distance is " << original_average << ", ration is " << sample_average / original_average << endl; 
 
         } 
         
@@ -274,7 +265,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
         //will differ 
-        if(sample_distance != original_distance) {
+        if(sample_average != original_average) {
             for (int j = 0; j < original_path[0].size(); j++) {
                 if ((config->weight_selection_method == 0) ||
                     (config->weight_selection_method == 1 && original_path[0][j]->ignore) ||
@@ -284,7 +275,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     if(num < 0)
                         original_path[0][j]->weight +=  abs(num)*10; 
                     else 
-                    original_path[0][j]->weight += (static_cast<float>(sample_distance) / original_distance - 1) * config->learning_rate;
+                    original_path[0][j]->weight += (sample_average / original_average - 1) * config->learning_rate;
                     original_path[0][j]->num_of_updates++;
                     num_of_edges_updated++;
                 }
