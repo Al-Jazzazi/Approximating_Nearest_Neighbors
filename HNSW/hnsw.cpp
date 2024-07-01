@@ -18,10 +18,10 @@ bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
-Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0) {}
+Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
 
 Edge::Edge(int target, float distance) : target(target), distance(distance),
-    weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0){}
+    weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
 
 bool Edge::operator>(const Edge& rhs) const {
     return this->distance > rhs.distance;
@@ -147,8 +147,10 @@ void HNSW::insert(Config* config, int query) {
 void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
+    priority_queue<Edge*, vector<Edge*>, greater<Edge*>> candidates_edges;
     priority_queue<pair<float, int>> found;
-
+    
+    Edge* new_Edge = new Edge(entry_points.back().second, entry_points.back().first);
     // Re-initialize the path
     if (layer_num == 0) {
         path.clear();
@@ -242,9 +244,13 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     neighbors[i].cost++;
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
+            
                     found.emplace(neighbor_dist, neighbor);
                     if (layer_num == 0) {
+                        candidates_edges.emplace(neighbors[i]);
+                        neighbors[i].prev_edge = candidates_edges.top();
                         path.push_back(&neighbors[i]);
+
                     }
 
                     if (log_neighbors) {
@@ -267,6 +273,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 }
             }
         }
+            if (layer_num == 0)
+               candidates_edges.pop();
+
     }
 
     // Place found elements into entry_points
@@ -276,7 +285,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     size_t idx = found.size();
     while (idx > 0) {
         --idx;
-        entry_points[idx] = found.top();
+        entry_points[idx] = make_pair(found.top().first, found.top().second);
         found.pop();
     }
 

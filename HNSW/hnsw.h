@@ -22,6 +22,7 @@ public:
     float distance;
 
     // GraSP
+    Edge* prev_edge;
     float weight; 
     float stinky;
     bool ignore;
