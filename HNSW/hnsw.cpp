@@ -145,9 +145,10 @@ void HNSW::insert(Config* config, int query) {
  * Note: Result is stored in entry_points (ep)
 */
 void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance; };
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
-    priority_queue<Edge*, vector<Edge*>, greater<Edge*>> candidates_edges;
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     priority_queue<pair<float, int>> found;
     
     //Edge* new_Edge = new Edge(entry_points.back().second, entry_points.back().first);
@@ -222,7 +223,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         Edge* closest_edge;
-        if(num_layers == 0){
+        if(layer_num == 0){
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
