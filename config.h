@@ -8,15 +8,15 @@
 class Config {
 public:
     // Datasets
-    std::string load_file = "./exports/sift/sift_base.fvecs";
-    std::string query_file = "./exports/sift/sift_query.fvecs";
-    std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
-    // std::string groundtruth_file = "";
-    std::string training_file = "./exports/sift/sift_learn.fvecs";
-    int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    std::string load_file = "./exports/deep1M/deep1M_base.fvecs";
+    std::string query_file = "./exports/deep1M/deep1M_query.fvecs";
+    // std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
+    std::string groundtruth_file = "";
+    std::string training_file = "./exports/deep1M/deep1M_learn.fvecs";
+    int dimensions = 256;
+    int num_nodes = 10000;
+    int num_training = 1000;
+    int num_queries = 1000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
@@ -62,7 +62,7 @@ public:
     float stinky_value = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
-    bool use_dynamic_sampling = true;
+    bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;

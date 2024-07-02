@@ -1,26 +1,30 @@
-# Make exports directory
+# Setup
 mkdir exports
 cd exports
 pip3 install h5py
-# Download SIFT
+
+# Download SIFT (1000000 x 128)
 wget ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz
 tar -xzvf sift.tar.gz
 rm sift.tar.gz
-# Download GIST
+
+# Download GIST (1000000 x 960)
 wget ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz
 tar -xzvf gist.tar.gz
 rm gist.tar.gz
-# Download GloVe
+
+# Download GloVe (1000000 x 100)
 mkdir glove
 cd glove 
-wget http://ann-benchmarks.com/glove-25-angular.hdf5
-python3 ../../utils/convert_hdf5.py glove-25-angular.hdf5
-rm glove-25-angular.hdf5
+wget http://ann-benchmarks.com/glove-100-angular.hdf5
+python3 ../../utils/hdf5_to_fvecs.py glove-100-angular.hdf5
+python3 ../../utils/split_fvecs.py train.fvecs glove_base.fvecs glove_learn.fvecs 1000000 100000
+rm neighbors.fvecs distances.fvecs train.fvecs glove-100-angular.hdf5
+mv test.fvecs query.fvecs
 cd ..
-# Download MNIST
-mkdir mnist
-cd mnist
-wget http://ann-benchmarks.com/mnist-784-euclidean.hdf5
-python3 ../../utils/convert_hdf5.py mnist-784-euclidean.hdf5
-rm mnist-784-euclidean.hdf5
-cd ../..
+
+# Download Deep (1000000 x 256)
+wget --no-check-certificate https://www.cse.cuhk.edu.hk/systems/hash/gqr/dataset/deep1M.tar.gz
+tar -xzvf deep1M.tar.gz
+rm deep1M.tar.gz deep1M/*.lshbox
+cd ..

@@ -26,7 +26,7 @@ def hdf5_to_fvecs(hdf5_file):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python convert_hdf5.py <hdf5_filename>.\nFor better file organization, make sure the HDF5 file is in its own folder")
+        print("Usage: python3 hdf5_to_fvecs.py <hdf5_filename>.\nFor better file organization, make sure the HDF5 file is in its own folder")
         return
     hdf5_to_fvecs(sys.argv[1])
 
