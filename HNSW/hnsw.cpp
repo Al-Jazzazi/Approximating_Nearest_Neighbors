@@ -332,21 +332,30 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             cerr << "start edge wasn't found, sorry can't find strick that" << endl;
             
         }
-        
         else {
             int size = 0;
             Edge* current = direct_path[0];
-            while(size < path.size() && current->prev_edge != nullptr && current->prev_edge->prev_edge != nullptr) {
-                direct_path.push_back(current->prev_edge);
-                current = current->prev_edge;
+            while(size < path.size() && current->prev_edge != nullptr) {
+                if(current->prev_edge->prev_edge != nullptr){
+                    direct_path.push_back(current->prev_edge);
+
+                    current = current->prev_edge;
+                }
+                else{
+                    delete current->prev_edge;
+                    current->prev_edge = nullptr;
+                }
                 size++;
             }
-            if (current->prev_edge != nullptr) {
-                delete current->prev_edge;
+            if(size == 0){
+                delete current;
+               // cerr << "closest point is the same as entry point, thus there is no direct path" << endl;
             }
-            current->prev_edge = nullptr;
-            path = direct_path;
+            else 
+                path = direct_path;
+            
         }
+        
 
     }
 
