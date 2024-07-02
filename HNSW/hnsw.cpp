@@ -137,7 +137,7 @@ void HNSW::insert(Config* config, int query) {
  * SEARCH-LAYER(hnsw, q, ep, ef, lc)
  * Note: Result is stored in entry_points (ep)
 */
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost, bool add_strict_path) {
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
@@ -318,6 +318,21 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         found.pop();
     }
 
+    if (add_strict_path) {
+        vector<Edge*> direct_path; 
+        int size = 0; 
+        for(auto edge : path){
+            if(edge->target == entry_points[0].second){
+                direct_path.push_back(edge);
+                cout << "Edge point at closest element was found " << endl;  
+                break;
+            }
+        }
+        if(direct_path.empty()){
+            cerr << "start edge wasn't found " << endl;
+        }
+    }
+
     // Export when_neigh_found data
     // if (log_neighbors)
     //     for (int i = 0; i < config->num_return; ++i) {
@@ -425,7 +440,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_ignoring, add_stinky, add_cost);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_ignoring, add_stinky, add_cost, true);
     
     if (config->gt_dist_log)
         log_neighbors = false;
