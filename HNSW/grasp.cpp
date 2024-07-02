@@ -18,7 +18,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
-        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, false, true);
+        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, true);
         for (int j = 0; j < path.size(); j++) {
             path[j]->benefit++;
         }
@@ -232,8 +232,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> sample_path;
         vector<Edge*> original_path;
-        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, config->use_stinky_points);
-        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, true);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, true, false);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
         // Calculate the average distances between nearest neighbors and training point incrementally
