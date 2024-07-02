@@ -27,6 +27,7 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nod
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
            gen(config->insertion_seed), dis(0.0000001, 0.9999999) {}
 
+
 /**
  * Alg 1
  * INSERT(hnsw, q, M, Mmax, efConstruction, mL)
@@ -320,17 +321,32 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
     if (add_strict_path) {
         vector<Edge*> direct_path; 
-        int size = 0; 
         for(auto edge : path){
             if(edge->target == entry_points[0].second){
                 direct_path.push_back(edge);
-                cout << "Edge point at closest element was found " << endl;  
+                //cout << "Edge point at closest element was found " << endl;  
                 break;
             }
         }
         if(direct_path.empty()){
-            cerr << "start edge wasn't found " << endl;
+            cerr << "start edge wasn't found, sorry can't find strick that" << endl;
+            
         }
+        
+        else {
+            int size = 0; 
+            while(size < path.size() && direct_path.back()->prev_edge != nullptr) {
+                direct_path.push_back(direct_path.back()->prev_edge);
+                if(direct_path.back()->prev_edge == nullptr){
+                    delete direct_path.back()->prev_edge; 
+                    direct_path.back()->prev_edge = nullptr;
+                    break;
+                }
+                size++;
+            }
+            path = direct_path;
+        }
+
     }
 
     // Export when_neigh_found data

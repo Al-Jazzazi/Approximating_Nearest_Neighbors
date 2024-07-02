@@ -49,7 +49,6 @@ public:
     int num_layers;
     int num_nodes;
     int num_dimensions;
-    
     // Probability function
     std::mt19937 gen;
     std::uniform_real_distribution<double> dis;
