@@ -147,7 +147,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     
     //Edge* new_Edge = new Edge(entry_points.back().second, entry_points.back().first);
     // Re-initialize the path
-    if (layer_num == 0) {
+    if (layer_num == 0 && config->use_direct_path) {
         path.clear();
     }
 
@@ -159,7 +159,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     for (const auto& entry : entry_points) {
         visited.insert(entry.second);
         candidates.emplace(entry);
-        if (layer_num == 0){
+        if (layer_num == 0 && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first);
             candidates_edges.emplace(new_Edge);
             path.push_back(new_Edge);
@@ -216,11 +216,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         Edge* closest_edge;
-        if(layer_num == 0){
+        if(layer_num == 0 && config->use_direct_path){
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
-            
-
         }
         candidates.pop();
 
@@ -262,7 +260,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     candidates.emplace(neighbor_dist, neighbor);
             
                     found.emplace(neighbor_dist, neighbor);
-                    if (layer_num == 0) {
+                    if (layer_num == 0 && config->use_direct_path) {
                         neighbor_edge.distance = neighbor_dist;
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
@@ -319,44 +317,39 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         found.pop();
     }
 
-    if (add_strict_path) {
-        vector<Edge*> direct_path; 
-        for(auto edge : path){
-            if(edge->target == entry_points[0].second){
-                direct_path.push_back(edge);
-                //cout << "Edge point at closest element was found " << endl;  
-                break;
-            }
-        }
-        if(direct_path.empty()){
-            cerr << "start edge wasn't found, sorry can't find strick that" << endl;
-            
-        }
-        else {
-            int size = 0;
-            Edge* current = direct_path[0];
-            while(size < path.size() && current->prev_edge != nullptr) {
-                if(current->prev_edge->prev_edge != nullptr){
-                    direct_path.push_back(current->prev_edge);
-
-                    current = current->prev_edge;
+    if (config->use_direct_path && add_strict_path) {
+        for (int i = 0; i < config->num_return; i++) {
+            vector<Edge*> direct_path; 
+            for(auto edge : path){
+                if(edge->target == entry_points[i].second){
+                    direct_path.push_back(edge);
+                    //cout << "Edge point at closest element was found " << endl;  
+                    break;
                 }
-                else{
+            }
+            if(direct_path.empty()){
+                cerr << "start edge wasn't found, sorry can't find strick that " << i << endl;
+                
+            } else {
+                int size = 0;
+                Edge* current = direct_path[0];
+                while(size < path.size() && current->prev_edge != nullptr && current->prev_edge->prev_edge != nullptr) {
+                    direct_path.push_back(current->prev_edge);
+                    current = current->prev_edge;
+                    size++;
+                }
+                if ((i == config->num_return - 1) && current->prev_edge != nullptr) {
                     delete current->prev_edge;
                     current->prev_edge = nullptr;
                 }
-                size++;
+                if(size == 0) {
+                    delete current;
+                    // cerr << "closest point is the same as entry point, thus there is no direct path" << endl;
+                } else {
+                    path = direct_path;
+                }
             }
-            if(size == 0){
-                delete current;
-               // cerr << "closest point is the same as entry point, thus there is no direct path" << endl;
-            }
-            else 
-                path = direct_path;
-            
         }
-        
-
     }
 
     // Export when_neigh_found data

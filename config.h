@@ -47,6 +47,7 @@ public:
     bool use_heuristic = true;
     bool use_grasp = true;
     bool use_benefit_cost = false;
+    bool use_direct_path = true;
     
     // GraSP Training
     float learning_rate = 0.1;
