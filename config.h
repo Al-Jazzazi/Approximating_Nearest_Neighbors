@@ -8,15 +8,16 @@
 class Config {
 public:
     // Datasets
-    std::string load_file = "./exports/deep1M/deep1M_base.fvecs";
-    std::string query_file = "./exports/deep1M/deep1M_query.fvecs";
-    // std::string groundtruth_file = "./exports/sift/sift_groundtruth.ivecs";
-    std::string groundtruth_file = "";
-    std::string training_file = "./exports/deep1M/deep1M_learn.fvecs";
-    int dimensions = 256;
-    int num_nodes = 10000;
-    int num_training = 1000;
-    int num_queries = 1000;
+    std::string dataset_prefix = "./exports/sift/sift";
+    std::string load_file = dataset_prefix + "_base.fvecs";
+    std::string query_file = dataset_prefix + "_query.fvecs";
+    std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
+    // std::string groundtruth_file = "";
+    std::string training_file = dataset_prefix + "_learn.fvecs";
+    int dimensions = 128;
+    int num_nodes = 1000000;
+    int num_training = 100000;
+    int num_queries = 10000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
