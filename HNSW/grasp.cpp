@@ -232,14 +232,14 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> sample_path;
         vector<Edge*> original_path;
-        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, config->use_stinky_points);
-        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1, true, config->use_stinky_points);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1, false, config->use_stinky_points);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
         vector<Edge*> direct_path; 
         int size = 0; 
-        for(auto edge: sample_path){
-            if(edge->target == sample_nearest[0].second){
+        for(auto edge: original_path){
+            if(edge->target == original_nearest[0].second){
                 direct_path.push_back(edge);
                 cout << "Edge point at closest element was found " << endl;  
                 break;

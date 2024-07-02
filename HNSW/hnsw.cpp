@@ -161,6 +161,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         if (layer_num == 0){
             Edge* new_Edge = new Edge(entry.second, entry.first);
             candidates_edges.emplace(new_Edge);
+            path.push_back(new_Edge);
         }
 
         found.emplace(entry);
@@ -217,13 +218,18 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         if(layer_num == 0){
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
+            
+
         }
         candidates.pop();
+
+
 
         // Get furthest element in found to query
         int furthest = found.top().second;
         float far_dist = found.top().first;
 
+      
         // If closest is further than furthest, stop
         if (close_dist > far_dist)
             break;
