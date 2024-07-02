@@ -162,7 +162,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     int nn_found = 0;
   
     // Add entry points to visited, candidates, and found
-    for (auto entry : entry_points) {
+    for (const auto& entry : entry_points) {
         visited.insert(entry.second);
         candidates.emplace(entry);
         if (layer_num == 0){
@@ -193,8 +193,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
    
     int iteration = 0;
     while (!candidates.empty()) {
-
-
 
         // if (debug_file != NULL) {
         //     // Export search data
@@ -240,9 +238,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         // Get neighbors of closest in HNSWLayer
         vector<Edge>& neighbors = mappings[closest][layer_num];
 
-        for (int i = 0; i < neighbors.size(); i++) {
-            int neighbor = neighbors[i].target;
-            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 - neighbors[i].probability_edge)) : neighbors[i].ignore;
+        for (auto& neighbor_edge : neighbors) {
+            int neighbor = neighbor_edge.target;
+            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
             if (!(is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
@@ -265,20 +263,24 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             
                     found.emplace(neighbor_dist, neighbor);
                     if (layer_num == 0) {
-                        neighbors[i].distance = neighbor_dist;
-                         neighbors[i].prev_edge = closest_edge;
-                        candidates_edges.emplace(&neighbors[i]);
-                        path.push_back(&neighbors[i]);
-                        if(candidates_edges.top()->target == candidates.top().second)
-                            cout << "Horray correct insertion, size is " <<  candidates_edges.size() <<endl;
+                        neighbor_edge.distance = neighbor_dist;
+                        neighbor_edge.prev_edge = closest_edge;
+                        candidates_edges.emplace(&neighbor_edge);
+                        path.push_back(&neighbor_edge);
                         if(candidates_edges.size() != candidates.size())
                             cerr << "logic error size is not the same " <<candidates.size() << " , " <<  candidates_edges.size() <<  endl;
-                        else 
-                            cout << "size is the same "  <<candidates.size() << endl;
-
+                        if(candidates_edges.top()->target != candidates.top().second)
+                           cerr << "tops don't match, size is "  <<  candidates_edges.size() 
+                                << " the tops are(e/c): " << candidates_edges.top()->target 
+                                << ", " <<candidates.top().second << ". Distances(e,c)" 
+                                << candidates_edges.top()->distance <<  ", "
+                                << candidates.top().first  <<endl;
+                            
                         // else 
-                        //     cerr << "error bad, size at "<< candidates_edges.size() <<endl;
-                        
+                        //     cout << "it's working" << endl;
+             
+
+          
 
                     }
 
@@ -302,14 +304,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 }
             } 
         }
-            // if (layer_num == 0 && !candidates_edges.empty() ){
 
-            //     if(candidates_edges.size() != candidates.size())
-            //         cerr << "logic error size is not the same " <<candidates.size() << " , " <<  candidates_edges.size() <<  endl;
-
-            //     // if(candidates_edges.top()->target != candidates.top().second)
-            //     //     cerr << "edge does not match node"  << candidates_edges.top()->target << ", " << candidates.top().second<< endl;
-            // }
     
     }
 
@@ -325,10 +320,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
 
     // Export when_neigh_found data
-    if (log_neighbors)
-        for (int i = 0; i < config->num_return; ++i) {
-            *when_neigh_found_file << when_neigh_found[i] << " ";
-        }
+    // if (log_neighbors)
+    //     for (int i = 0; i < config->num_return; ++i) {
+    //         *when_neigh_found_file << when_neigh_found[i] << " ";
+    //     }
 }
 
 /**

@@ -236,6 +236,33 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, config->use_stinky_points);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
+        vector<Edge*> direct_path; 
+        int size = 0; 
+        for(auto edge: sample_path){
+            if(edge->target == sample_nearest[0].second){
+                direct_path.push_back(edge);
+                cout << "Edge point at closest element was found " << endl;  
+                break;
+            }
+        }
+
+        // while(size < sample_path.size() && !direct_path.empty() && direct_path.back()->prev_edge != nullptr){
+        //     direct_path.push_back(direct_path.back()->prev_edge);
+        //     if(direct_path.back()->prev_edge == nullptr){
+        //        // cout << "We have successfully reached the start edge" << endl;
+        //         // if(!direct_path.empty())
+        //         //     direct_path.pop_back();
+        //         // else 
+        //         //     cerr << "direct path is empty" << endl;
+        //         break;
+        //     }
+        //     size++;
+        // }
+        if(direct_path.empty()){
+            cerr << "start edge wasn't found " << endl;
+        }
+            
+
         // Calculate the average distances between nearest neighbors and training point incrementally
         double sample_average = 0;
         double original_average = 0;
@@ -535,9 +562,9 @@ void remove_duplicates(Config* config, float** training, float** queries) {
 
 
 void test_queue(){
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance; };
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
-    priority_queue<Edge*, vector<Edge*>, greater<Edge*>> candidates_edges;
-
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     for(int i =0; i< 50; i++ ){
         mt19937 gen(10);
         normal_distribution<float> dis(0, 1000);
