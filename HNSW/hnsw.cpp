@@ -334,16 +334,17 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
         
         else {
-            int size = 0; 
-            while(size < path.size() && direct_path.back()->prev_edge != nullptr) {
-                direct_path.push_back(direct_path.back()->prev_edge);
-                if(direct_path.back()->prev_edge == nullptr){
-                    delete direct_path.back()->prev_edge; 
-                    direct_path.back()->prev_edge = nullptr;
-                    break;
-                }
+            int size = 0;
+            Edge* current = direct_path[0];
+            while(size < path.size() && current->prev_edge != nullptr && current->prev_edge->prev_edge != nullptr) {
+                direct_path.push_back(current->prev_edge);
+                current = current->prev_edge;
                 size++;
             }
+            if (current->prev_edge != nullptr) {
+                delete current->prev_edge;
+            }
+            current->prev_edge = nullptr;
             path = direct_path;
         }
 
