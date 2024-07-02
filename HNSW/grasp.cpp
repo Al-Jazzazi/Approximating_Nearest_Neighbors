@@ -236,18 +236,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1, false, config->use_stinky_points);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
-        // while(size < sample_path.size() && !direct_path.empty() && direct_path.back()->prev_edge != nullptr){
-        //     direct_path.push_back(direct_path.back()->prev_edge);
-        //     if(direct_path.back()->prev_edge == nullptr){
-        //        // cout << "We have successfully reached the start edge" << endl;
-        //         // if(!direct_path.empty())
-        //         //     direct_path.pop_back();
-        //         // else 
-        //         //     cerr << "direct path is empty" << endl;
-        //         break;
-        //     }
-        //     size++;
-        // }
             
 
         // Calculate the average distances between nearest neighbors and training point incrementally

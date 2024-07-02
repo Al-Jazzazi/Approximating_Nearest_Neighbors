@@ -14,9 +14,9 @@ public:
     // std::string groundtruth_file = "";
     std::string training_file = "./exports/sift/sift_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 10000;
-    int num_training = 1000;
-    int num_queries = 1000;
+    int num_nodes = 100000;
+    int num_training = 10000;
+    int num_queries = 10000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
