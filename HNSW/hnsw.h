@@ -36,8 +36,6 @@ public:
 
     Edge();
     Edge(int target, float distance);
-    bool operator>(const Edge& rhs) const;
-    bool operator<(const Edge& rhs) const;
 };
 
 class HNSW {

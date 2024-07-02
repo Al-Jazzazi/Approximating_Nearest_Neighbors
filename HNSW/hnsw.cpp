@@ -23,14 +23,6 @@ Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_
 Edge::Edge(int target, float distance) : target(target), distance(distance),
     weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
 
-bool Edge::operator>(const Edge& rhs) const {
-    return this->distance > rhs.distance;
-}
-
-bool Edge::operator<(const Edge& rhs) const {
-    return this->distance < rhs.distance;
-}
-
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
            gen(config->insertion_seed), dis(0.0000001, 0.9999999) {}
@@ -113,7 +105,8 @@ void HNSW::insert(Config* config, int query) {
             // Place query in correct position in neighbor_mapping
             float new_dist = calculate_l2_sq(nodes[query], nodes[n_pair.target], num_dimensions, layer);
             auto new_edge = Edge(query, new_dist);
-            auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge);
+            auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge,
+                [](const Edge& lhs, const Edge& rhs) { return lhs.distance < rhs.distance || (lhs.distance == rhs.distance && lhs.target < rhs.target); });
             neighbor_mapping.insert(pos, new_edge);
         }
 
@@ -145,7 +138,7 @@ void HNSW::insert(Config* config, int query) {
  * Note: Result is stored in entry_points (ep)
 */
 void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_ignoring, bool add_stinky, bool add_cost) {
-    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance; };
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
