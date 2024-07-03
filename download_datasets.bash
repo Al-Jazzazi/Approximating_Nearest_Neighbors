@@ -20,7 +20,7 @@ wget http://ann-benchmarks.com/glove-100-angular.hdf5
 python3 ../../utils/hdf5_to_fvecs.py glove-100-angular.hdf5
 python3 ../../utils/split_fvecs.py train.fvecs glove_base.fvecs glove_learn.fvecs 1000000 100000
 rm neighbors.fvecs distances.fvecs train.fvecs glove-100-angular.hdf5
-mv test.fvecs query.fvecs
+mv test.fvecs glove_query.fvecs
 cd ..
 
 # Download Deep (1000000 x 256)

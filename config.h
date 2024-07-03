@@ -41,8 +41,10 @@ public:
     double scaling_factor = 0.379;
     int ef_search = 400;
     int num_return = 50;
+    float threshold_alpha = 1;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
+    bool use_distance_threshold = false;
     bool use_heuristic = true;
     bool use_grasp = true;
     bool use_benefit_cost = false;

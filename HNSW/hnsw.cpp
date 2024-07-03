@@ -139,25 +139,35 @@ void HNSW::insert(Config* config, int query) {
     }
 }
 
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool is_thresholding) {
+    // HNSW structures
     unordered_set<int> visited;
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<pair<float, int>> found;
-
-    // Re-initialize the path
-    if (layer_num == 0) {
-        path.clear();
-    }
-
     // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
     int nn_found = 0;
+    // Distance threshold structures
+    priority_queue<pair<float, int>> top_k;
+    pair<float, int> top_1;
 
-    // Add entry points to visited, candidates, and found
+    // Re-initialize arguments
+    if (layer_num == 0) {
+        path.clear();
+    }
+    if (is_thresholding) {
+        num_to_return = 100000;
+    }
+
+    // Add entry points to data structures
     for (auto entry : entry_points) {
         visited.insert(entry.second);
         candidates.emplace(entry);
         found.emplace(entry);
+        if (is_thresholding) {
+            top_k.emplace(entry);
+            top_1 = entry;
+        }
 
         if (log_neighbors) {
             auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
@@ -235,11 +245,17 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     neighbors[i].stinky -= config->stinky_value;
                 if (is_training && config->use_benefit_cost)
                     neighbors[i].cost++;
-                if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
+                
+                bool within_distance = !is_thresholding || top_k.size() < config->num_return || (neighbor_dist < config->threshold_alpha * (2 * top_k.top().first - top_1.first));
+                if ((neighbor_dist < far_inner_dist || found.size() < num_to_return) && within_distance) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
+                    top_k.emplace(neighbor_dist, neighbor);
                     if (layer_num == 0) {
                         path.push_back(&neighbors[i]);
+                    }
+                    if (neighbor_dist < top_1.first) {
+                        top_1 = make_pair(neighbor_dist, neighbor);
                     }
 
                     if (log_neighbors) {
@@ -256,9 +272,11 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         }
                     }
 
-                    // If found is greater than num_to_return, remove furthest
+                    // If priority queues are too large, remove the furthest
                     if (found.size() > num_to_return)
                         found.pop();
+                    if (top_k.size() > config->num_return)
+                        top_k.pop();
                 }
             }
         }
@@ -382,7 +400,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring, config->use_distance_threshold);
     
     if (config->gt_dist_log)
         log_neighbors = false;
