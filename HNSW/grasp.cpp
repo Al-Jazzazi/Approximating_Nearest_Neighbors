@@ -18,7 +18,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
-        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, false, true);
+        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, true);
         for (int j = 0; j < path.size(); j++) {
             path[j]->benefit++;
         }
@@ -232,8 +232,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> sample_path;
         vector<Edge*> original_path;
-        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, 1, true, config->use_stinky_points);
-        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, 1, false, config->use_stinky_points);
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, true);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, true, false);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
 
             
@@ -246,12 +246,16 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             original_average += (original_nearest[j].first - original_average) / (j + 1);
         }
 
-        double num = (sample_average / original_average - 1) * config->learning_rate;
-        if( config->export_negative_values && num < 0){
+        // Calculate weight change from average distances
+        double weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        if(weight_change > 1000) {
+            weight_change = 1000;
+        }
+        if (config->export_negative_values && weight_change < 0) {
            if(results_file != nullptr)
                 *results_file << "error weight is being updates by a negative value" << endl;
             else
-                cout << "negative value found, num is " << num <<  ", sample distance is " << sample_average 
+                cout << "negative value found, weight_change is " << weight_change <<  ", sample distance is " << sample_average 
                 << ", original distance is " << original_average << ", ration is " << sample_average / original_average << endl; 
 
         } 
@@ -263,8 +267,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                 original_path[j]->stinky += config->stinky_value;
         }
 
-
-
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
         //will differ 
         if(sample_average != original_average) {
@@ -273,20 +275,13 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
                     (config->weight_selection_method == 1 && original_path[j]->ignore) ||
                     (config->weight_selection_method == 2 && sample_path_set.find(original_path[j]) == sample_path_set.end())
                 ) {
-                   
-                    if(num < 0)
-                        original_path[j]->weight +=  abs(num)*10; 
-                    else 
-                    original_path[j]->weight += (sample_average / original_average - 1) * config->learning_rate;
+                    original_path[j]->weight += weight_change;
                     original_path[j]->num_of_updates++;
                     num_of_edges_updated++;
                 }
             }
             num_updates++;
         }
-
-    
-       
     }
 
     //Creating a histogram the accumlative change in the frequency in which the edges are being updated 

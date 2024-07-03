@@ -8,13 +8,14 @@
 class Config {
 public:
     // Datasets
-    std::string load_file = "./exports/sift/sift_base.fvecs";
-    std::string query_file = "./exports/sift/sift_query.fvecs";
+    std::string dataset_prefix = "./exports/sift/sift";
+    std::string load_file = dataset_prefix + "_base.fvecs";
+    std::string query_file = dataset_prefix + "_query.fvecs";
+    //std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
     std::string groundtruth_file = "";
-    // std::string groundtruth_file = "";
-    std::string training_file = "./exports/sift/sift_learn.fvecs";
+    std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 100000;
+    int num_nodes = 10000;
     int num_training = 10000;
     int num_queries = 10000;
 
@@ -42,11 +43,13 @@ public:
     double scaling_factor = 0.379;
     int ef_search = 400;
     int num_return = 50;
+    float threshold_alpha = 1;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
+    bool use_distance_threshold = true;
     bool use_heuristic = true;
     bool use_grasp = true;
-    bool use_benefit_cost = false;
+    bool use_benefit_cost = true;
     bool use_direct_path = true;
     
     // GraSP Training
@@ -65,7 +68,7 @@ public:
     float stinky_value = 0.00005;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
-    bool use_dynamic_sampling = true;
+    bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;
