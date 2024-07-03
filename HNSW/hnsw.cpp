@@ -5,6 +5,7 @@
 #include <immintrin.h>
 #include <unordered_set>
 #include "hnsw.h"
+#include <set>
 
 using namespace std;
 
@@ -136,23 +137,28 @@ void HNSW::insert(Config* config, int query) {
 /**
  * Alg 2
  * Search_later(hnsw, q, M, Mmax, efConstruction, mL)
- * Note: max_con is not used for layer 0, instead max_connections_0 is used
+ * Note: closest point are saved to entry_points 
+ *       , and the path taken is saved into path which can be the direct path or beam_search bath dependent on variable config->use_direct_path
+ *         
 */
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool is_thresholding, bool add_strict_path) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool is_thresholding) {
     // HNSW structures
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
+    //The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
+    //This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
+ 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     priority_queue<pair<float, int>> found;
-        // Array of when each neighbor was found
+   
+    // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
     int nn_found = 0;
     // Distance threshold structures
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
 
-    //Edge* new_Edge = new Edge(entry_points.back().second, entry_points.back().first);
     // Re-initialize arguments
     if (layer_num == 0 && config->use_direct_path) {
         path.clear();
@@ -163,8 +169,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
   
     // Add entry points to data structures
     for (const auto& entry : entry_points) {
+        
         visited.insert(entry.second);
         candidates.emplace(entry);
+        //We create an new edge pointing at entry point
         if (layer_num == 0 && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first);
             candidates_edges.emplace(new_Edge);
@@ -172,15 +180,13 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
 
         found.emplace(entry);
-        if (is_thresholding) {
-            top_k.emplace(entry);
-            top_1 = entry;
-        }
+
 
         if (is_thresholding) {
             top_k.emplace(entry);
             top_1 = entry;
         }
+     
 
         // if (log_neighbors) {
         //     auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
@@ -248,7 +254,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
         // Get neighbors of closest in HNSWLayer
         vector<Edge>& neighbors = mappings[closest][layer_num];
-
+        //Explore the neighbours of the closest discovered element
         for (auto& neighbor_edge : neighbors) {
             int neighbor = neighbor_edge.target;
             bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
@@ -264,22 +270,26 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], num_dimensions, layer_num);
                 
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
-                //discovered some stinky points 
-                if (is_training && config->use_stinky_points)
-                    neighbor_edge.stinky -= config->stinky_value;
-                if (is_training && config->use_benefit_cost)
-                    neighbor_edge.cost++;
+                //discovered some stinky points or increasing it's cost (we developed a few different implementations to prune edges) 
+                // if (is_training && config->use_stinky_points)
+                //     neighbor_edge.stinky -= config->stinky_value;
+                // if (is_training && config->use_benefit_cost)
+                //     neighbor_edge.cost++;
                 
+                //If this bool is false, tehn we terminate current run and assume we already found the closest k elemetnts
                 bool within_distance = !is_thresholding || top_k.size() < config->num_return || (neighbor_dist < config->threshold_alpha * (2 * top_k.top().first - top_1.first));
-                if ((neighbor_dist < far_inner_dist || found.size() < num_to_return) && within_distance) {
-                    candidates.emplace(neighbor_dist, neighbor);
             
+                if ((neighbor_dist < far_inner_dist || found.size() < num_to_return && within_distance) ) {
+                    candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
+
                     if (layer_num == 0 && config->use_direct_path) {
                         neighbor_edge.distance = neighbor_dist;
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
                         path.push_back(&neighbor_edge);
+
+                        //Sanity check conditions (to check if our two priority queues are behaving properly)
                         if(candidates_edges.size() != candidates.size())
                             cerr << "logic error size is not the same " <<candidates.size() << " , " <<  candidates_edges.size() <<  endl;
                         if(candidates_edges.top()->target != candidates.top().second)
@@ -289,11 +299,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                                 << candidates_edges.top()->distance <<  ", "
                                 << candidates.top().first  <<endl;
                             
-                        // else 
-                        //     cout << "it's working" << endl;
-             
-
-          
 
                     }
 
@@ -310,27 +315,28 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     //             candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                     //     }
                     // }
-                    top_k.emplace(neighbor_dist, neighbor);
+                    
                     if (layer_num == 0) {
                         path.push_back(&neighbor_edge);
                     }
+                    top_k.emplace(neighbor_dist, neighbor);                    
                     if (neighbor_dist < top_1.first) {
                         top_1 = make_pair(neighbor_dist, neighbor);
                     }
 
-                    if (log_neighbors) {
-                        auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
-                        if (loc != cur_groundtruth.end()) {
-                            // Get neighbor index (xth closest) and log distance comp
-                            int index = distance(cur_groundtruth.begin(), loc);
-                            when_neigh_found[index] = layer0_dist_comps;
-                            ++nn_found;
-                            ++correct_nn_found;
-                            if (config->gt_smart_termination && nn_found == config->num_return)
-                                // End search
-                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
-                        }
-                    }
+                    // if (log_neighbors) {
+                    //     auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
+                    //     if (loc != cur_groundtruth.end()) {
+                    //         // Get neighbor index (xth closest) and log distance comp
+                    //         int index = distance(cur_groundtruth.begin(), loc);
+                    //         when_neigh_found[index] = layer0_dist_comps;
+                    //         ++nn_found;
+                    //         ++correct_nn_found;
+                    //         if (config->gt_smart_termination && nn_found == config->num_return)
+                    //             // End search
+                    //             candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                    //     }
+                    // }
 
                     // If priority queues are too large, remove the furthest
                     if (found.size() > num_to_return)
@@ -355,46 +361,60 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         found.pop();
     }
 
-    if (config->use_direct_path && add_strict_path) {
-        for (int i = 0; i < config->num_return; i++) {
-            vector<Edge*> direct_path; 
-            for(auto edge : path){
-                if(edge->target == entry_points[i].second){
-                    direct_path.push_back(edge);
-                    //cout << "Edge point at closest element was found " << endl;  
-                    break;
-                }
+   if (config->use_direct_path && is_training) {
+    set<Edge*> direct_path;
+    for (int i = 0; i < entry_points.size(); i++) {
+
+        Edge* current = nullptr;
+        for (auto edge : path) {
+            if (edge->target == entry_points[i].second) {
+                direct_path.insert(edge);
+                current = edge;
+                //cout << "Current edge found for entry point " << i << " with target " << edge->target << endl;  // Debug print
+                break;
             }
-            if(direct_path.empty()){
-                cerr << "start edge wasn't found, sorry can't find strick that " << i << endl;
-                
-            } else {
-                int size = 0;
-                Edge* current = direct_path[0];
-                while(size < path.size() && current->prev_edge != nullptr && current->prev_edge->prev_edge != nullptr) {
-                    direct_path.push_back(current->prev_edge);
-                    current = current->prev_edge;
-                    size++;
-                }
-                if ((i == config->num_return - 1) && current->prev_edge != nullptr) {
-                    delete current->prev_edge;
-                    current->prev_edge = nullptr;
-                }
-                if(size == 0) {
-                    delete current;
-                    // cerr << "closest point is the same as entry point, thus there is no direct path" << endl;
-                } else {
-                    path = direct_path;
+        }
+
+        if (current == nullptr) {
+            cerr << "Start edge wasn't found, can't find strict path for entry point " << i << endl;
+            break;
+        } else {
+            // Traverse back through the path
+            int size = 0;
+            while (size < path.size() && current->prev_edge != nullptr) {
+                direct_path.insert(current->prev_edge);
+                current = current->prev_edge;
+                size++;
+              // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
+            }
+
+            // Handle the last entry point
+            if (i == entry_points.size() - 1) {
+                if (current != nullptr) {
+                    direct_path.insert(current);
+                    if (current->prev_edge != nullptr) {
+                        delete current->prev_edge;
+                        current->prev_edge = nullptr;
+                        //cout << "Deleted previous edge of current" << endl;  // Debug print
+                    } else {
+                        delete current;
+                        //cout << "Deleted current edge" << endl;  // Debug print
+                    }
                 }
             }
         }
     }
 
+    vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
+    path = direct_path_vector;
+    }
+
+
     // Export when_neigh_found data
-    // if (log_neighbors)
-    //     for (int i = 0; i < config->num_return; ++i) {
-    //         *when_neigh_found_file << when_neigh_found[i] << " ";
-    //     }
+    if (log_neighbors)
+        for (int i = 0; i < config->num_return; ++i) {
+            *when_neigh_found_file << when_neigh_found[i] << " ";
+        }
 }
 
 /**

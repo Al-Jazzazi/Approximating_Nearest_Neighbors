@@ -11,22 +11,22 @@ public:
     std::string dataset_prefix = "./exports/sift/sift";
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
-    // std::string groundtruth_file = "";
+   // std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
+    std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    int num_nodes = 10000;
+    int num_training = 10000;
+    int num_queries = 1000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/cost_benefit_deep/efs_";
     std::string hnsw_graph_file = "./runs/cost_benefit_deep/graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/cost_benefit_deep/info_num_return_50.txt";
     std::string training_set = "";
-    bool load_graph_file = true;
+    bool load_graph_file = false;
     bool export_benchmark = true;
-    bool export_graph = true;
+    bool export_graph = false;
 
     // Debugging related flags
     bool print_weight_updates = true;
@@ -48,7 +48,7 @@ public:
     float threshold_alpha = 1;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
-    bool use_distance_threshold = true;
+    bool use_distance_threshold = false;
     bool use_heuristic = true;
     bool use_grasp = true;
     bool use_benefit_cost = true;

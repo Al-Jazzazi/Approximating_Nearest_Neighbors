@@ -60,7 +60,7 @@ public:
     
     // Main algorithms
     void insert(Config* config, int query);
-    void search_layer(Config* config, float* query, std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training = false, bool is_ignoring = false, bool is_thresholding = false, bool add_strict_path = false);
+    void search_layer(Config* config, float* query, std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training = false, bool is_ignoring = false, bool is_thresholding = false);
     void select_neighbors_heuristic(Config* config, float* query, std::vector<Edge>& candidates, int num_to_return, int layer_num, bool extend_candidates = false, bool keep_pruned = true);
     std::vector<std::pair<float, int>> nn_search(Config* config, std::vector<Edge*>& path, std::pair<int, float*>& query, int num_to_return, bool is_training = false, bool is_ignoring = false);
 };
