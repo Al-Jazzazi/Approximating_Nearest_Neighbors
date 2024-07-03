@@ -80,7 +80,8 @@ public:
     std::vector<int> benchmark_ef_construction = {};
     std::vector<int> benchmark_ef_search = {};
     // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
-    // std::vector<int> benchmark_threshold_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
+    std::vector<float> benchmark_threshold_alpha = {};
+    // std::vector<float> benchmark_threshold_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
