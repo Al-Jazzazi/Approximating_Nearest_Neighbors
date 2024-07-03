@@ -11,28 +11,30 @@ public:
     std::string dataset_prefix = "./exports/sift/sift";
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
-    //std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
-    std::string groundtruth_file = "";
+    std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
+    // std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 10000;
-    int num_training = 10000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_prefix = "./runs/";
-    std::string hnsw_graph_file = "./runs/grasp_graph_num_return_50.bin";
-    std::string hnsw_info_file = "./runs/grasp_info_num_return_50.txt";
+    std::string runs_prefix = "./runs/cost_benefit_deep/efs_";
+    std::string hnsw_graph_file = "./runs/cost_benefit_deep/graph_num_return_50.bin";
+    std::string hnsw_info_file = "./runs/cost_benefit_deep/info_num_return_50.txt";
     std::string training_set = "";
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     bool export_benchmark = true;
     bool export_graph = true;
-    //Debugging related flags
+
+    // Debugging related flags
     bool print_weight_updates = true;
     bool export_weight_updates = true;
+    int interval_for_weight_histogram = 1; 
+    int interval_for_num_of_updates_histogram = 10; 
     bool export_training_queries = false; 
     bool export_negative_values = false; 
-    
     bool first_print = true;
 
     // HNSW Parameters
@@ -65,23 +67,20 @@ public:
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
-    float stinky_value = 0.00005;
-    int interval_for_weight_histogram = 1; 
-    int interval_for_num_of_updates_histogram = 10; 
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false; 
-    bool generate_our_training = false;
-    bool regenerate_each_iteration = false;
-    float generate_ratio = 0;
+    float stinky_value = 0.00005;
 
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {1, 10 ,50};
+    std::vector<int> benchmark_num_return = {1, 10, 50};
     //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     std::vector<int> benchmark_ef_search = {};
+    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
+    // std::vector<int> benchmark_threshold_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
@@ -95,6 +94,9 @@ public:
     bool benchmark_print_missing = false;
 
     // Generation Settings
+    bool generate_our_training = false;
+    bool regenerate_each_iteration = false;
+    float generate_ratio = 0;
     int graph_seed = 0;
     int shuffle_seed = 1;
     int sample_seed = 2;
