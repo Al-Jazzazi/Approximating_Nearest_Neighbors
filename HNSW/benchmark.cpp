@@ -349,13 +349,14 @@ int main() {
         "max_con_0", nodes, queries, training, results_file);
     run_benchmark(config, config->ef_construction, config->benchmark_ef_construction,
         "ef_construction", nodes, queries, training, results_file);
-    run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
-        queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
     
     if (config->use_distance_threshold) {
         run_benchmark(config, config->threshold_alpha, config->benchmark_threshold_alpha, "threshold_alpha", nodes,
+            queries, training, results_file);
+    } else {
+        run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
             queries, training, results_file);
     }
 

@@ -248,7 +248,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         // Calculate weight change from average distances
         double weight_change = (sample_average / original_average - 1) * config->learning_rate;
-        if(weight_change > 1000) {
+        if(weight_change > 1000 || weight_change < -1000) {
             weight_change = 1000;
         }
         if (config->export_negative_values && weight_change < 0) {
