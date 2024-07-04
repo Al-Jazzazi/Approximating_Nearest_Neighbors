@@ -16,17 +16,19 @@ int main() {
     cout << "GraSP run started at " << ctime(&now);
     Config* config = new Config();
 
-    cout << "Size " << config->num_nodes << "\nDefault Parameters: opt_con = "
-         << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
-         << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
-         << ", ef_search = " << config->ef_search << ", num_return = " << config->num_return
-         << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
-         << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
-         << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
-         <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
-         << ", use_heuristic = " << config->use_heuristic << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
-         << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   << endl;
-
+    cout << "Size " << config->num_nodes << "\nBenchmarking with Parameters: opt_con = "
+        << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
+        << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
+        << ", ef_search = " << config->ef_search << "\nnum_return = " << config->num_return
+        << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
+        << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
+        << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
+        <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
+        << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
+        << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   
+        << "\nUse_distance_threshold = " << config->use_distance_threshold << ", use_benefit_cost = " << config->use_benefit_cost 
+        << ", use_direct_path = " << config->use_direct_path << endl;
+        
     // Clear histogram file if it exists
     if (!config->runs_prefix.empty()) {
         ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
