@@ -37,22 +37,24 @@ public:
     bool export_negative_values = false; 
     bool first_print = true;
 
-    // HNSW Parameters
+    // HNSW Construction Parameters
     int optimal_connections = 14;
     int max_connections = 14;
     int max_connections_0 = 14;
     int ef_construction = 500;
     double scaling_factor = 0.379;
-    int ef_search = 400;
-    int num_return = 50;
-    float threshold_alpha = 1;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_entry_point = true;
-    bool use_distance_threshold = false;
     bool use_heuristic = true;
     bool use_grasp = true;
     bool use_benefit_cost = true;
     bool use_direct_path = true;
+
+    // HNSW Search Parameters
+    int ef_search = 400;
+    int num_return = 50;
+    float threshold_alpha = 0.5;
+    bool use_distance_threshold = false;
     
     // GraSP Training
     float learning_rate = 0.1;

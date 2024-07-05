@@ -249,7 +249,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
       
         // If closest is further than furthest, stop
-        if (close_dist > far_dist)
+        bool within_distance = is_thresholding
+            ? top_k.size() < config->num_return || (close_dist <= config->threshold_alpha * (2 * top_k.top().first + top_1.first))
+            : close_dist <= far_dist;
+        if (!within_distance)
             break;
 
         // Get neighbors of closest in HNSWLayer
@@ -275,11 +278,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 //     neighbor_edge.stinky -= config->stinky_value;
                 // if (is_training && config->use_benefit_cost)
                 //     neighbor_edge.cost++;
-                
-                //If this bool is false, tehn we terminate current run and assume we already found the closest k elemetnts
-                bool within_distance = !is_thresholding || top_k.size() < config->num_return || (neighbor_dist < config->threshold_alpha * (2 * top_k.top().first + top_1.first));
             
-                if ((neighbor_dist < far_inner_dist || found.size() < num_to_return && within_distance) ) {
+                if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
 
