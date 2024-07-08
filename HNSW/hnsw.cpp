@@ -136,7 +136,7 @@ void HNSW::insert(Config* config, int query) {
 
 /**
  * Alg 2
- * Search_later(hnsw, q, M, Mmax, efConstruction, mL)
+ * Search_layer(hnsw, q, M, Mmax, efConstruction, mL)
  * Note: closest point are saved to entry_points 
  *       , and the path taken is saved into path which can be the direct path or beam_search bath dependent on variable config->use_direct_path
  *         
@@ -461,6 +461,10 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         } else {
             search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
         }
+=======
+       
+        search_layer(config, query.second, path, entry_points, 1, layer);
+>>>>>>> f33d5f2 (slight changes)
 
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;

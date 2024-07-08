@@ -15,9 +15,9 @@ public:
     // std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    int num_nodes = 10000;
+    int num_training = 10000;
+    int num_queries = 1000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
@@ -30,7 +30,7 @@ public:
 
     // Debugging related flags
     bool print_weight_updates = true;
-    bool export_weight_updates = true;
+    bool export_weight_updates = false;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10; 
     bool export_training_queries = false; 

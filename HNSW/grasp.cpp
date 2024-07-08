@@ -235,7 +235,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, true);
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, true, false);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
-
+        
             
 
         // Calculate the average distances between nearest neighbors and training point incrementally
