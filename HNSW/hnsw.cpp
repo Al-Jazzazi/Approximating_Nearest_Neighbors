@@ -11,6 +11,7 @@ using namespace std;
 
 long long int layer0_dist_comps = 0;
 long long int upper_dist_comps = 0;
+long long int actual_beam_width = 0;
 
 ofstream* debug_file = NULL;
 
@@ -248,8 +249,12 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         bool within_distance = is_thresholding
             ? top_k.size() < config->num_return || (close_dist <= config->threshold_alpha * (2 * top_k.top().first + top_1.first))
             : close_dist <= far_dist;
-        if (!within_distance)
+        if (!within_distance) {
+            if (layer_num == 0) {
+                actual_beam_width += found.size();
+            }
             break;
+        }
 
         // Get neighbors of closest in HNSWLayer
         vector<Edge>& neighbors = mappings[closest][layer_num];

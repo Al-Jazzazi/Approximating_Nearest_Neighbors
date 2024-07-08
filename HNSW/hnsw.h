@@ -12,6 +12,7 @@
 
 extern long long int layer0_dist_comps;
 extern long long int upper_dist_comps;
+extern long long int actual_beam_width;
 
 extern std::ofstream* debug_file;
 

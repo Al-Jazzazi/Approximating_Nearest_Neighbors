@@ -181,6 +181,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         auto start = chrono::high_resolution_clock::now();
         layer0_dist_comps = 0;
         upper_dist_comps = 0;
+        actual_beam_width = 0;
         neighbors.reserve(config->num_queries);
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
@@ -264,7 +265,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
-                     + std::to_string(total_dist_comp / config->num_queries) + ", " 
+                     + std::to_string(total_dist_comp / config->num_queries) + ", "
+                     + std::to_string(static_cast<double>(actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(construction_duration);
             lines.push_back(line);
         }
@@ -276,7 +278,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms)" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms), total_dist_comps/query, num_queries_terminated, construction time" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
