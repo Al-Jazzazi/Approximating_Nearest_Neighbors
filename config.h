@@ -24,7 +24,7 @@ public:
     std::string hnsw_graph_file = "./runs/cost_benefit_deep/graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/cost_benefit_deep/info_num_return_50.txt";
     std::string training_set = "";
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     bool export_benchmark = true;
     bool export_graph = true;
 
@@ -77,14 +77,14 @@ public:
     float stinky_value = 0.00005;
 
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {1, 10, 50};
+    std::vector<int> benchmark_num_return = {};
     //  std::vector<int> benchmark_weight_selection_method = {0,1,2}; 
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {};
-    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
+    //std::vector<int> benchmark_ef_search = {};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
     std::vector<float> benchmark_threshold_alpha = {};
     // std::vector<float> benchmark_threshold_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
