@@ -12,7 +12,7 @@ public:
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
     std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
-    // std::string groundtruth_file = "";
+    //std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
     int num_nodes = 10000;
@@ -49,6 +49,7 @@ public:
     int max_connections_0 = 14;
     int ef_construction = 500;
     double scaling_factor = 0.379;
+
 
     // HNSW Search Parameters
     bool use_distance_threshold = false;

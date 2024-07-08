@@ -458,13 +458,13 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     for (int layer = top; layer >= 1; layer--) {
         if ((config->single_ep_query && !is_training) || (config->single_ep_training && is_training)) {
             search_layer(config, query.second, path, entry_points, 1, layer);
-        } else {
-            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
+        } else if (config->single_ep_training && is_training){
+            search_layer(config, query.second, path, entry_points, 1, layer);
         }
-=======
-       
-        search_layer(config, query.second, path, entry_points, 1, layer);
->>>>>>> f33d5f2 (slight changes)
+        else {
+            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
+
+        }
 
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
