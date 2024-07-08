@@ -538,7 +538,8 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
             }
         }
     }
-    std::copy(direct_path.begin(), direct_path.end(), std::back_inserter(path));
+    vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
+    path = direct_path_vector;
 }
 
 void HNSW::search_queries(Config* config, float** queries) {
