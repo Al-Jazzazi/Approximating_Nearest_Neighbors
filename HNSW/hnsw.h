@@ -57,6 +57,7 @@ public:
     HNSW(Config* config, float** nodes);
     void search_queries(Config* config, float** queries);
     std::vector<Edge*> get_layer_edges(Config* config, int layer);
+    void find_direct_path(std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points);
     
     // Main algorithms
     void insert(Config* config, int query);

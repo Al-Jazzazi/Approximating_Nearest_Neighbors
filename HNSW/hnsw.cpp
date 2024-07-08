@@ -147,7 +147,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     unordered_set<int> visited;
     //The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
     //This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
- 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     priority_queue<pair<float, int>> found;
@@ -169,7 +168,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
   
     // Add entry points to data structures
     for (const auto& entry : entry_points) {
-        
         visited.insert(entry.second);
         candidates.emplace(entry);
         //We create an new edge pointing at entry point
@@ -181,54 +179,52 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
         found.emplace(entry);
 
-
         if (is_thresholding) {
             top_k.emplace(entry);
             top_1 = entry;
         }
      
 
-        // if (log_neighbors) {
-        //     auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
-        //     if (loc != cur_groundtruth.end()) {
-        //         // Get neighbor index (xth closest) and log distance comp
-        //         int index = distance(cur_groundtruth.begin(), loc);
-        //         when_neigh_found[index] = layer0_dist_comps;
-        //         ++nn_found;
-        //         ++correct_nn_found;
-        //         if (config->gt_smart_termination && nn_found == config->num_return)
-        //             // End search
-        //             candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
-        //     }
-        // }
+        if (log_neighbors) {
+            auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
+            if (loc != cur_groundtruth.end()) {
+                // Get neighbor index (xth closest) and log distance comp
+                int index = distance(cur_groundtruth.begin(), loc);
+                when_neigh_found[index] = layer0_dist_comps;
+                ++nn_found;
+                ++correct_nn_found;
+                if (config->gt_smart_termination && nn_found == config->num_return)
+                    // End search
+                    candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+            }
+        }
     }
     
 
    
     int iteration = 0;
     while (!candidates.empty()) {
+        if (debug_file != NULL) {
+            // Export search data
+            *debug_file << "Iteration " << iteration << endl;
+            for (int index : visited)
+                *debug_file << index << ",";
+            *debug_file << endl;
 
-        // if (debug_file != NULL) {
-        //     // Export search data
-        //     *debug_file << "Iteration " << iteration << endl;
-        //     for (int index : visited)
-        //         *debug_file << index << ",";
-        //     *debug_file << endl;
+            priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
+            while (!temp_candidates.empty()) {
+                *debug_file << temp_candidates.top().second << ",";
+                temp_candidates.pop();
+            }
+            *debug_file << endl;
 
-        //     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
-        //     while (!temp_candidates.empty()) {
-        //         *debug_file << temp_candidates.top().second << ",";
-        //         temp_candidates.pop();
-        //     }
-        //     *debug_file << endl;
-
-        //     priority_queue<pair<float, int>> temp_found(found);
-        //     while (!temp_found.empty()) {
-        //         *debug_file << temp_found.top().second << ",";
-        //         temp_found.pop();
-        //     }
-        //     *debug_file << endl;
-        // }
+            priority_queue<pair<float, int>> temp_found(found);
+            while (!temp_found.empty()) {
+                *debug_file << temp_found.top().second << ",";
+                temp_found.pop();
+            }
+            *debug_file << endl;
+        }
         ++iteration;
 
         // Get and remove closest element in candiates to query
@@ -274,10 +270,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
                 //discovered some stinky points or increasing it's cost (we developed a few different implementations to prune edges) 
-                // if (is_training && config->use_stinky_points)
-                //     neighbor_edge.stinky -= config->stinky_value;
-                // if (is_training && config->use_benefit_cost)
-                //     neighbor_edge.cost++;
+                if (is_training && config->use_stinky_points)
+                    neighbor_edge.stinky -= config->stinky_value;
+                if (is_training && config->use_benefit_cost)
+                    neighbor_edge.cost++;
             
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
@@ -302,19 +298,19 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
                     }
 
-                    // if (log_neighbors) {
-                    //     auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
-                    //     if (loc != cur_groundtruth.end()) {
-                    //         // Get neighbor index (xth closest) and log distance comp
-                    //         int index = distance(cur_groundtruth.begin(), loc);
-                    //         when_neigh_found[index] = layer0_dist_comps;
-                    //         ++nn_found;
-                    //         ++correct_nn_found;
-                    //         if (config->gt_smart_termination && nn_found == config->num_return)
-                    //             // End search
-                    //             candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
-                    //     }
-                    // }
+                    if (log_neighbors) {
+                        auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
+                        if (loc != cur_groundtruth.end()) {
+                            // Get neighbor index (xth closest) and log distance comp
+                            int index = distance(cur_groundtruth.begin(), loc);
+                            when_neigh_found[index] = layer0_dist_comps;
+                            ++nn_found;
+                            ++correct_nn_found;
+                            if (config->gt_smart_termination && nn_found == config->num_return)
+                                // End search
+                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                        }
+                    }
                     
                     if (layer_num == 0) {
                         path.push_back(&neighbor_edge);
@@ -324,19 +320,19 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         top_1 = make_pair(neighbor_dist, neighbor);
                     }
 
-                    // if (log_neighbors) {
-                    //     auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
-                    //     if (loc != cur_groundtruth.end()) {
-                    //         // Get neighbor index (xth closest) and log distance comp
-                    //         int index = distance(cur_groundtruth.begin(), loc);
-                    //         when_neigh_found[index] = layer0_dist_comps;
-                    //         ++nn_found;
-                    //         ++correct_nn_found;
-                    //         if (config->gt_smart_termination && nn_found == config->num_return)
-                    //             // End search
-                    //             candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
-                    //     }
-                    // }
+                    if (log_neighbors) {
+                        auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
+                        if (loc != cur_groundtruth.end()) {
+                            // Get neighbor index (xth closest) and log distance comp
+                            int index = distance(cur_groundtruth.begin(), loc);
+                            when_neigh_found[index] = layer0_dist_comps;
+                            ++nn_found;
+                            ++correct_nn_found;
+                            if (config->gt_smart_termination && nn_found == config->num_return)
+                                // End search
+                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                        }
+                    }
 
                     // If priority queues are too large, remove the furthest
                     if (found.size() > num_to_return)
@@ -353,7 +349,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     // Place found elements into entry_points
     entry_points.clear();
     entry_points.resize(found.size());
-
     size_t idx = found.size();
     while (idx > 0) {
         --idx;
@@ -361,52 +356,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         found.pop();
     }
 
-   if (config->use_direct_path && is_training) {
-    set<Edge*> direct_path;
-    for (int i = 0; i < entry_points.size(); i++) {
-
-        Edge* current = nullptr;
-        for (auto edge : path) {
-            if (edge->target == entry_points[i].second) {
-                direct_path.insert(edge);
-                current = edge;
-                //cout << "Current edge found for entry point " << i << " with target " << edge->target << endl;  // Debug print
-                break;
-            }
-        }
-
-        if (current == nullptr) {
-            cerr << "Start edge wasn't found, can't find strict path for entry point " << i << endl;
-            break;
-        } else {
-            // Traverse back through the path
-            int size = 0;
-            while (size < path.size() && current->prev_edge != nullptr) {
-                direct_path.insert(current->prev_edge);
-                current = current->prev_edge;
-                size++;
-              // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
-            }
-
-            // Handle the last entry point
-            if (i == entry_points.size() - 1) {
-                if (current != nullptr) {
-                    direct_path.insert(current);
-                    if (current->prev_edge != nullptr) {
-                        delete current->prev_edge;
-                        current->prev_edge = nullptr;
-                        //cout << "Deleted previous edge of current" << endl;  // Debug print
-                    } else {
-                        delete current;
-                        //cout << "Deleted current edge" << endl;  // Debug print
-                    }
-                }
-            }
-        }
-    }
-
-    vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
-    path = direct_path_vector;
+    if (config->use_direct_path && is_training) {
+        find_direct_path(path, entry_points);
     }
 
 
@@ -538,6 +489,56 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     // Select closest elements
     entry_points.resize(min(entry_points.size(), (size_t)num_to_return));
     return entry_points;
+}
+
+/*
+ * Finds the direct path to each nearest neighbor stored in entry_points by
+ * backtracking along the beam searched path until a nullptr is reached. This
+ * sets the path to the newly found path and deallocates the entry points.
+ */
+void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry_points) {
+    set<Edge*> direct_path;
+    for (int i = 0; i < entry_points.size(); i++) {
+        Edge* current = nullptr;
+        for (auto edge : path) {
+            if (edge->target == entry_points[i].second) {
+                direct_path.insert(edge);
+                current = edge;
+                //cout << "Current edge found for entry point " << i << " with target " << edge->target << endl;  // Debug print
+                break;
+            }
+        }
+
+        if (current == nullptr) {
+            cerr << "Start edge wasn't found, can't find strict path for entry point " << i << endl;
+            break;
+        } else {
+            // Traverse back through the path
+            int size = 0;
+            while (size < path.size() && current->prev_edge != nullptr) {
+                direct_path.insert(current->prev_edge);
+                current = current->prev_edge;
+                size++;
+                // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
+            }
+
+            // Handle the last entry point
+            if (i == entry_points.size() - 1) {
+                if (current != nullptr) {
+                    direct_path.insert(current);
+                    if (current->prev_edge != nullptr) {
+                        delete current->prev_edge;
+                        current->prev_edge = nullptr;
+                        //cout << "Deleted previous edge of current" << endl;  // Debug print
+                    } else {
+                        delete current;
+                        //cout << "Deleted current edge" << endl;  // Debug print
+                    }
+                }
+            }
+        }
+    }
+    std::copy(direct_path.begin(), direct_path.end(), std::back_inserter(path));
 }
 
 void HNSW::search_queries(Config* config, float** queries) {
