@@ -20,13 +20,13 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_prefix = "./runs/cost_benefit_deep/efs_";
+    std::string runs_prefix = "./runs/";
     std::string hnsw_graph_file = "./runs/cost_benefit_deep/graph_num_return_50.bin";
     std::string hnsw_info_file = "./runs/cost_benefit_deep/info_num_return_50.txt";
     std::string training_set = "";
     bool load_graph_file = false;
     bool export_benchmark = true;
-    bool export_graph = false;
+    bool export_graph = true;
 
     // Debugging related flags
     bool print_weight_updates = true;
@@ -53,6 +53,7 @@ public:
     // HNSW Search Parameters
     bool use_distance_threshold = false;
     bool single_ep_query = false;
+    bool single_ep_training = true;
     int ef_search = 400;
     int ef_search_upper = 10;
     int num_return = 50;

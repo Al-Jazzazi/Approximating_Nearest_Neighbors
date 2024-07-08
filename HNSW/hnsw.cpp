@@ -456,7 +456,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
 
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= 1; layer--) {
-        if (config->single_ep_query && !is_training) {
+        if ((config->single_ep_query && !is_training) || (config->single_ep_training && is_training)) {
             search_layer(config, query.second, path, entry_points, 1, layer);
         } else {
             search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
