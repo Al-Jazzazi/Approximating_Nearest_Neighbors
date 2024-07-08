@@ -95,6 +95,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         double construction_duration;
         double search_duration;
         long long search_dist_comp;
+        long long total_dist_comp;
         HNSW* hnsw = NULL;
         vector<vector<int>> actual_neighbors;
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
@@ -164,6 +165,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             cout << "Warning: Skipping ef_search = " << config->ef_search << " which is less than num_return" << endl;
             search_duration = 0;
             search_dist_comp = 0;
+            total_dist_comp = 0;
             break;
         }
 
@@ -186,6 +188,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
         search_duration = duration;
         search_dist_comp = layer0_dist_comps;
+        total_dist_comp = layer0_dist_comps + upper_dist_comps;
 
         if (neighbors.empty())
             break;
@@ -253,6 +256,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
+                     + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(construction_duration);
             lines.push_back(line);
         }
