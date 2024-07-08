@@ -29,14 +29,22 @@ int main() {
         << "\nUse_distance_threshold = " << config->use_distance_threshold << ", use_benefit_cost = " << config->use_benefit_cost 
         << ", use_direct_path = " << config->use_direct_path << endl;
         
-    // Clear histogram file if it exists
-    if (!config->runs_prefix.empty()) {
-        ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
-        histogram.close();
-        histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
-        histogram.close();
-        histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
-        histogram.close();
+    // Clear histogram files if they exist
+    if (config->export_histograms) {
+        if (config->use_grasp) {
+            ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
+            histogram.close();
+            histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
+            histogram.close();
+            histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
+            histogram.close();
+        }
+        if (config->use_benefit_cost) {
+            ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt");
+            histogram.close();
+            histogram = ofstream(config->runs_prefix + "histogram_benefit.txt");
+            histogram.close();
+        }
     }
 
     // Load nodes

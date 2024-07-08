@@ -23,14 +23,6 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             path[j]->benefit++;
         }
     }
-    // Print averages
-    float total_cost = 0;
-    float total_benefit = 0;
-    for (int i = 0; i < edges.size(); i++) {
-        total_cost += edges[i]->cost;
-        total_benefit += edges[i]->benefit;
-    }
-    cout << "Cost: " << (total_cost / edges.size()) << " Benefit: " << (total_benefit / edges.size()) << endl;
     // Mark edges for deletion
     auto compare = [](Edge* lhs, Edge* rhs) {
         if (lhs->cost == 0) {
@@ -41,12 +33,20 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
         }
     };
-    // auto compare = [](Edge* lhs, Edge* rhs) { return lhs->benefit - 0.5 * lhs->cost > rhs->benefit - 0.5 * rhs->cost; };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
+    vector<long long> counts_cost;
+    vector<long long> counts_benefit;
+    for (int i = 0; i < 20; i++) {
+        counts_cost.push_back(0);
+        counts_benefit.push_back(0);
+    }
+
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default
         edges[i]->ignore = false;
         remaining_edges.push(edges[i]);
+        counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_benefit_histogram)]++;
+        counts_benefit[std::min(19, edges[i]->benefit / config->interval_for_cost_benefit_histogram)]++;
         // Disable edge if it is pushed out of remaining edges
         if (remaining_edges.size() > num_keep) {
             remaining_edges.top()->ignore = true;
@@ -65,14 +65,18 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             }
         }
     }
-    // Print averages
-    total_cost = 0;
-    total_benefit = 0;
-    for (int i = 0; i < edges.size(); i++) {
-        total_cost += edges[i]->cost;
-        total_benefit += edges[i]->benefit;
+    if (config->export_histograms) {
+        ofstream cost_histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
+        ofstream benefit_histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
+        for (int i = 0; i < 20; i++) {
+            cost_histogram << counts_cost[i] << ",";
+            benefit_histogram << counts_benefit[i] << ",";
+        }
+        cost_histogram << endl;
+        cost_histogram.close();
+        benefit_histogram << endl;
+        benefit_histogram.close();
     }
-    cout << "Cost: " << (total_cost / edges.size()) << " Benefit: " << (total_benefit / edges.size()) << " Removed: " << count << endl;
 }
 
 /**
@@ -155,7 +159,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
         }
     }
     // Record distributions in histogram text files
-    if (!config->runs_prefix.empty()) {
+    if (config->export_histograms) {
         ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
             histogram << counts_prob[i] << ",";
@@ -285,7 +289,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
     }
 
     //Creating a histogram the accumlative change in the frequency in which the edges are being updated 
-     if(!config->runs_prefix.empty()){
+     if(config->export_histograms){
         int* count_updates = new int [20];
         std::fill(count_updates, count_updates + 20, 0);
         for(int j = 0; j < config->num_nodes ; j++){

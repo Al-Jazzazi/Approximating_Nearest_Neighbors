@@ -135,7 +135,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 learn_edge_importance(config, hnsw, edges, training, results_file);
                 prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
                 edges = hnsw->get_layer_edges(config, 0);
-                if (!config->runs_prefix.empty()) {
+                if (config->export_histograms) {
                     ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
                     histogram << endl;
                     histogram.close();
@@ -151,6 +151,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             if (config->use_benefit_cost) {
                 vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
                 learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
+                if (config->export_histograms) {
+                    ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                    histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                }
             }
 
             auto end = chrono::high_resolution_clock::now();
@@ -341,13 +349,21 @@ int main() {
 
           
 
-        if (!config->runs_prefix.empty()) {
-            ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
-            histogram.close();
-            histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
-            histogram.close();
-            histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
-            histogram.close();
+        if (config->export_histograms) {
+            if (config->use_grasp) {
+                ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
+                histogram.close();
+                histogram = ofstream(config->runs_prefix + "histogram_weights.txt");
+                histogram.close();
+                histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
+                histogram.close();
+            }
+            if (config->use_benefit_cost) {
+                ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt");
+                histogram.close();
+                histogram = ofstream(config->runs_prefix + "histogram_benefit.txt");
+                histogram.close();
+            }
         }
     }
 

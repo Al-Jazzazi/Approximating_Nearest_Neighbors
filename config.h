@@ -12,35 +12,37 @@ public:
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
     std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
-    //std::string groundtruth_file = "";
+    // std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 10000;
-    int num_training = 10000;
-    int num_queries = 1000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
+    int num_queries = 10000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/";
-    std::string hnsw_graph_file = "./runs/cost_benefit_deep/graph_num_return_50.bin";
-    std::string hnsw_info_file = "./runs/cost_benefit_deep/info_num_return_50.txt";
+    std::string hnsw_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
+    std::string hnsw_info_file = "./runs/hnsw_sift/info_num_return_50.txt";
     std::string training_set = "";
-    bool load_graph_file = true;
+    bool load_graph_file = false;
     bool export_benchmark = true;
     bool export_graph = true;
 
     // Debugging related flags
     bool print_weight_updates = true;
     bool export_weight_updates = false;
+    bool export_histograms = true;
     int interval_for_weight_histogram = 1; 
-    int interval_for_num_of_updates_histogram = 10; 
+    int interval_for_num_of_updates_histogram = 10;
+    int interval_for_cost_benefit_histogram = 10; 
     bool export_training_queries = false; 
     bool export_negative_values = false; 
     bool first_print = true;
 
     // HNSW Construction Parameters
     bool use_heuristic = true;
-    bool use_grasp = true;
-    bool use_benefit_cost = false;
+    bool use_grasp = false;
+    bool use_benefit_cost = true;
     bool use_direct_path = true;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_ep_construction = true;
@@ -53,7 +55,7 @@ public:
 
     // HNSW Search Parameters
     bool use_distance_threshold = false;
-    bool single_ep_query = false;
+    bool single_ep_query = true;
     bool single_ep_training = true;
     int ef_search = 400;
     int ef_search_upper = 10;
@@ -85,7 +87,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     std::vector<int> benchmark_ef_search = {};
-   // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
+    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
     std::vector<float> benchmark_threshold_alpha = {};
     // std::vector<float> benchmark_threshold_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
