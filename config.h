@@ -11,13 +11,13 @@ public:
     std::string dataset_prefix = "./exports/sift/sift";
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
-   // std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
-    std::string groundtruth_file = "";
+    std::string groundtruth_file = dataset_prefix + "_groundtruth.ivecs";
+    // std::string groundtruth_file = "";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     int dimensions = 128;
-    int num_nodes = 10000;
-    int num_training = 10000;
-    int num_queries = 1000;
+    int num_nodes = 1000000;
+    int num_training = 100000;
+    int num_queries = 10000;
 
     // Save/Load Files
     std::string runs_prefix = "./runs/cost_benefit_deep/efs_";
@@ -38,25 +38,29 @@ public:
     bool first_print = true;
 
     // HNSW Construction Parameters
+    bool use_heuristic = true;
+    bool use_grasp = true;
+    bool use_benefit_cost = false;
+    bool use_direct_path = true;
+    // Enforces a single entry point for graph construction. Searching will always be single entry point
+    bool single_ep_construction = true;
     int optimal_connections = 14;
     int max_connections = 14;
     int max_connections_0 = 14;
     int ef_construction = 500;
     double scaling_factor = 0.379;
-    // Enforces a single entry point for graph construction. Searching will always be single entry point
-    bool single_entry_point = true;
-    bool use_heuristic = true;
-    bool use_grasp = true;
-    bool use_benefit_cost = true;
-    bool use_direct_path = true;
 
     // HNSW Search Parameters
+    bool use_distance_threshold = false;
+    bool single_ep_query = false;
     int ef_search = 400;
+    int ef_search_upper = 10;
     int num_return = 50;
     float threshold_alpha = 0.5;
-    bool use_distance_threshold = false;
     
     // GraSP Training
+    bool use_dynamic_sampling = false;
+    bool use_stinky_points = false;
     float learning_rate = 0.1;
     float initial_temperature = 1;
     float decay_factor = 0.8;
@@ -69,8 +73,6 @@ public:
     int num_return_training = -1;
     // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_selection_method = 0;
-    bool use_dynamic_sampling = false;
-    bool use_stinky_points = false; 
     float stinky_value = 0.00005;
 
     // Benchmark parameters

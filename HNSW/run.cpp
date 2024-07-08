@@ -25,7 +25,7 @@ int main() {
         << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
         <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
         << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
-        << ", Single search point = " << config->single_entry_point  << ", current Pruning method = " << config->weight_selection_method   
+        << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method   
         << "\nUse_distance_threshold = " << config->use_distance_threshold << ", use_benefit_cost = " << config->use_benefit_cost 
         << ", use_direct_path = " << config->use_direct_path << endl;
         

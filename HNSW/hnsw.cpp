@@ -124,7 +124,7 @@ void HNSW::insert(Config* config, int query) {
             }
         }
 
-        if (config->single_entry_point)
+        if (config->single_ep_construction)
             // Resize entry_points to 1
             entry_points.resize(1);
     }
@@ -456,7 +456,11 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
 
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= 1; layer--) {
-        search_layer(config, query.second, path, entry_points, 1, layer);
+        if (config->single_ep_query && !is_training) {
+            search_layer(config, query.second, path, entry_points, 1, layer);
+        } else {
+            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
+        }
 
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
