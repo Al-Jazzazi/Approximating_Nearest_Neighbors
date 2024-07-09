@@ -123,7 +123,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
 
             hnsw = init_hnsw(config, nodes);
-            for (int i = 1; i < config->num_nodes; i++) {
+            for (int i = 1; i < config->num_nodes; ++i) {
                 hnsw->insert(config, i);
             }
 
@@ -176,15 +176,19 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         }
 
         // Run query search
+        hnsw->reset_statistics();
         auto start = chrono::high_resolution_clock::now();
-        hnsw->layer0_dist_comps = 0;
-        hnsw->upper_dist_comps = 0;
-        hnsw->actual_beam_width = 0;
         neighbors.reserve(config->num_queries);
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
             pair<int, float*> query = make_pair(i, queries[i]);
             neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));
+            if (config->print_neighbor_percent) {
+                for (int i = 0; i < 10; ++i) {
+                    cout << hnsw->percent_neighbors[i] << " ";
+                }
+                cout << endl;
+            }
         }
 
         auto end = chrono::high_resolution_clock::now();
@@ -263,9 +267,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
+                     + std::to_string(construction_duration) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", "
-                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
-                     + std::to_string(construction_duration);
+                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries);
             lines.push_back(line);
         }
         
@@ -276,7 +280,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms), total_dist_comps/query, num_queries_terminated, construction time" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms), construction time, total_dist_comps/query, actual_beam_width" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
@@ -411,14 +415,14 @@ int main() {
         delete results_file;
         cout << "Results exported to " << config->runs_prefix << "benchmark.txt" << endl;
     }
-    for (int i = 0; i < config->num_nodes; i++)
+    for (int i = 0; i < config->num_nodes; ++i)
         delete[] nodes[i];
     delete[] nodes;
     for (int i = 0; i < config->num_queries; ++i)
         delete[] queries[i];
     delete[] queries;
     if (config->use_grasp && !config->load_graph_file)
-        for (int i = 0; i < config->num_training; i++)
+        for (int i = 0; i < config->num_training; ++i)
             delete[] training[i];
     delete[] training;
     delete config;

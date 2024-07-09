@@ -53,11 +53,16 @@ public:
     double normal_factor;
 
     // Statistics
-    long long int layer0_dist_comps = 0;
-    long long int upper_dist_comps = 0;
-    long long int actual_beam_width = 0;
+    long long int layer0_dist_comps;
+    long long int upper_dist_comps;
+    long long int actual_beam_width;
+    long long int processed_neighbors;
+    long long int total_neighbors;
+    float percent_neighbors[10];
+
 
     HNSW(Config* config, float** nodes);
+    void reset_statistics();
     void search_queries(Config* config, float** queries);
     std::vector<Edge*> get_layer_edges(Config* config, int layer);
     void find_direct_path(std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points);

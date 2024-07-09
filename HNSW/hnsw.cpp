@@ -23,7 +23,9 @@ Edge::Edge(int target, float distance) : target(target), distance(distance),
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999) {}
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999) {
+    reset_statistics();
+}
 
 
 /**
@@ -162,6 +164,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     if (use_distance_termination) {
         num_to_return = 100000;
     }
+    if (layer_num == 0 && config->print_neighbor_percent) {
+        processed_neighbors = 0;
+        total_neighbors = 0;
+    }
   
     // Add entry points to data structures
     for (const auto& entry : entry_points) {
@@ -258,6 +264,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         for (auto& neighbor_edge : neighbors) {
             int neighbor = neighbor_edge.target;
             bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
+            if (config->print_neighbor_percent && layer_num == 0) {
+                ++total_neighbors;
+            }
             if (!(is_training && is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
 
@@ -269,12 +278,20 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 // add to candidates and found
                 float neighbor_dist = calculate_l2_sq(this, layer_num, query, nodes[neighbor], num_dimensions);
                 
+                if (config->print_neighbor_percent && layer_num == 0) {
+                    ++processed_neighbors;
+                    if (found.size() % (config->ef_search / 10) == 0) {
+                        percent_neighbors[found.size() / (config->ef_search / 10)] = static_cast<double>(processed_neighbors) / total_neighbors;
+                        processed_neighbors = 0;
+                        total_neighbors = 0;
+                    }
+                }
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
                 //discovered some stinky points or increasing it's cost (we developed a few different implementations to prune edges) 
                 if (is_training && config->use_stinky_points)
                     neighbor_edge.stinky -= config->stinky_value;
                 if (is_training && config->use_benefit_cost)
-                    neighbor_edge.cost++;
+                    ++neighbor_edge.cost;
             
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
@@ -524,7 +541,7 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
             while (size < path.size() && current->prev_edge != nullptr) {
                 direct_path.insert(current->prev_edge);
                 current = current->prev_edge;
-                size++;
+                ++size;
                 // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
             }
 
@@ -546,6 +563,17 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     }
     vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
     path = direct_path_vector;
+}
+
+void HNSW::reset_statistics() {
+    layer0_dist_comps = 0;
+    upper_dist_comps = 0;
+    actual_beam_width = 0;
+    processed_neighbors = 0;
+    total_neighbors = 0;
+    for (int i = 0; i < 10; ++i) {
+        percent_neighbors[i] = 0;
+    }
 }
 
 void HNSW::search_queries(Config* config, float** queries) {
@@ -597,8 +625,7 @@ void HNSW::search_queries(Config* config, float** queries) {
             }
         }
         cur_groundtruth = actual_neighbors[i];
-        layer0_dist_comps = 0;
-        upper_dist_comps = 0;
+        reset_statistics();
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
         if (config->gt_dist_log)
