@@ -266,11 +266,13 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         if (config->export_benchmark ) {
             std::string line = std::to_string(parameter) + ", " 
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
+                     + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
-                     + std::to_string(construction_duration) + ", "
+                     //+ std::to_string(construction_duration) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries);
+                     + std::to_string(average_ndcg);
             lines.push_back(line);
         }
         
@@ -281,7 +283,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, recall, runtime/query (ms), construction time, total_dist_comps/query, actual_beam_width" << endl;
+        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
@@ -384,7 +386,7 @@ int main() {
         "ef_construction", nodes, queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
-    
+
     if (config->use_distance_termination) {
         run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
             queries, training, results_file);

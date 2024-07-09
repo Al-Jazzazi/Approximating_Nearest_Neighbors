@@ -20,13 +20,14 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_prefix = "./runs/";
-    std::string hnsw_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
-    std::string hnsw_info_file = "./runs/hnsw_sift/info_num_return_50.txt";
+    std::string runs_prefix = "/home/ya2225/Summer_2024_Project/Summer2024-Research/runs/k_10/new_termination/distance_threshold_1/_";
+    std::string hnsw_graph_file = "/ex_ssd/ya2225/graph_hnsw_heuristic.bin";
+    std::string hnsw_info_file = "/ex_ssd/ya2225/info_hnsw_heuristic.txt";
     std::string training_set = "";
     bool load_graph_file = true;
+    bool load_graph_file = true;
     bool export_benchmark = true;
-    bool export_graph = true;
+    bool export_graph = false;
 
     // Debugging related flags
     bool print_weight_updates = true;
@@ -43,8 +44,8 @@ public:
 
     // HNSW Construction Parameters
     bool use_heuristic = true;
-    bool use_grasp = false;
-    bool use_benefit_cost = true;
+    bool use_grasp = true;
+    bool use_benefit_cost = false;
     bool use_direct_path = true;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_ep_construction = true;
@@ -56,7 +57,8 @@ public:
 
 
     // HNSW Search Parameters
-    bool use_distance_termination = false;
+    bool use_distance_termination = true;
+    bool joined_termination = true; 
     bool single_ep_query = true;
     bool single_ep_training = true;
     int ef_search = 400;
