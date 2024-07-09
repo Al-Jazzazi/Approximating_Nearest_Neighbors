@@ -75,7 +75,7 @@ void k_means_cluster(Config* config, float* cluster_sizes, float& wcss, float** 
             int min_distance = -1;
             int min_index = -1;
             for (int m = 0; m < k; m++) {
-                float distance = calculate_l2_sq(nodes[n], centroids[m], config->dimensions, -1);
+                float distance = calculate_l2_sq(nodes[n], centroids[m], config->dimensions);
                 if (min_distance == -1 || distance < min_distance) {
                     min_distance = distance;
                     min_index = m;
@@ -99,7 +99,7 @@ void k_means_cluster(Config* config, float* cluster_sizes, float& wcss, float** 
     float total_error = 0;
     for (int i = 0; i < config->num_nodes; i++) {
         int cluster_index = assignments[i];
-        sum_of_squares[cluster_index] +=  calculate_l2_sq(nodes[i], centroids[cluster_index], config->dimensions, -1);
+        sum_of_squares[cluster_index] +=  calculate_l2_sq(nodes[i], centroids[cluster_index], config->dimensions);
     }
     for (int i = 0; i < k; i++) {
         if (cluster_sizes[i] > 0) {
@@ -145,7 +145,7 @@ float calculate_hopkins(Config* config, float** nodes, int sample_size, float* m
     for (int i = 0; i < sample_size; i++) {
         min_distance = -1;
         for (int j = 0; j < sample_size; j++) {
-            float distance = calculate_l2_sq(sample[i], sample[j], config->dimensions, -1);
+            float distance = calculate_l2_sq(sample[i], sample[j], config->dimensions);
             if ((min_distance == -1 || distance < min_distance) && i != j) {
                 min_distance = distance;
             }
@@ -158,7 +158,7 @@ float calculate_hopkins(Config* config, float** nodes, int sample_size, float* m
     for (int i = 0; i < sample_size; i++) {
         min_distance = -1;
         for (int j = 0; j < sample_size; j++) {
-            float distance = calculate_l2_sq(uniform[i], sample[j], config->dimensions, -1);
+            float distance = calculate_l2_sq(uniform[i], sample[j], config->dimensions);
             if ((min_distance == -1 || distance < min_distance)) {
                 min_distance = distance;
             }

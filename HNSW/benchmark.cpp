@@ -23,7 +23,7 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
             for (int i = 0; i < config->num_queries; ++i) {
                 cout << "Neighbors in ideal case for query " << i << endl;
                 for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
-                    float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions, -1);
+                    float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
                     cout << actual_neighbors[i][j] << " (" << dist << ") ";
                 }
                 cout << endl;
@@ -37,7 +37,7 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
             priority_queue<pair<float, int>> pq;
 
             for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(queries[i], nodes[j], config->dimensions, -1);
+                float dist = calculate_l2_sq(queries[i], nodes[j], config->dimensions);
                 pq.emplace(dist, j);
                 if (pq.size() > config->num_return)
                     pq.pop();
@@ -57,7 +57,7 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
             if (config->benchmark_print_neighbors) {
                 cout << "Neighbors in ideal case for query " << i << endl;
                 for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
-                    float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions, -1);
+                    float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
                     cout << actual_neighbors[i][j] << " (" << dist << ") ";
                 }
                 cout << endl;
@@ -89,8 +89,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             break;
         }
 
-        layer0_dist_comps = 0;
-        upper_dist_comps = 0;
         vector<vector<pair<float, int>>> neighbors;
         double construction_duration;
         double search_duration;
@@ -117,7 +115,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                  <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
                  << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
                  << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method   
-                 << "\nUse_distance_threshold = " << config->use_distance_threshold << ", use_benefit_cost = " << config->use_benefit_cost 
+                 << "\nUse_distance_termination = " << config->use_distance_termination << ", use_benefit_cost = " << config->use_benefit_cost 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 
 
@@ -164,8 +162,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";
-            cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
-            cout << "Distance computations (top layers): " << upper_dist_comps << endl;
+            cout << "Distance computations (layer 0): " << hnsw->layer0_dist_comps << ", ";
+            cout << "Distance computations (top layers): " << hnsw->upper_dist_comps << endl;
             construction_duration = duration / 1000.0;
         }
 
@@ -179,9 +177,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
         // Run query search
         auto start = chrono::high_resolution_clock::now();
-        layer0_dist_comps = 0;
-        upper_dist_comps = 0;
-        actual_beam_width = 0;
+        hnsw->layer0_dist_comps = 0;
+        hnsw->upper_dist_comps = 0;
+        hnsw->actual_beam_width = 0;
         neighbors.reserve(config->num_queries);
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
@@ -192,12 +190,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         cout << "Query time: " << duration / 1000.0 << " seconds, ";
-        cout << "Distance computations (layer 0): " << layer0_dist_comps << ", ";
-        cout << "Distance computations (top layers): " << upper_dist_comps << endl;
+        cout << "Distance computations (layer 0): " << hnsw->layer0_dist_comps << ", ";
+        cout << "Distance computations (top layers): " << hnsw->upper_dist_comps << endl;
 
         search_duration = duration;
-        search_dist_comp = layer0_dist_comps;
-        total_dist_comp = layer0_dist_comps + upper_dist_comps;
+        search_dist_comp = hnsw->layer0_dist_comps;
+        total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
 
         if (neighbors.empty())
             break;
@@ -245,7 +243,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
                 for (size_t k = 0; k < actual_neighbors[j].size(); ++k) {
                     if (intersection.find(actual_neighbors[j][k]) == intersection.end()) {
-                        float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions, -1);
+                        float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions);
                         cout << actual_neighbors[j][k] << " (" << dist << ") ";
                     }
                 }
@@ -266,7 +264,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
                      + std::to_string(total_dist_comp / config->num_queries) + ", "
-                     + std::to_string(static_cast<double>(actual_beam_width) / config->num_queries) + ", "
+                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(construction_duration);
             lines.push_back(line);
         }
@@ -346,7 +344,7 @@ int main() {
                  <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
                  << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
                  << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method   
-                 << "\nUse_distance_threshold = " << config->use_distance_threshold << ", use_benefit_cost = " << config->use_benefit_cost 
+                 << "\nUse_distance_termination = " << config->use_distance_termination << ", use_benefit_cost = " << config->use_benefit_cost 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 
           
@@ -382,8 +380,8 @@ int main() {
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
     
-    if (config->use_distance_threshold) {
-        run_benchmark(config, config->threshold_alpha, config->benchmark_threshold_alpha, "threshold_alpha", nodes,
+    if (config->use_distance_termination) {
+        run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
             queries, training, results_file);
     } else {
         run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,

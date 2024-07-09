@@ -9,10 +9,6 @@
 
 using namespace std;
 
-long long int layer0_dist_comps = 0;
-long long int upper_dist_comps = 0;
-long long int actual_beam_width = 0;
-
 ofstream* debug_file = NULL;
 
 int correct_nn_found = 0;
@@ -52,7 +48,7 @@ void HNSW::insert(Config* config, int query) {
             cout << "Layer count increased to " << num_layers << endl;
     }
 
-    float dist = calculate_l2_sq(nodes[query], nodes[entry_point], num_dimensions, top);
+    float dist = calculate_l2_sq(this, top, nodes[query], nodes[entry_point], num_dimensions);
     entry_points.push_back(make_pair(dist, entry_point));
 
     if (config->debug_insert)
@@ -106,7 +102,7 @@ void HNSW::insert(Config* config, int query) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
 
             // Place query in correct position in neighbor_mapping
-            float new_dist = calculate_l2_sq(nodes[query], nodes[n_pair.target], num_dimensions, layer);
+            float new_dist = calculate_l2_sq(this, layer, nodes[query], nodes[n_pair.target], num_dimensions);
             auto new_edge = Edge(query, new_dist);
             auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge,
                 [](const Edge& lhs, const Edge& rhs) { return lhs.distance < rhs.distance || (lhs.distance == rhs.distance && lhs.target < rhs.target); });
@@ -142,7 +138,7 @@ void HNSW::insert(Config* config, int query) {
  *       , and the path taken is saved into path which can be the direct path or beam_search bath dependent on variable config->use_direct_path
  *         
 */
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool is_thresholding) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool use_distance_termination) {
     // HNSW structures
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
@@ -151,19 +147,19 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     priority_queue<pair<float, int>> found;
+    // Distance termination structures
+    priority_queue<pair<float, int>> top_k;
+    pair<float, int> top_1;
    
     // Array of when each neighbor was found
     vector<int> when_neigh_found(config->num_return, -1);
     int nn_found = 0;
-    // Distance threshold structures
-    priority_queue<pair<float, int>> top_k;
-    pair<float, int> top_1;
 
     // Re-initialize arguments
     if (layer_num == 0 && config->use_direct_path) {
         path.clear();
     }
-    if (is_thresholding) {
+    if (use_distance_termination) {
         num_to_return = 100000;
     }
   
@@ -180,7 +176,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
         found.emplace(entry);
 
-        if (is_thresholding) {
+        if (use_distance_termination) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -246,8 +242,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
       
         // If closest is further than furthest, stop
-        bool within_distance = is_thresholding
-            ? top_k.size() < config->num_return || (close_dist <= config->threshold_alpha * (2 * top_k.top().first + top_1.first))
+        bool within_distance = use_distance_termination
+            ? top_k.size() < config->num_return || (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first))
             : close_dist <= far_dist;
         if (!within_distance) {
             if (layer_num == 0) {
@@ -271,7 +267,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 // If distance from query to neighbor is less than the distance from query to furthest,
                 // or if the size of found is less than num_to_return,
                 // add to candidates and found
-                float neighbor_dist = calculate_l2_sq(query, nodes[neighbor], num_dimensions, layer_num);
+                float neighbor_dist = calculate_l2_sq(this, layer_num, query, nodes[neighbor], num_dimensions);
                 
                 //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
                 //discovered some stinky points or increasing it's cost (we developed a few different implementations to prune edges) 
@@ -412,10 +408,10 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
     // Add considered element to output if it is closer to query than to other output elements
     while (!considered.empty() && output.size() < num_to_return) {
         const Edge& closest = considered.top();
-        float query_distance = calculate_l2_sq(nodes[closest.target], query, num_dimensions, layer_num);
+        float query_distance = calculate_l2_sq(this, layer_num, nodes[closest.target], query, num_dimensions);
         bool is_closer_to_query = true;
         for (auto n_pair : output) {
-            if (query_distance >= calculate_l2_sq(nodes[closest.target], nodes[n_pair.target], num_dimensions, layer_num)) {
+            if (query_distance >= calculate_l2_sq(this, layer_num, nodes[closest.target], nodes[n_pair.target], num_dimensions)) {
                 is_closer_to_query = false;
                 break;
             }
@@ -453,7 +449,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
-    float dist = calculate_l2_sq(query.second, nodes[entry_point], num_dimensions, top);
+    float dist = calculate_l2_sq(this, top, query.second, nodes[entry_point], num_dimensions);
     entry_points.push_back(make_pair(dist, entry_point));
 
     if (config->debug_search)
@@ -478,7 +474,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring, config->use_distance_threshold);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring, config->use_distance_termination);
     
     if (config->gt_dist_log)
         log_neighbors = false;
@@ -584,7 +580,7 @@ void HNSW::search_queries(Config* config, float** queries) {
             // Get actual nearest neighbors
             priority_queue<pair<float, int>> pq;
             for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(query.second, nodes[j], num_dimensions, -1);
+                float dist = calculate_l2_sq(query.second, nodes[j], num_dimensions);
                 pq.emplace(dist, j);
                 if (pq.size() > config->num_return)
                     pq.pop();
@@ -744,12 +740,15 @@ std::ostream& operator<<(std::ostream& os, const HNSW& hnsw) {
     return os;
 }
 
-float calculate_l2_sq(float* a, float* b, int size, int layer) {
+float calculate_l2_sq(HNSW* hnsw, int layer, float* a, float* b, int size) {
     if (layer == 0)
-        ++layer0_dist_comps;
-    else
-        ++upper_dist_comps;
+        ++hnsw->layer0_dist_comps;
+    else if (layer > 0)
+        ++hnsw->upper_dist_comps;
+    return calculate_l2_sq(a, b, size);
+}
 
+float calculate_l2_sq(float* a, float* b, int size) {
     int parts = size / 8;
 
     // Initialize result to 0
@@ -998,8 +997,8 @@ void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int du
               << config->max_connections_0 << " " << config->ef_construction << endl;
     info_file << config->num_nodes << endl;
     info_file << hnsw->num_layers << endl;
-    info_file << layer0_dist_comps << endl;
-    info_file << upper_dist_comps << endl;
+    info_file << hnsw->layer0_dist_comps << endl;
+    info_file << hnsw->upper_dist_comps << endl;
     info_file << duration << endl;
 
     cout << "Exported graph to " << config->runs_prefix + "graph_" + name + ".bin" << endl;
