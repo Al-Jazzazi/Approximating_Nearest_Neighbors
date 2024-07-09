@@ -20,9 +20,9 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_prefix = "/home/ya2225/Summer_2024_Project/Summer2024-Research/runs/k_10/new_termination/distance_threshold_1/_";
-    std::string hnsw_graph_file = "/ex_ssd/ya2225/graph_hnsw_heuristic.bin";
-    std::string hnsw_info_file = "/ex_ssd/ya2225/info_hnsw_heuristic.txt";
+   std::string runs_prefix = "./runs/";
+    std::string hnsw_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
+    std::string hnsw_info_file = "./runs/hnsw_sift/info_num_return_50.txt";
     std::string training_set = "";
     bool load_graph_file = true;
     bool load_graph_file = true;
