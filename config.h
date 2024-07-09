@@ -33,6 +33,7 @@ public:
     bool export_weight_updates = false;
     bool export_histograms = true;
     bool print_neighbor_percent = true;
+    int interval_for_neighbor_percent = 100;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10;
     int interval_for_cost_benefit_histogram = 10; 

@@ -58,7 +58,7 @@ public:
     long long int actual_beam_width;
     long long int processed_neighbors;
     long long int total_neighbors;
-    float percent_neighbors[10];
+    std::vector<float> percent_neighbors;
 
 
     HNSW(Config* config, float** nodes);

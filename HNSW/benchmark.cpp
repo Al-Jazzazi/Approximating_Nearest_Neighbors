@@ -184,10 +184,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             pair<int, float*> query = make_pair(i, queries[i]);
             neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));
             if (config->print_neighbor_percent) {
-                for (int i = 0; i < 10; ++i) {
+                for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
                     cout << hnsw->percent_neighbors[i] << " ";
                 }
                 cout << endl;
+                hnsw->percent_neighbors.clear();
             }
         }
 

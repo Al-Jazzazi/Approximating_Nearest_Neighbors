@@ -280,8 +280,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 
                 if (config->print_neighbor_percent && layer_num == 0) {
                     ++processed_neighbors;
-                    if (found.size() % (config->ef_search / 10) == 0) {
-                        percent_neighbors[found.size() / (config->ef_search / 10)] = static_cast<double>(processed_neighbors) / total_neighbors;
+                    if (total_neighbors == config->interval_for_neighbor_percent) {
+                        percent_neighbors.push_back(static_cast<double>(processed_neighbors) / total_neighbors);
                         processed_neighbors = 0;
                         total_neighbors = 0;
                     }
@@ -571,9 +571,7 @@ void HNSW::reset_statistics() {
     actual_beam_width = 0;
     processed_neighbors = 0;
     total_neighbors = 0;
-    for (int i = 0; i < 10; ++i) {
-        percent_neighbors[i] = 0;
-    }
+    percent_neighbors.clear();
 }
 
 void HNSW::search_queries(Config* config, float** queries) {
