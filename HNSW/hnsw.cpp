@@ -148,6 +148,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     //This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
+    vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
     // Distance termination structures
     priority_queue<pair<float, int>> top_k;
@@ -177,6 +178,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         if (layer_num == 0 && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first);
             candidates_edges.emplace(new_Edge);
+            entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
 
@@ -382,6 +384,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
     if (config->use_direct_path && is_training) {
         find_direct_path(path, entry_points);
+        for (Edge* edge : entry_point_edges) {
+            delete edge;
+        }
     }
 
 
@@ -531,7 +536,6 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
         Edge* current = nullptr;
         for (auto edge : path) {
             if (edge->target == entry_points[i].second) {
-                direct_path.insert(edge);
                 current = edge;
                 //cout << "Current edge found for entry point " << i << " with target " << edge->target << endl;  // Debug print
                 break;
@@ -545,25 +549,10 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
             // Traverse back through the path
             int size = 0;
             while (size < path.size() && current->prev_edge != nullptr) {
-                direct_path.insert(current->prev_edge);
+                direct_path.insert(current);
                 current = current->prev_edge;
                 ++size;
                 // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
-            }
-
-            // Handle the last entry point
-            if (i == entry_points.size() - 1) {
-                if (current != nullptr) {
-                    direct_path.insert(current);
-                    if (current->prev_edge != nullptr) {
-                        delete current->prev_edge;
-                        current->prev_edge = nullptr;
-                        //cout << "Deleted previous edge of current" << endl;  // Debug print
-                    } else {
-                        delete current;
-                        //cout << "Deleted current edge" << endl;  // Debug print
-                    }
-                }
             }
         }
     }
