@@ -161,7 +161,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     if (layer_num == 0 && config->use_direct_path) {
         path.clear();
     }
-    if (use_distance_termination && !config->joined_termination) {
+    if (use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
     }
     if (layer_num == 0 && config->print_neighbor_percent) {
@@ -182,7 +182,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
 
         found.emplace(entry);
 
-        if (use_distance_termination || config->joined_termination) {
+        if (use_distance_termination || config->combined_termination) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -250,8 +250,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         // If closest is further than furthest, stop
         bool within_distance;
 
-        if(config->joined_termination){
-            within_distance = config->num_return || (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) || close_dist <= far_dist;
+        if(config->combined_termination){
+            within_distance = top_k.size() < config->num_return|| (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) || close_dist <= far_dist;
         }
         else{
          within_distance = use_distance_termination

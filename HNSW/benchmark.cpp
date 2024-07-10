@@ -271,7 +271,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_duration / config->num_queries) + ", " 
                      //+ std::to_string(construction_duration) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", "
-                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries);
+                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries)
                      + std::to_string(average_ndcg);
             lines.push_back(line);
         }
@@ -387,7 +387,7 @@ int main() {
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
 
-    if (config->use_distance_termination) {
+    if (config->use_distance_termination && !config->combined_termination) {
         run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
             queries, training, results_file);
     } else {

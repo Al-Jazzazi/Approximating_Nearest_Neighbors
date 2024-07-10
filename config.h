@@ -20,11 +20,10 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-   std::string runs_prefix = "./runs/";
-    std::string hnsw_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
-    std::string hnsw_info_file = "./runs/hnsw_sift/info_num_return_50.txt";
+    std::string runs_prefix = "./runs/k_1/new_termination/_";
+    std::string hnsw_graph_file = "/ex_ssd/ya2225/graph_hnsw_heuristic.bin";
+    std::string hnsw_info_file = "/ex_ssd/ya2225/info_hnsw_heuristic.txt";
     std::string training_set = "";
-    bool load_graph_file = true;
     bool load_graph_file = true;
     bool export_benchmark = true;
     bool export_graph = false;
@@ -33,7 +32,7 @@ public:
     bool print_weight_updates = true;
     bool export_weight_updates = false;
     bool export_histograms = true;
-    bool print_neighbor_percent = true;
+    bool print_neighbor_percent = false;
     int interval_for_neighbor_percent = 100;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 10;
@@ -58,12 +57,12 @@ public:
 
     // HNSW Search Parameters
     bool use_distance_termination = true;
-    bool joined_termination = false; 
+    bool combined_termination = true; 
     bool single_ep_query = true;
     bool single_ep_training = true;
     int ef_search = 400;
     int ef_search_upper = 10;
-    int num_return = 50;
+    int num_return = 1;
     float termination_alpha = 0.5;
     
     // GraSP Training
@@ -90,8 +89,8 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {500};
-    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
+    //std::vector<int> benchmark_ef_search = {500};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
@@ -126,7 +125,7 @@ public:
     bool print_results = false;
     bool print_actual = false;
     bool print_indiv_found = false;
-    bool print_total_found = true;
+    bool print_total_found = false;
     // Log where the neighbors are found per query
     bool gt_dist_log = false;
     // Use groundtruth to terminate search early
