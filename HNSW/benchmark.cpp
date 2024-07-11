@@ -270,8 +270,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
                      //+ std::to_string(construction_duration) + ", "
-                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries)
-                     + std::to_string(average_ndcg);
+                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
+                     + std::to_string(average_ndcg) + ", ";
             if(config->combined_termination)
                 line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination);
             lines.push_back(line);
@@ -348,10 +348,11 @@ int main() {
                  << ", ef_search = " << config->ef_search << "\nnum_return = " << config->num_return
                  << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
                  << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
-                 << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  
+                 << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  << ", Single training = " << config->single_ep_training 
                  <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
                  << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
-                 << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method   
+                 << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query 
+                 << ", current Pruning method = " << config->weight_selection_method   
                  << "\nUse_distance_termination = " << config->use_distance_termination << ", use_benefit_cost = " << config->use_benefit_cost 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 

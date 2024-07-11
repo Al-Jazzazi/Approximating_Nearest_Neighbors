@@ -20,7 +20,7 @@ public:
     int num_queries = 10000;
 
     // Save/Load Files
-    std::string runs_prefix = "./runs/k_1/new_termination/_";
+    std::string runs_prefix = "./runs/k_50/earlier_termination_multiple_search_points/_";
     std::string hnsw_graph_file = "/ex_ssd/ya2225/graph_hnsw_heuristic.bin";
     std::string hnsw_info_file = "/ex_ssd/ya2225/info_hnsw_heuristic.txt";
     std::string training_set = "";
@@ -43,9 +43,9 @@ public:
 
     // HNSW Construction Parameters
     bool use_heuristic = true;
-    bool use_grasp = true;
+    bool use_grasp = false;
     bool use_benefit_cost = false;
-    bool use_direct_path = true;
+    bool use_direct_path = false;
     // Enforces a single entry point for graph construction. Searching will always be single entry point
     bool single_ep_construction = true;
     int optimal_connections = 14;
@@ -58,11 +58,11 @@ public:
     // HNSW Search Parameters
     bool use_distance_termination = false;
     bool combined_termination = true; 
-    bool single_ep_query = true;
+    bool single_ep_query = false;
     bool single_ep_training = true;
     int ef_search = 400;
     int ef_search_upper = 10;
-    int num_return = 1;
+    int num_return = 50;
     float termination_alpha = 0.5;
     
     // GraSP Training
@@ -90,7 +90,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     //std::vector<int> benchmark_ef_search = {500};
-    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
