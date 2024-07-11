@@ -899,16 +899,16 @@ void load_ivecs(const string& file, vector<vector<int>>& results, int num, int n
 
 void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
     // Check file and parameters
-    ifstream graph_file(config->hnsw_graph_file);
-    ifstream info_file(config->hnsw_info_file);
-    cout << "Loading saved graph from " << config->hnsw_graph_file << endl;
+    ifstream graph_file(config->loaded_graph_file);
+    ifstream info_file(config->loaded_info_file);
+    cout << "Loading saved graph from " << config->loaded_graph_file << endl;
 
     if (!graph_file) {
-        cout << "File " << config->hnsw_graph_file << " not found!" << endl;
+        cout << "File " << config->loaded_graph_file << " not found!" << endl;
         return;
     }
     if (!info_file) {
-        cout << "File " << config->hnsw_info_file << " not found!" << endl;
+        cout << "File " << config->loaded_info_file << " not found!" << endl;
         return;
     }
 

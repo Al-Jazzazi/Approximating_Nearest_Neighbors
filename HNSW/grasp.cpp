@@ -45,8 +45,8 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         // Enable edge by default
         edges[i]->ignore = false;
         remaining_edges.push(edges[i]);
-        counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_benefit_histogram)]++;
-        counts_benefit[std::min(19, edges[i]->benefit / config->interval_for_cost_benefit_histogram)]++;
+        counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_histogram)]++;
+        counts_benefit[std::min(19, edges[i]->benefit / config->interval_for_benefit_histogram)]++;
         // Disable edge if it is pushed out of remaining edges
         if (remaining_edges.size() > num_keep) {
             remaining_edges.top()->ignore = true;
@@ -415,18 +415,6 @@ void load_training(Config* config, float** nodes, float** training) {
    
     if ( !config->generate_our_training && config->training_file != "") {
         if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
-            if (config->generate_ratio > 0) {
-                int num_loaded = config->num_training * (1.0 - config->generate_ratio);
-                load_fvecs(config->training_file, "training", training, num_loaded, config->dimensions, config->groundtruth_file != "");
-                normal_distribution<float> dis(config->gen_min, config->gen_max);
-                for (int i = num_loaded; i < config->num_training; i++) {
-                    training[i] = new float[config->dimensions];
-                    for (int j = 0; j < config->dimensions; j++) {
-                        training[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
-                    }
-                }
-                return;
-            }
             // Load training from fvecs file
             load_fvecs(config->training_file, "training", training, config->num_training, config->dimensions, config->groundtruth_file != "");
             return;
