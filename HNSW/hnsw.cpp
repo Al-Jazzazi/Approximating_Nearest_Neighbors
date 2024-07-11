@@ -23,10 +23,20 @@ Edge::Edge(int target, float distance) : target(target), distance(distance),
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999), num_distance_termination(0), num_original_termination(0) {
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0) {
     reset_statistics();
 }
 
+void HNSW::reset_statistics() {
+    layer0_dist_comps = 0;
+    upper_dist_comps = 0;
+    actual_beam_width = 0;
+    processed_neighbors = 0;
+    total_neighbors = 0;
+    num_distance_termination = 0;
+    num_original_termination = 0;
+    percent_neighbors.clear();
+}
 
 /**
  * Alg 1
@@ -159,9 +169,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     int nn_found = 0;
 
     // Re-initialize arguments
-    if (layer_num == 0 && config->use_direct_path) {
-        path.clear();
-    }
+    path.clear();
     if (use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
     }
@@ -513,7 +521,10 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         log_neighbors = true;
     
     search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring, config->use_distance_termination);
-    
+    if (config->print_path_size) {
+        total_path_size += path.size();
+    }
+
     if (config->gt_dist_log)
         log_neighbors = false;
     if (config->debug_query_search_index == query.first) {
@@ -568,17 +579,6 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     }
     vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
     path = direct_path_vector;
-}
-
-void HNSW::reset_statistics() {
-    layer0_dist_comps = 0;
-    upper_dist_comps = 0;
-    actual_beam_width = 0;
-    processed_neighbors = 0;
-    total_neighbors = 0;
-    num_distance_termination = 0;
-    num_original_termination = 0;
-    percent_neighbors.clear();
 }
 
 void HNSW::search_queries(Config* config, float** queries) {

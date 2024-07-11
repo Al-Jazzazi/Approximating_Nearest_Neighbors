@@ -110,15 +110,23 @@ int main() {
 
     // Run queries
     if (config->run_search) {
+        if (config->print_path_size) {
+            hnsw->total_path_size = 0;
+        }
         auto search_start = chrono::high_resolution_clock::now();
         cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
         cout << "Beginning search" << endl;
 
         // Run query search and print results
         hnsw->search_queries(config, queries);
-
+        
         auto search_end = chrono::high_resolution_clock::now();
         cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
+
+        if (config->print_path_size) {
+            cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
+            hnsw->total_path_size = 0;
+        }
 
         // Delete queries
         for (int i = 0; i < config->num_queries; ++i)

@@ -177,6 +177,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
         // Run query search
         hnsw->reset_statistics();
+        if (config->print_path_size) {
+            hnsw->total_path_size = 0;
+        }
         auto start = chrono::high_resolution_clock::now();
         neighbors.reserve(config->num_queries);
         vector<Edge*> path;
@@ -197,6 +200,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         cout << "Query time: " << duration / 1000.0 << " seconds, ";
         cout << "Distance computations (layer 0): " << hnsw->layer0_dist_comps << ", ";
         cout << "Distance computations (top layers): " << hnsw->upper_dist_comps << endl;
+        if (config->print_path_size) {
+            cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
+            hnsw->total_path_size = 0;
+        }
 
         search_duration = duration;
         search_dist_comp = hnsw->layer0_dist_comps;

@@ -59,7 +59,8 @@ public:
     long long int processed_neighbors;
     long long int total_neighbors;
     long long int num_distance_termination; 
-    long long int num_original_termination; 
+    long long int num_original_termination;
+    long long int total_path_size;
     std::vector<float> percent_neighbors;
 
 
