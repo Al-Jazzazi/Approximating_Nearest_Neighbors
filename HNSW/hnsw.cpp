@@ -259,13 +259,23 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
          within_distance = use_distance_termination
             ? top_k.size() < config->num_return || (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first))
             : close_dist <= far_dist;
-            if (!within_distance) {
+           
+        }
+
+        if (!within_distance) {
                 if (layer_num == 0) {
                     actual_beam_width += found.size();
                 }
+                if(!config->combined_termination){
+
+                    if(!(close_dist <= far_dist))
+                        num_original_termination++;
+                    else 
+                        num_distance_termination++;
+                }
                 break;
             }
-        }
+
         // Get neighbors of closest in HNSWLayer
         vector<Edge>& neighbors = mappings[closest][layer_num];
         //Explore the neighbours of the closest discovered element
@@ -566,6 +576,8 @@ void HNSW::reset_statistics() {
     actual_beam_width = 0;
     processed_neighbors = 0;
     total_neighbors = 0;
+    num_distance_termination = 0;
+    num_original_termination = 0;
     percent_neighbors.clear();
 }
 

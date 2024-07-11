@@ -56,7 +56,7 @@ public:
 
 
     // HNSW Search Parameters
-    bool use_distance_termination = true;
+    bool use_distance_termination = false;
     bool combined_termination = true; 
     bool single_ep_query = true;
     bool single_ep_training = true;

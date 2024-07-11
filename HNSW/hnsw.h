@@ -58,6 +58,8 @@ public:
     long long int actual_beam_width;
     long long int processed_neighbors;
     long long int total_neighbors;
+    long long int num_distance_termination; 
+    long long int num_original_termination; 
     std::vector<float> percent_neighbors;
 
 

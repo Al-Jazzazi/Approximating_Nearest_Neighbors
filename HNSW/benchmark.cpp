@@ -273,6 +273,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(total_dist_comp / config->num_queries) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries)
                      + std::to_string(average_ndcg);
+            if(config->combined_termination)
+                line += std::to_string(hnsw->num_distance_termination/hnsw->num_original_termination);
             lines.push_back(line);
         }
         
@@ -283,7 +285,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG" << endl;
+        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG, ratio termination (distance based/origianl)" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
