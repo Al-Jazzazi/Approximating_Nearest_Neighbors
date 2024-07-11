@@ -274,7 +274,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries)
                      + std::to_string(average_ndcg);
             if(config->combined_termination)
-                line += std::to_string(hnsw->num_distance_termination/hnsw->num_original_termination);
+                line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination);
             lines.push_back(line);
         }
         

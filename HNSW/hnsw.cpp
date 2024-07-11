@@ -23,7 +23,7 @@ Edge::Edge(int target, float distance) : target(target), distance(distance),
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999) {
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999), num_distance_termination(0), num_original_termination(0) {
     reset_statistics();
 }
 
