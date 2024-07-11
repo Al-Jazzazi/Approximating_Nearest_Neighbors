@@ -270,7 +270,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(recall) + ", " 
                      + std::to_string(search_duration / config->num_queries) + ", " 
                      //+ std::to_string(construction_duration) + ", "
-                     + std::to_string(total_dist_comp / config->num_queries) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries)
                      + std::to_string(average_ndcg);
             if(config->combined_termination)

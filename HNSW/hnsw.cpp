@@ -253,7 +253,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         bool within_distance;
 
         if(config->combined_termination){
-            within_distance = top_k.size() < config->num_return|| (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) || close_dist <= far_dist;
+            within_distance = top_k.size() < config->num_return|| ((close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) && close_dist <= far_dist);
         }
         else{
          within_distance = use_distance_termination
