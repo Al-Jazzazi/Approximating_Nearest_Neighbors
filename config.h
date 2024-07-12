@@ -57,13 +57,15 @@ public:
     float learning_rate = 0.1;
     float initial_temperature = 1;
     float decay_factor = 0.8;
-    float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.8;
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
     int num_return_training = -1;  // -1 = use num_return instead of num_return_training
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
+    float initial_keep_ratio = 0.9;
+    float final_keep_ratio = 0.8;
+    int initial_cost = 1;
+    int initial_benefit = 1;
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {50};

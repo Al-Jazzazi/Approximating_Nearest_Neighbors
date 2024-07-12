@@ -18,8 +18,8 @@ ofstream* when_neigh_found_file;
 
 Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
 
-Edge::Edge(int target, float distance) : target(target), distance(distance),
-    weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
+Edge::Edge(int target, float distance, int initial_cost, int initial_benefit) : target(target), distance(distance),
+    weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(initial_cost), cost(initial_benefit), prev_edge(nullptr){}
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
@@ -90,7 +90,7 @@ void HNSW::insert(Config* config, int query) {
         if (config->use_heuristic) {
             vector<Edge> candidates(entry_points.size());
             for (int i = 0; i < entry_points.size(); i++) {
-                candidates[i] = Edge(entry_points[i].second, entry_points[i].first);
+                candidates[i] = Edge(entry_points[i].second, entry_points[i].first, config->initial_cost, config->initial_benefit);
             }
             select_neighbors_heuristic(config, nodes[query], candidates, num_neighbors, layer);
             for (int i = 0; i < num_neighbors; i++) {
@@ -98,7 +98,7 @@ void HNSW::insert(Config* config, int query) {
             }
         } else {
             for (int i = 0; i < min(config->optimal_connections, (int)entry_points.size()); i++) {
-                neighbors[i] = Edge(entry_points[i].second, entry_points[i].first);
+                neighbors[i] = Edge(entry_points[i].second, entry_points[i].first, config->initial_cost, config->initial_benefit);
             }
         }
 
@@ -115,7 +115,7 @@ void HNSW::insert(Config* config, int query) {
 
             // Place query in correct position in neighbor_mapping
             float new_dist = calculate_l2_sq(this, layer, nodes[query], nodes[n_pair.target], num_dimensions);
-            auto new_edge = Edge(query, new_dist);
+            auto new_edge = Edge(query, new_dist, config->initial_cost, config->initial_benefit);
             auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge,
                 [](const Edge& lhs, const Edge& rhs) { return lhs.distance < rhs.distance || (lhs.distance == rhs.distance && lhs.target < rhs.target); });
             neighbor_mapping.insert(pos, new_edge);
@@ -184,7 +184,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         candidates.emplace(entry);
         //We create an new edge pointing at entry point
         if (layer_num == 0 && config->use_direct_path){
-            Edge* new_Edge = new Edge(entry.second, entry.first);
+            Edge* new_Edge = new Edge(entry.second, entry.first, config->initial_cost, config->initial_benefit);
             candidates_edges.emplace(new_Edge);
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
@@ -946,7 +946,7 @@ void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmar
             << config->max_connections_0 << ", " << config->ef_construction << endl;
         
         hnsw->num_layers = num_layers;
-        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+        load_hnsw_graph(config, hnsw, graph_file, nodes, num_nodes, num_layers);
         
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -956,11 +956,11 @@ void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmar
         cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
     } else {
         hnsw->num_layers = num_layers;
-        load_hnsw_graph(hnsw, graph_file, nodes, num_nodes, num_layers);
+        load_hnsw_graph(config, hnsw, graph_file, nodes, num_nodes, num_layers);
     }
 }
 
-void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
+void load_hnsw_graph(Config* config, HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
     // Load node neighbors
     for (int i = 0; i < num_nodes; ++i) {
         int layers;
@@ -979,7 +979,7 @@ void load_hnsw_graph(HNSW* hnsw, ifstream& graph_file, float** nodes, int num_no
                 float distance;
                 graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
                 graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
-                hnsw->mappings[i][j].emplace_back(Edge(index, distance));
+                hnsw->mappings[i][j].emplace_back(Edge(index, distance, config->initial_cost, config->initial_benefit));
             }
         }
     }
