@@ -42,11 +42,14 @@ public:
     int ef_search = 400;
     int ef_search_upper = 10;
 
-    // Distance Termination
+
+    // HNSW Search Parameters
     bool use_distance_termination = false;
-    bool combined_termination = false;
+    bool combined_termination = false; 
+    bool use_latest = false;
     float termination_alpha = 0.5;
-    
+
+       
     // HNSW Training
     bool use_grasp = false;  // Make sure use_grasp and use_benefit_cost are not both on at the same time
     bool use_benefit_cost = true;
