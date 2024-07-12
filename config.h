@@ -41,7 +41,7 @@ public:
     int ef_construction = 500;
     int ef_search = 400;
     int ef_search_upper = 10;
-
+    int k_upper = 10;
 
     // HNSW Search Parameters
     bool use_distance_termination = false;
