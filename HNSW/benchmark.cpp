@@ -363,8 +363,8 @@ int main() {
                  << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
                  << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                  << ", current Pruning method = " << config->weight_selection_method     
-                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest << ", alpha value " 
-                 << config->termination_alpha  << ", use_benefit_cost = " << config->use_benefit_cost 
+                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
+                 << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha  << ", use_benefit_cost = " << config->use_benefit_cost 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 
 
