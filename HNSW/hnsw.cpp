@@ -273,7 +273,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
            
         }
 
-        if (!within_distance || ( config->use_latest && !(close_dist <= config->termination_alpha*1.5 * (2 * top_k.top().first + top_1.first))) ) {
+        if (!within_distance || ( config->use_latest &&  config->use_break && !(close_dist <= config->termination_alpha* config->break_value * (2 * top_k.top().first + top_1.first)))) {
                 if (layer_num == 0) {
                     actual_beam_width += found.size();
                 }
@@ -396,7 +396,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     // Place found elements into entry_points
     entry_points.clear();
     size_t idx;
-    if(layer_num == 0){
+    if(layer_num == 0 || config->single_ep_query ){
         entry_points.resize(found.size());
          idx = found.size();
     }

@@ -47,7 +47,9 @@ public:
     bool use_distance_termination = false;
     bool combined_termination = false; 
     bool use_latest = false;
+    bool use_break = true;
     float termination_alpha = 0.5;
+    float break_value = 3; 
 
        
     // HNSW Training
