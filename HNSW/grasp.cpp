@@ -25,13 +25,8 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     }
     // Mark edges for deletion
     auto compare = [](Edge* lhs, Edge* rhs) {
-        if (lhs->cost == 0) {
-            return true;
-        } else if (rhs->cost == 0) {
-            return false;
-        } else {
-            return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
-        }
+        return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
+        
     };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     vector<long long> counts_cost;
