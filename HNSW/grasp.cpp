@@ -18,7 +18,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
-        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, true);
+        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true);
         for (int j = 0; j < path.size(); j++) {
             path[j]->benefit++;
         }
@@ -231,8 +231,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> sample_path;
         vector<Edge*> original_path;
-        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, true, true);
-        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, true, false);
+        vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, false, true, true);
+        vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, true, false);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
         
             
@@ -514,27 +514,4 @@ void remove_duplicates(Config* config, float** training, float** queries) {
         }
     }
     config->num_training = num_training_filtered;
-}
-
-
-
-void test_queue(){
-    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance; };
-    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
-    priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
-    for(int i =0; i< 50; i++ ){
-        mt19937 gen(10);
-        normal_distribution<float> dis(0, 1000);
-        float distance = dis(gen);
-        candidates.emplace(make_pair(distance, i));
-        Edge* new_Edge = new Edge(i, distance);
-        candidates_edges.emplace(new_Edge);
-
-       if(candidates_edges.top()->target != candidates.top().second)
-            cerr << "edge does not match node"  << candidates_edges.top()->target << ", " << candidates.top().second<< endl;
-        else 
-            cout << "it's working" <<endl;
-    }
-    exit(EXIT_FAILURE);
-
 }

@@ -15,9 +15,9 @@ public:
     std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
     bool load_graph_file = false;
     int dimensions = 128;
-    int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
+    int num_nodes = 10000;
+    int num_training = 1000;
+    int num_queries = 1000;
     int num_return = 50;
 
     // Interpreted File Setup

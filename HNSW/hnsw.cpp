@@ -150,54 +150,47 @@ void HNSW::insert(Config* config, int query) {
  *       , and the path taken is saved into path which can be the direct path or beam_search bath dependent on variable config->use_direct_path
  *         
 */
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_training, bool is_ignoring, bool use_distance_termination) {
-    // HNSW structures
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying, bool is_training, bool is_ignoring) {
+    // Initialize search structures
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
-    //The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
-    //This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
+    // The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
+    // This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
-    // Distance termination structures
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
-   
-    // Array of when each neighbor was found
-    vector<int> when_neigh_found(config->num_return, -1);
-    int nn_found = 0;
-
-    // Re-initialize arguments
-    path.clear();
-    if (use_distance_termination && !config->combined_termination) {
+    if (is_querying && config->use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
     }
+
+    // Initialize statistics
+    vector<int> when_neigh_found(config->num_return, -1);
+    int nn_found = 0;
+    path.clear();
     if (layer_num == 0 && config->print_neighbor_percent) {
         processed_neighbors = 0;
         total_neighbors = 0;
     }
   
-    // Add entry points to data structures
+    // Add entry points to search structures
     for (const auto& entry : entry_points) {
         visited.insert(entry.second);
         candidates.emplace(entry);
-        //We create an new edge pointing at entry point
+        found.emplace(entry);
+        // Create an new edge pointing at entry point
         if (layer_num == 0 && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first, config->initial_cost, config->initial_benefit);
             candidates_edges.emplace(new_Edge);
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-
-        found.emplace(entry);
-
-        if (use_distance_termination || config->combined_termination) {
+        if ((is_querying && config->use_distance_termination) || config->combined_termination) {
             top_k.emplace(entry);
             top_1 = entry;
         }
-     
-
         if (log_neighbors) {
             auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
             if (loc != cur_groundtruth.end()) {
@@ -240,73 +233,60 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
         ++iteration;
 
-        // Get and remove closest element in candiates to query
+        // Get the furthest element in found and closest element in candidates
+        int furthest = found.top().second;
+        float far_dist = found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
+        candidates.pop();
         Edge* closest_edge;
         if(layer_num == 0 && config->use_direct_path){
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
-        candidates.pop();
 
-
-
-        // Get furthest element in found to query
-        int furthest = found.top().second;
-        float far_dist = found.top().first;
-
-      
-        // If closest is further than furthest, stop
-        bool within_distance;
-
-        if(config->combined_termination){
-            if(config->use_latest)
-                within_distance = top_k.size() < config->num_return|| ((close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) || close_dist <= far_dist);
-            else
-                within_distance = top_k.size() < config->num_return|| ((close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first)) && close_dist <= far_dist);
-        }
-        else{
-         within_distance = use_distance_termination
-            ? top_k.size() < config->num_return || (close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first))
-            : close_dist <= far_dist;
-           
+        // Check if search should terminate
+        bool should_continue;
+        bool within_distance = top_k.size() < config->num_return || close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first);
+        bool outside_max_distance = config->use_latest && config->use_break && close_dist > config->termination_alpha * config->break_value * (2 * top_k.top().first + top_1.first);
+        if (!is_querying) {
+            should_continue = close_dist <= far_dist;
+        } else if (config->combined_termination && config->use_latest) {
+            should_continue = within_distance || close_dist <= far_dist;
+        } else if (config->combined_termination) {
+            should_continue = within_distance && close_dist <= far_dist;
+        } else if (config->use_distance_termination) {
+            should_continue = within_distance;
+        } else {
+            should_continue = close_dist <= far_dist;
         }
 
-        if (!within_distance || ( config->use_latest &&  config->use_break && !(close_dist <= config->termination_alpha* config->break_value * (2 * top_k.top().first + top_1.first)))) {
-                if (layer_num == 0) {
-                    actual_beam_width += found.size();
-                }
-                if(config->combined_termination){
-
-                    if(!(close_dist <= far_dist))
-                        num_original_termination++;
-                    else 
-                        num_distance_termination++;
-                }
-                break;
+        // If terminating, log statistics and break
+        if (!should_continue || outside_max_distance) {
+            if (layer_num == 0) {
+                actual_beam_width += found.size();
             }
+            if(config->combined_termination){
+                if(close_dist > far_dist)
+                    num_original_termination++;
+                else 
+                    num_distance_termination++;
+            }
+            break;
+        }
 
-        // Get neighbors of closest in HNSWLayer
+        // Explore neighbors of closest discovered element in HNSW layer
         vector<Edge>& neighbors = mappings[closest][layer_num];
-        //Explore the neighbours of the closest discovered element
         for (auto& neighbor_edge : neighbors) {
             int neighbor = neighbor_edge.target;
-            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
             if (config->print_neighbor_percent && layer_num == 0) {
                 ++total_neighbors;
             }
+
+            // Traverse newly discovered neighbor if we don't ignore it
+            bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
             if (!(is_training && is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
-
-                // Get furthest element in found to query
-                float far_inner_dist = found.top().first;
-
-                // If distance from query to neighbor is less than the distance from query to furthest,
-                // or if the size of found is less than num_to_return,
-                // add to candidates and found
-                float neighbor_dist = calculate_l2_sq(this, layer_num, query, nodes[neighbor], num_dimensions);
-                
                 if (config->print_neighbor_percent && layer_num == 0) {
                     ++processed_neighbors;
                     if (total_neighbors == config->interval_for_neighbor_percent) {
@@ -315,58 +295,31 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         total_neighbors = 0;
                     }
                 }
-                //If we are at layer 0 and are looking for the neighbour during the training phase, we are giving every edge
-                //discovered some stinky points or increasing it's cost (we developed a few different implementations to prune edges) 
+
+                // Add cost point to neighbor's edge if we are training
                 if (is_training && config->use_stinky_points)
                     neighbor_edge.stinky -= config->stinky_value;
                 if (is_training && config->use_benefit_cost)
                     ++neighbor_edge.cost;
-            
+                
+                // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
+                float far_inner_dist = found.top().first;
+                float neighbor_dist = calculate_l2_sq(this, layer_num, query, nodes[neighbor], num_dimensions);
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
-
+                    top_k.emplace(neighbor_dist, neighbor); 
+                    if (layer_num == 0) {
+                        path.push_back(&neighbor_edge);
+                    }                   
+                    if (neighbor_dist < top_1.first) {
+                        top_1 = make_pair(neighbor_dist, neighbor);
+                    }
                     if (layer_num == 0 && config->use_direct_path) {
                         neighbor_edge.distance = neighbor_dist;
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
-                        path.push_back(&neighbor_edge);
-
-                        //Sanity check conditions (to check if our two priority queues are behaving properly)
-                        if(candidates_edges.size() != candidates.size())
-                            cerr << "logic error size is not the same " <<candidates.size() << " , " <<  candidates_edges.size() <<  endl;
-                        if(candidates_edges.top()->target != candidates.top().second)
-                           cerr << "tops don't match, size is "  <<  candidates_edges.size() 
-                                << " the tops are(e/c): " << candidates_edges.top()->target 
-                                << ", " <<candidates.top().second << ". Distances(e,c)" 
-                                << candidates_edges.top()->distance <<  ", "
-                                << candidates.top().first  <<endl;
-                            
-
                     }
-
-                    if (log_neighbors) {
-                        auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
-                        if (loc != cur_groundtruth.end()) {
-                            // Get neighbor index (xth closest) and log distance comp
-                            int index = distance(cur_groundtruth.begin(), loc);
-                            when_neigh_found[index] = layer0_dist_comps;
-                            ++nn_found;
-                            ++correct_nn_found;
-                            if (config->gt_smart_termination && nn_found == config->num_return)
-                                // End search
-                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
-                        }
-                    }
-                    
-                    if (layer_num == 0) {
-                        path.push_back(&neighbor_edge);
-                    }
-                    top_k.emplace(neighbor_dist, neighbor);                    
-                    if (neighbor_dist < top_1.first) {
-                        top_1 = make_pair(neighbor_dist, neighbor);
-                    }
-
                     if (log_neighbors) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
                         if (loc != cur_groundtruth.end()) {
@@ -389,41 +342,30 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 }
             } 
         }
-
-    
     }
 
     // Place found elements into entry_points
+    size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : config->k_upper;
     entry_points.clear();
-    size_t idx;
-    if(layer_num == 0 || config->single_ep_query ){
-        entry_points.resize(found.size());
-         idx = found.size();
-    }
-    else {
-         entry_points.resize(config->k_upper);
-         idx = config->k_upper;
-    }
-
+    entry_points.resize(idx);
     while (idx > 0) {
         --idx;
         entry_points[idx] = make_pair(found.top().first, found.top().second);
         found.pop();
     }
-
+    // Calculate direct path
     if (config->use_direct_path && is_training) {
         find_direct_path(path, entry_points);
         for (Edge* edge : entry_point_edges) {
             delete edge;
         }
     }
-
-
     // Export when_neigh_found data
-    if (log_neighbors)
+    if (log_neighbors) {
         for (int i = 0; i < config->num_return; ++i) {
             *when_neigh_found_file << when_neigh_found[i] << " ";
         }
+    }
 }
 
 /**
@@ -480,7 +422,6 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
         }
         considered.pop();
     }
-
     // Add discarded elements until output is large enough
     if (keep_pruned) {
         while (!discarded.empty() && output.size() < num_to_return) {
@@ -488,7 +429,6 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
             discarded.pop();
         }
     }
-
     // Set candidates to output
     candidates.clear();
     candidates.resize(output.size());
@@ -502,7 +442,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
  * K-NN-SEARCH(hnsw, q, K, ef)
  * This also stores the traversed bottom-layer edges in the path vector
 */
-vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_training, bool is_ignoring) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_querying, bool is_training, bool is_ignoring) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
@@ -515,12 +455,10 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     // Get closest element by using search_layer to find the closest point at each layer
     for (int layer = top; layer >= 1; layer--) {
          if ((config->single_ep_query && !is_training) || (config->single_ep_training && is_training)) {
-            search_layer(config, query.second, path, entry_points, 1, layer);
+            search_layer(config, query.second, path, entry_points, 1, layer, is_querying);
         } else {
-            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer);
+            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer, is_querying);
         }
-
-
         if (config->debug_search)
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
     }
@@ -531,11 +469,10 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     if (config->gt_dist_log)
         log_neighbors = true;
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_training, is_ignoring, config->use_distance_termination);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring);
     if (config->print_path_size) {
         total_path_size += path.size();
     }
-
     if (config->gt_dist_log)
         log_neighbors = false;
     if (config->debug_query_search_index == query.first) {
@@ -551,7 +488,6 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
             cout << n_pair.second << " (" << n_pair.first << ") ";
         cout << endl;
     }
-
     // Select closest elements
     entry_points.resize(min(entry_points.size(), (size_t)num_to_return));
     return entry_points;

@@ -17,6 +17,5 @@ std::pair<float,float> find_max_min(Config* config, HNSW* hnsw);
 float binary_search(Config* config, std::vector<Edge*>& edges, float left, float right, float target, float temperature);
 void load_training(Config* config, float** nodes, float** training);
 void remove_duplicates(Config* config, float** training, float** queries);
-void test_queue();
 
 #endif
