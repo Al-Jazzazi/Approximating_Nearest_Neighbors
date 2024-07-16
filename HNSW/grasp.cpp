@@ -23,12 +23,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             path[j]->benefit++;
         }
     }
-    // Mark edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) {
-        return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost;
-        
-    };
-    priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
+    // Initialize histograms
     vector<long long> counts_cost;
     vector<long long> counts_benefit;
     for (int i = 0; i < 20; i++) {
@@ -36,12 +31,19 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         counts_benefit.push_back(0);
     }
 
+    // Mark edges for deletion
+    auto compare = [](Edge* lhs, Edge* rhs) { return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost; };
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
-        // Enable edge by default
-        edges[i]->ignore = false;
-        remaining_edges.push(edges[i]);
         counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_histogram)]++;
         counts_benefit[std::min(19, edges[i]->benefit / config->interval_for_benefit_histogram)]++;
+        // Enable edge if it meets minimum threshold
+        if (config->cost_benefit_min < 0 || static_cast<float>(edges[i]->benefit) / edges[i]->cost >= config->cost_benefit_min) {
+            edges[i]->ignore = false;
+            remaining_edges.push(edges[i]);
+        } else {
+            edges[i]->ignore = true;
+        }
         // Disable edge if it is pushed out of remaining edges
         if (remaining_edges.size() > num_keep) {
             remaining_edges.top()->ignore = true;
@@ -60,6 +62,8 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             }
         }
     }
+
+    // Export histograms to files
     if (config->export_histograms) {
         ofstream cost_histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
         ofstream benefit_histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
@@ -72,6 +76,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         benefit_histogram << endl;
         benefit_histogram.close();
     }
+    cout << "Edges Removed: " << static_cast<float>(count) / edges.size() << endl;
 }
 
 /**
@@ -98,11 +103,10 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             if (!config->use_dynamic_sampling) {
                 sample_subgraph(config, edges, lambda);
             }
-            int num_return = config->num_return_training == -1 ? config->num_return : config->num_return_training;
             if (results_file != nullptr) {
                 *results_file << k;
             }
-            update_weights(config, hnsw, training, num_return, results_file);
+            update_weights(config, hnsw, training, config->num_return, results_file);
 
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
@@ -178,21 +182,14 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
  * edges and remove the rest of its edges.
  */
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
-    //update probs 
-    if(config->use_stinky_points ){
+    // Update probs 
+    if(config->use_stinky_points){
         for (auto e: edges){
             e->probability_edge -= config->stinky_value * e->stinky;
         }
     }
-    
-    
     // Mark lowest weight edges for deletion
-    
     auto compare =[](Edge* lhs, Edge* rhs) { return lhs->probability_edge > rhs->probability_edge;};
-                           
-   
-         
-
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         // Enable edge by default

@@ -10,11 +10,11 @@
 class Config {
 public:
     // File Setup
-    std::string dataset_prefix = "./exports/sift/sift";
+    std::string dataset_prefix = "./exports/gist/gist";
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
     bool load_graph_file = false;
-    int dimensions = 128;
+    int dimensions = 960;
     int num_nodes = 10000;
     int num_training = 1000;
     int num_queries = 1000;
@@ -29,7 +29,7 @@ public:
 
     // HNSW Construction
     bool use_heuristic = true;
-    int max_connections = 14;
+    int max_connections = 24;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
@@ -40,8 +40,8 @@ public:
     bool single_ep_training = true;
     int ef_construction = 500;
     int ef_search = 400;
-    int ef_search_upper = 10;
-    int k_upper = 10;
+    int ef_search_upper = 1;
+    int k_upper = 1;
 
     // HNSW Search Parameters
     bool use_distance_termination = false;
@@ -65,12 +65,12 @@ public:
     int keep_exponent = 3;
     int grasp_loops = 20;
     int grasp_subloops = 1;
-    int num_return_training = -1;  // -1 = use num_return instead of num_return_training
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.8;
+    float final_keep_ratio = 1;
     int initial_cost = 1;
     int initial_benefit = 1;
+    float cost_benefit_min = 0.1;  // negative = don't use minimum cost-benefit threshold
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {50};
