@@ -10,14 +10,14 @@
 class Config {
 public:
     // File Setup
-    std::string dataset_prefix = "./exports/gist/gist";
+    std::string dataset_prefix = "./exports/sift/sift";
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
     bool load_graph_file = false;
-    int dimensions = 960;
-    int num_nodes = 10000;
-    int num_training = 1000;
-    int num_queries = 1000;
+    int dimensions = 128;
+    int num_nodes = 1000000;
+    int num_training = 100000;
+    int num_queries = 10000;
     int num_return = 50;
 
     // Interpreted File Setup
@@ -53,8 +53,8 @@ public:
 
        
     // HNSW Training
-    bool use_grasp = false;  // Make sure use_grasp and use_benefit_cost are not both on at the same time
-    bool use_benefit_cost = true;
+    bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    bool use_cost_benefit = true;
     bool use_direct_path = true;
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false;
@@ -67,10 +67,9 @@ public:
     int grasp_subloops = 1;
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 1;
+    float final_keep_ratio = 0.9;
     int initial_cost = 1;
     int initial_benefit = 1;
-    float cost_benefit_min = 0.1;  // negative = don't use minimum cost-benefit threshold
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {50};
@@ -112,6 +111,7 @@ public:
     std::string training_set = "";
     bool generate_our_training = false;
     bool regenerate_each_iteration = false;
+    int num_training_generated = 0;  // 0 = don't generate training queries
     int graph_seed = 0;
     int shuffle_seed = 1;
     int sample_seed = 2;

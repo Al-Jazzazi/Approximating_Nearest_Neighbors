@@ -299,7 +299,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 // Add cost point to neighbor's edge if we are training
                 if (is_training && config->use_stinky_points)
                     neighbor_edge.stinky -= config->stinky_value;
-                if (is_training && config->use_benefit_cost)
+                if (is_training && config->use_cost_benefit)
                     ++neighbor_edge.cost;
                 
                 // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full

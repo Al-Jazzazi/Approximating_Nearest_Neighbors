@@ -14,7 +14,7 @@
 using namespace std;
 
 void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, int num_keep) {
-    // Check how beneficial each edge is
+    // Check how costly and beneficial each edge is
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
@@ -22,6 +22,23 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         for (int j = 0; j < path.size(); j++) {
             path[j]->benefit++;
         }
+    }
+    // Repeat for generated set if applicable
+    if (config->num_training_generated > 0) {
+        float** generated = new float*[config->num_training_generated];
+        load_training(config, hnsw->nodes, generated, config->num_training_generated, true);
+        for (int i = 0; i < config->num_training_generated; i++) {
+            pair<int, float*> query = make_pair(i, generated[i]);
+            vector<Edge*> path;
+            vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true);
+            for (int j = 0; j < path.size(); j++) {
+                path[j]->benefit++;
+            }
+        }
+        for (int i = 0; i < config->num_training_generated; ++i) {
+            delete[] generated[i];
+        }
+        delete[] generated;
     }
     // Initialize histograms
     vector<long long> counts_cost;
@@ -37,13 +54,9 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     for (int i = 0; i < edges.size(); i++) {
         counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_histogram)]++;
         counts_benefit[std::min(19, edges[i]->benefit / config->interval_for_benefit_histogram)]++;
-        // Enable edge if it meets minimum threshold
-        if (config->cost_benefit_min < 0 || static_cast<float>(edges[i]->benefit) / edges[i]->cost >= config->cost_benefit_min) {
-            edges[i]->ignore = false;
-            remaining_edges.push(edges[i]);
-        } else {
-            edges[i]->ignore = true;
-        }
+        // Enable edge by default
+        edges[i]->ignore = false;
+        remaining_edges.push(edges[i]);
         // Disable edge if it is pushed out of remaining edges
         if (remaining_edges.size() > num_keep) {
             remaining_edges.top()->ignore = true;
@@ -110,11 +123,10 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
 
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
-            // cout << "Temperature: " << temperature << " Lambda: " << lambda << endl;
         }
         //Each loop, generate a new set training sets
         if(config->generate_our_training && config->regenerate_each_iteration){
-            load_training(config, hnsw->nodes, training );
+            load_training(config, hnsw->nodes, training, config->num_training);
             //cout << "training" << training[10][10] << endl;
         }
     }
@@ -401,14 +413,14 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
 }
 
 // Load training set from training file or randomly generate them from nodes
-void load_training(Config* config, float** nodes, float** training) {
+void load_training(Config* config, float** nodes, float** training, int num_training, bool is_generating) {
     std::random_device rd;
     mt19937 gen(rd());
    
-    if ( !config->generate_our_training && config->training_file != "") {
+    if (!is_generating && config->training_file != "") {
         if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
             // Load training from fvecs file
-            load_fvecs(config->training_file, "training", training, config->num_training, config->dimensions, config->groundtruth_file != "");
+            load_fvecs(config->training_file, "training", training, num_training, config->dimensions, config->groundtruth_file != "");
             return;
         }
 
@@ -418,28 +430,25 @@ void load_training(Config* config, float** nodes, float** training) {
             cout << "File " << config->training_file << " not found!" << endl;
             exit(1);
         }
-        cout << "Loading " << config->num_training << " training set from file " << config->training_file << endl;
+        cout << "Loading " << num_training << " training set from file " << config->training_file << endl;
 
-        for (int i = 0; i < config->num_training; i++) {
+        for (int i = 0; i < num_training; i++) {
             training[i] = new float[config->dimensions];
             for (int j = 0; j < config->dimensions; j++) {
                 f >> training[i][j];
-
-    
             }
-       
         }
 
         f.close();
         return;
     }
 
-    if (!config->generate_our_training && config->load_file == "") {
+    if (!is_generating && config->load_file == "") {
         // Generate random training nodes
-        cout << "Generating " << config->num_training << " random training points" << endl;
+        cout << "Generating " << num_training << " random training points" << endl;
         normal_distribution<float> dis(config->gen_min, config->gen_max);
 
-        for (int i = 0; i < config->num_training; i++) {
+        for (int i = 0; i < num_training; i++) {
             training[i] = new float[config->dimensions];
             for (int j = 0; j < config->dimensions; j++) {
                 training[i][j] = round(dis(gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
@@ -473,12 +482,10 @@ void load_training(Config* config, float** nodes, float** training) {
     }
 
     // Generate training set based on the range of values in each dimension
-    for (int i = 0; i < config->num_training; i++) {
+    for (int i = 0; i < num_training; i++) {
         training[i] = new float[config->dimensions];
         for (int j = 0; j < config->dimensions; j++) {
             training[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
-        
-           
         }
 
     }

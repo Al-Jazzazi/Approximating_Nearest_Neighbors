@@ -25,7 +25,7 @@ int main() {
         <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
         << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
         << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method   
-        << "\nUse_distance_termination = " << config->use_distance_termination << ", use_benefit_cost = " << config->use_benefit_cost 
+        << "\nUse_distance_termination = " << config->use_distance_termination << ", use_cost_benefit = " << config->use_cost_benefit 
         << ", use_direct_path = " << config->use_direct_path << endl;
         
     // Clear histogram files if they exist
@@ -38,7 +38,7 @@ int main() {
             histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt");
             histogram.close();
         }
-        if (config->use_benefit_cost) {
+        if (config->use_cost_benefit) {
             ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt");
             histogram.close();
             histogram = ofstream(config->runs_prefix + "histogram_benefit.txt");
@@ -64,7 +64,7 @@ int main() {
         // Optimize HNSW using GraSP
         if (config->use_grasp) {
             float** training = new float*[config->num_training];
-            load_training(config, nodes, training);
+            load_training(config, nodes, training, config->num_training);
             if (config->export_training_queries) {
                 ofstream histogram = ofstream(config->training_set, std::ios::app);
                 for (int i = 0; i < config->num_training; i++) {
@@ -87,10 +87,10 @@ int main() {
                 delete[] training[i];
             delete[] training;
         }
-        if (config->use_benefit_cost) {
+        if (config->use_cost_benefit) {
             float** training = new float*[config->num_training];
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            load_training(config, nodes, training);
+            load_training(config, nodes, training, config->num_training);
             remove_duplicates(config, training, queries);
             learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
             for (int i = 0; i < config->num_training; i++)

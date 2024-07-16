@@ -15,7 +15,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 float compute_lambda(float final_keep, float initial_keep, int k, int num_iterations, int c);
 std::pair<float,float> find_max_min(Config* config, HNSW* hnsw);
 float binary_search(Config* config, std::vector<Edge*>& edges, float left, float right, float target, float temperature);
-void load_training(Config* config, float** nodes, float** training);
+void load_training(Config* config, float** nodes, float** training, int num_training, bool is_generating = false);
 void remove_duplicates(Config* config, float** training, float** queries);
 
 #endif
