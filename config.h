@@ -13,7 +13,7 @@ public:
     std::string dataset_prefix = "./exports/sift/sift";
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     int dimensions = 128;
     int num_nodes = 1000000;
     int num_training = 100000;
@@ -29,7 +29,7 @@ public:
 
     // HNSW Construction
     bool use_heuristic = true;
-    int max_connections = 24;
+    int max_connections = 14;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
@@ -44,11 +44,11 @@ public:
     int k_upper = 1;
 
     // HNSW Search Parameters
-    bool use_distance_termination = false;
+    bool use_distance_termination = true;
     bool combined_termination = false; 
     bool use_latest = false;
     bool use_break = true;
-    float termination_alpha = 0.5;
+    float termination_alpha = 0.3;
     float break_value = 3; 
 
        
@@ -148,9 +148,9 @@ public:
 
     // Dataset Metrics Parameters
     std::string metrics_file = "./runs/dataset_metrics.txt";
-    std::string metrics_dataset1_prefix = "./exports/sift/sift_learn";
-    std::string metrics_dataset2_prefix = "./exports/sift/sift_query";
-    bool compare_datasets = true;
+    std::string metrics_dataset1_prefix = "./exports/deep1M/deep1M_base";
+    std::string metrics_dataset2_prefix = "./exports/deep1M/deep1M_query";
+    bool compare_datasets = false;
     int comparison_num_nodes = 10000;
     int hopkins_sample_size = 1000;
     int cluster_k = 400;

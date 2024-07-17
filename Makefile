@@ -22,7 +22,7 @@ dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
 
 benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -g -pg -o ${BUILD_PATH}/$@.out $^
 
 benchmark_slurm: HNSW/benchmark.cpp HNSW/grasp.cpp HNSW/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h config.h
 	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^

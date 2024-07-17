@@ -187,7 +187,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-        if ((is_querying && config->use_distance_termination) || config->combined_termination) {
+        if (is_querying && (config->use_distance_termination || config->combined_termination)) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -245,24 +245,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             candidates_edges.pop();
         }
 
-        // Check if search should terminate
-        bool should_continue;
-        bool within_distance = top_k.size() < config->num_return || close_dist <= config->termination_alpha * (2 * top_k.top().first + top_1.first);
-        bool outside_max_distance = config->use_latest && config->use_break && close_dist > config->termination_alpha * config->break_value * (2 * top_k.top().first + top_1.first);
-        if (!is_querying) {
-            should_continue = close_dist <= far_dist;
-        } else if (config->combined_termination && config->use_latest) {
-            should_continue = within_distance || close_dist <= far_dist;
-        } else if (config->combined_termination) {
-            should_continue = within_distance && close_dist <= far_dist;
-        } else if (config->use_distance_termination) {
-            should_continue = within_distance;
-        } else {
-            should_continue = close_dist <= far_dist;
-        }
-
         // If terminating, log statistics and break
-        if (!should_continue || outside_max_distance) {
+        if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying)) {
             if (layer_num == 0) {
                 actual_beam_width += found.size();
             }
@@ -526,6 +510,34 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     }
     vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
     path = direct_path_vector;
+}
+
+bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared, bool is_querying) {
+    // Compare closest distance to thresholds
+    bool outside_original = close_squared > far_squared;
+    bool outside_distance = false;
+    bool outside_max_distance = false;
+    if ((config->combined_termination && config->use_latest) || config->combined_termination || config->use_distance_termination) {
+        float close = sqrt(close_squared);
+        float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+        outside_distance = top_k.size() >= config->num_return && close > config->termination_alpha * threshold;
+        if (config->use_latest && config->use_break) {
+            outside_max_distance = top_k.size() >= config->num_return && close > config->termination_alpha * config->break_value * threshold;
+        }
+    }
+
+    // Return whether closest is too far
+    if (!is_querying) {
+        return outside_original;
+    } else if (config->combined_termination && config->use_latest) {
+        return (outside_distance && outside_original) || outside_max_distance;
+    } else if (config->combined_termination) {
+        return outside_distance || outside_original;
+    } else if (config->use_distance_termination) {
+        return outside_distance;
+    } else {
+        return outside_original;
+    }
 }
 
 void HNSW::search_queries(Config* config, float** queries) {

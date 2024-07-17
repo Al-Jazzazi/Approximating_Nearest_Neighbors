@@ -250,8 +250,8 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         double sample_average = 0;
         double original_average = 0;
         for (int j = 0; j < num_neighbors; j++) {
-            sample_average += (sample_nearest[j].first - sample_average) / (j + 1);
-            original_average += (original_nearest[j].first - original_average) / (j + 1);
+            sample_average += (sqrt(sample_nearest[j].first) - sample_average) / (j + 1);
+            original_average += (sqrt(original_nearest[j].first) - original_average) / (j + 1);
         }
 
         // Calculate weight change from average distances
