@@ -48,7 +48,7 @@ public:
     bool combined_termination = false; 
     bool use_latest = false;
     bool use_break = true;
-    float termination_alpha = 0.3;
+    float termination_alpha = 0.4;
     float break_value = 3; 
 
        

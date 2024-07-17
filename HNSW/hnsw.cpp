@@ -162,7 +162,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     priority_queue<pair<float, int>> found;
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
-    if (is_querying && config->use_distance_termination && !config->combined_termination) {
+    if (is_querying && layer_num == 0 && config->use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
     }
 
@@ -187,7 +187,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-        if (is_querying && (config->use_distance_termination || config->combined_termination)) {
+        if (is_querying && layer_num == 0 && (config->use_distance_termination || config->combined_termination)) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -246,11 +246,11 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
 
         // If terminating, log statistics and break
-        if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying)) {
+        if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num)) {
             if (layer_num == 0) {
                 actual_beam_width += found.size();
             }
-            if(config->combined_termination){
+            if(is_querying && layer_num == 0 && config->combined_termination){
                 if(close_dist > far_dist)
                     num_original_termination++;
                 else 
@@ -512,12 +512,12 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     path = direct_path_vector;
 }
 
-bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared, bool is_querying) {
+bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared, bool is_querying, int layer_num) {
     // Compare closest distance to thresholds
     bool outside_original = close_squared > far_squared;
     bool outside_distance = false;
     bool outside_max_distance = false;
-    if ((config->combined_termination && config->use_latest) || config->combined_termination || config->use_distance_termination) {
+    if (is_querying && layer_num == 0 && ((config->combined_termination && config->use_latest) || config->combined_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         outside_distance = top_k.size() >= config->num_return && close > config->termination_alpha * threshold;
@@ -527,7 +527,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     }
 
     // Return whether closest is too far
-    if (!is_querying) {
+    if (!is_querying || layer_num > 0) {
         return outside_original;
     } else if (config->combined_termination && config->use_latest) {
         return (outside_distance && outside_original) || outside_max_distance;
