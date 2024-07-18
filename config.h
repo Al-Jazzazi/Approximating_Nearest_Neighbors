@@ -10,15 +10,15 @@
 class Config {
 public:
     // File Setup
-    std::string dataset_prefix = "./exports/sift/sift";
+    std::string dataset_prefix = "./exports/deep1M/deep1M";
     std::string runs_prefix = "./runs/";
-    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
+    std::string loaded_graph_file = "./graphs/hnsw_deep.bin";
     bool load_graph_file = true;
-    int dimensions = 128;
+    int dimensions = 256;
     int num_nodes = 1000000;
     int num_training = 100000;
-    int num_queries = 10000;
-    int num_return = 50;
+    int num_queries = 1000;
+    int num_return = 10;
 
     // Interpreted File Setup
     std::string load_file = dataset_prefix + "_base.fvecs";
@@ -44,12 +44,13 @@ public:
     int k_upper = 1;
 
     // HNSW Search Parameters
-    bool use_distance_termination = true;
+    bool use_distance_termination = false;
     bool combined_termination = false; 
     bool use_latest = false;
-    bool use_break = true;
-    float termination_alpha = 0.4;
+    bool use_break = false;
+    float termination_alpha = 0.3;
     float break_value = 3; 
+    float efs_search_2 = 1.1; 
 
        
     // HNSW Training
@@ -72,13 +73,13 @@ public:
     int initial_benefit = 1;
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {50};
+    std::vector<int> benchmark_num_return = {0};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {};
-    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    //std::vector<int> benchmark_ef_search = {};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800 }; //, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};

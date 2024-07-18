@@ -4,3 +4,4 @@ runs
 slurm
 venv
 *.out
+graphs
