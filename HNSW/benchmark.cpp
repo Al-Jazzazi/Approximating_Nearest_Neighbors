@@ -404,14 +404,10 @@ int main() {
         "ef_construction", nodes, queries, training, results_file);
     run_benchmark(config, config->num_return, config->benchmark_num_return, "num_return",
         nodes, queries, training, results_file);
-
-    if (config->use_distance_termination && !config->combined_termination) {
-        run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
-            queries, training, results_file);
-    } else {
-        run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
-            queries, training, results_file);
-    }
+    run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
+        queries, training, results_file);
+    run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
+        queries, training, results_file);
 
     if (config->use_grasp) {
         run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",
