@@ -364,7 +364,7 @@ int main() {
                  << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                  << ", current Pruning method = " << config->weight_selection_method     
                  << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                 << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha  << ", use_cost_benefit = " << config->use_cost_benefit 
+                 << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha << ", second beam_width = " << config->efs_search_2 << ", use_cost_benefit = " << config->use_cost_benefit 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 
 
