@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O2 -mavx
+CXXFLAGS := -O2 -mavx -g
 
 SRCS := $(wildcard HNSW/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
@@ -13,19 +13,19 @@ EPOCH_TIME := $(shell date +%s)
 all: $(TARGETS)
 
 run: HNSW/run.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
 save: HNSW/save.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
 dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
 benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
 benchmark_slurm: HNSW/benchmark.cpp HNSW/grasp.cpp HNSW/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -g -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 clean:

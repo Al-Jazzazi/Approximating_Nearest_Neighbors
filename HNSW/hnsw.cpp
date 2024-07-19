@@ -345,7 +345,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
 
     // Place found elements into entry_points
-    size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : config->k_upper;
+    size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : min(config->k_upper, static_cast<int>(found.size()));
     entry_points.clear();
     entry_points.resize(idx);
     while (idx > 0) {

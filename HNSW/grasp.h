@@ -9,7 +9,7 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, f
 void normalize_weights(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float lambda, float temperature);
 
 // Helper functions
-double calculate_weight_change(Config* config, std::vector<std::pair<float, int>>& original_nearest, std::vector<std::pair<float, int>>& sample_nearest, int num_neighbors, std::ofstream* results_file);
+double calculate_weight_change(Config* config, std::vector<std::pair<float, int>>& original_nearest, std::vector<std::pair<float, int>>& sample_nearest, std::ofstream* results_file);
 void prune_edges(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, int num_keep);
 void sample_subgraph(Config* config, std::vector<Edge*>& edges, float lambda);
 void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors, std::ofstream* results_file);
