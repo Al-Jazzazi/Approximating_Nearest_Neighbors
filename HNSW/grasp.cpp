@@ -156,16 +156,16 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     for(int i = 0; i < config->num_nodes ; i++){
         for(int k = 0; k < hnsw->mappings[i][0].size(); k++){
             Edge& edge = hnsw->mappings[i][0][k];
-            int count_position = edge.probability_edge == 1 ? 19 : edge.probability_edge * 20;
+            int count_position = edge.probability_edge >= 1 ? 19 : edge.probability_edge * 20;
             edge.weight += mu;
             edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
             counts_prob[count_position]++;
 
-            if(edge.weight < 0)
+            if(edge.weight < 0) {
                 counts_w[0]++;
-            else{
-            count_position = edge.weight >=19*config->interval_for_weight_histogram ? 19: edge.weight/config->interval_for_weight_histogram +1; 
-            counts_w[count_position]++;
+            } else {
+                count_position = edge.weight >=19*config->interval_for_weight_histogram ? 19: edge.weight/config->interval_for_weight_histogram +1; 
+                counts_w[count_position]++;
             }
         }
     }
@@ -243,30 +243,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         vector<pair<float, int>> sample_nearest = hnsw->nn_search(config, sample_path, query, num_neighbors, false, true, true);
         vector<pair<float, int>> original_nearest = hnsw->nn_search(config, original_path, query, num_neighbors, false, true, false);
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
-        
-            
-
-        // Calculate the average distances between nearest neighbors and training point incrementally
-        double sample_average = 0;
-        double original_average = 0;
-        for (int j = 0; j < num_neighbors; j++) {
-            sample_average += (sqrt(sample_nearest[j].first) - sample_average) / (j + 1);
-            original_average += (sqrt(original_nearest[j].first) - original_average) / (j + 1);
-        }
-
-        // Calculate weight change from average distances
-        double weight_change = (sample_average / original_average - 1) * config->learning_rate;
-        if(weight_change > 1000 || weight_change < -1000) {
-            weight_change = 1000;
-        }
-        if (config->export_negative_values && weight_change < 0) {
-           if(results_file != nullptr)
-                *results_file << "error weight is being updates by a negative value" << endl;
-            else
-                cout << "negative value found, weight_change is " << weight_change <<  ", sample distance is " << sample_average 
-                << ", original distance is " << original_average << ", ration is " << sample_average / original_average << endl; 
-
-        } 
+        double weight_change = calculate_weight_change(config, original_nearest, sample_nearest, num_neighbors, results_file);
         
         if(config->use_stinky_points){
             for (int j = 0; j < sample_path.size(); j++) 
@@ -277,7 +254,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 
         //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
         //will differ 
-        if(sample_average != original_average) {
+        if(weight_change != 0) {
             for (int j = 0; j < original_path.size(); j++) {
                 if ((config->weight_selection_method == 0) ||
                     (config->weight_selection_method == 1 && original_path[j]->ignore) ||
@@ -323,6 +300,44 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         *results_file << "\t\t\t" <<num_updates << "\t\t\t\t" << num_of_edges_updated  <<endl; 
     }
     
+}
+
+double calculate_weight_change(Config* config, vector<pair<float, int>>& original_nearest, vector<pair<float, int>>& sample_nearest, int num_neighbors, ofstream* results_file) {
+    double weight_change = 0;
+    if (config->weight_formula == 0) {
+        // Calculate the average distances between nearest neighbors and training point incrementally
+        double sample_average = 0;
+        double original_average = 0;
+        for (int i = 0; i < num_neighbors; i++) {
+            sample_average += (sqrt(sample_nearest[i].first) - sample_average) / (i + 1);
+            original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
+        }
+
+        // Calculate weight change from average distances
+        weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        if(weight_change > 1000 || weight_change < -1000) {
+            weight_change = 1000;
+        }
+        if (config->export_negative_values && weight_change < 0) {
+            if (results_file != nullptr) {
+                *results_file << "error weight is being updates by a negative value" << endl;
+            } else {
+                cout << "negative value found, weight_change is " << weight_change <<  ", sample distance is " << sample_average 
+                << ", original distance is " << original_average << ", ration is " << sample_average / original_average << endl; 
+            }
+        } 
+    } else if (config->weight_formula == 1) {
+        // Use modified DCG formula to score using positions of missing neighbors
+        unordered_set<int> sample_nearest_set;
+        std::transform(sample_nearest.begin(), sample_nearest.end(), std::inserter(sample_nearest_set, sample_nearest_set.end()),
+                      [](const pair<float, int>& neighbor) { return neighbor.second; });
+        for (int i = 0; i < num_neighbors; i++) {
+            if (sample_nearest_set.find(original_nearest[i].second) == sample_nearest_set.end()) {
+                weight_change += 1 / log2(i + 2);
+            }
+        }
+    }
+    return weight_change;
 }
 
 /**

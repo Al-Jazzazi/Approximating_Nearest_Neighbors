@@ -67,6 +67,7 @@ public:
     int grasp_loops = 20;
     int grasp_subloops = 1;
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
+    int weight_formula = 0;  // 0 = original distance formula, 1 = position-based formula
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.9;
     int initial_cost = 1;
