@@ -11,8 +11,8 @@ class Config {
 public:
     // File Setup
     std::string dataset_prefix = "./exports/deep1M/deep1M";
-    std::string runs_prefix = "./runs/";
-    std::string loaded_graph_file = "./graphs/hnsw_deep.bin";
+    std::string runs_prefix = "./runs/testing/_randos_";
+    std::string loaded_graph_file = "./grphs/hnsw_deep.bin";
     bool load_graph_file = true;
     int dimensions = 256;
     int num_nodes = 1000000;
@@ -45,12 +45,22 @@ public:
 
     // HNSW Search Parameters
     bool use_distance_termination = false;
-    bool combined_termination = false; 
-    bool use_latest = false;
-    bool use_break = false;
-    float termination_alpha = 0.3;
+    bool combined_termination = true; 
+    bool use_latest = true;
+    bool use_break = true;
     float break_value = 3; 
     float efs_search_2 = 1.1; 
+
+   
+    //Beam_Width & alpha Equations' Parameters 
+    float bw_slope = 0.197; 
+    float bw_intercept = -347.98;
+    float alpha_coefficient = 0.0187;
+    float alpha_interscept = 0.2361; 
+    
+    //Getting termination_alpha
+    float search_distance_calc_bw = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 1.0f;
+    float termination_alpha = use_distance_termination ? 0.5  :alpha_coefficient * log(search_distance_calc_bw ) + alpha_interscept;
 
        
     // HNSW Training
@@ -74,7 +84,7 @@ public:
     int initial_benefit = 1;
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {0};
+    std::vector<int> benchmark_num_return = {};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
