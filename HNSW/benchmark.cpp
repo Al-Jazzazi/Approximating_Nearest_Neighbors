@@ -298,81 +298,34 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         *results_file << endl << endl;
     }
     parameter = default_parameter;
+    if (results_file != NULL) {
+        results_file->close();
+        delete results_file;
+        cout << "Results exported to " << config->runs_prefix << "benchmark.txt" << endl;
+    }
 }
 
-string get_cpu_brand() {
-    char CPUBrand[0x40];
-    unsigned int CPUInfo[4] = {0,0,0,0};
-
-    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-    unsigned int nExIds = CPUInfo[0];
-
-    memset(CPUBrand, 0, sizeof(CPUBrand));
-
-    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
-        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-        if (i == 0x80000002)
-            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000003)
-            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000004)
-            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
-    }
-    string output(CPUBrand);
-    return output;
-}
-
-/**
- * This class is used to run HNSW with different parameters, comparing the recall
- * versus ideal for each set of parameters.
-*/
-int main() {
-
-    string CPUBrand = get_cpu_brand();
-
-    time_t now = time(0);
-    cout << "Benchmark run started at " << ctime(&now);
-    Config* config = new Config();
-
-    // Load nodes
-    float** nodes = new float*[config->num_nodes];
-    load_nodes(config, nodes);
-    float** queries = new float*[config->num_queries];
-    load_queries(config, nodes, queries);
-    float** training = nullptr;
-    if ((config->use_grasp || config->use_cost_benefit) && !config->load_graph_file) {
-        training = new float*[config->num_training];
-        load_training(config, nodes, training, config->num_training);
-        remove_duplicates(config, training, queries);
-    }
-
+void run_benchmarks(Config* config, float** nodes, float** queries, float** training) {
     // Initialize output files
     ofstream* results_file = NULL;
     if (config->export_benchmark) {
         results_file = new ofstream(config->runs_prefix + "benchmark.txt");
         *results_file << "Size " << config->num_nodes << "\nBenchmarking with Parameters: opt_con = "
-                 << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
-                 << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
-                 << ", ef_search = " << config->ef_search 
-                 
-                 << "\nnum_return = " << config->num_return << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
-                 << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
-                 << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  << ", Single training = " << config->single_ep_training 
-                 
-                 <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
-                 << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
-                 << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
-                 << ", current Pruning method = " << config->weight_selection_method     
-                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                 << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha << ", second beam_width = " << config->efs_search_2 << ", use_cost_benefit = " << config->use_cost_benefit 
-                 << ", use_direct_path = " << config->use_direct_path << endl;
-
-
-   
-          
-
-
-          
+                << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
+                << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
+                << ", ef_search = " << config->ef_search 
+                
+                << "\nnum_return = " << config->num_return << ", learning_rate = " << config->learning_rate << ", initial_temperature = " << config->initial_temperature
+                << ", decay_factor = " << config->decay_factor << ", initial_keep_ratio = " << config->initial_keep_ratio
+                << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  << ", Single training = " << config->single_ep_training 
+                
+                <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
+                << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
+                << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
+                << ", current Pruning method = " << config->weight_selection_method     
+                << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
+                << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha << ", second beam_width = " << config->efs_search_2 << ", use_cost_benefit = " << config->use_cost_benefit 
+                << ", use_direct_path = " << config->use_direct_path << endl;
 
         if (config->export_histograms) {
             if (config->use_grasp) {
@@ -425,13 +378,73 @@ int main() {
         run_benchmark(config, config->use_stinky_points, config->benchmark_enablign_stinky, "stinky_points",
             nodes, queries, training, results_file);
     }
+}
+
+string get_cpu_brand() {
+    char CPUBrand[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+
+    memset(CPUBrand, 0, sizeof(CPUBrand));
+
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+        if (i == 0x80000002)
+            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
+    }
+    string output(CPUBrand);
+    return output;
+}
+
+/**
+ * This class is used to run HNSW with different parameters, comparing the recall
+ * versus ideal for each set of parameters.
+*/
+int main() {
+
+    string CPUBrand = get_cpu_brand();
+
+    time_t now = time(0);
+    cout << "Benchmark run started at " << ctime(&now);
+    Config* config = new Config();
+
+    // Load nodes
+    float** nodes = new float*[config->num_nodes];
+    load_nodes(config, nodes);
+    float** queries = new float*[config->num_queries];
+    load_queries(config, nodes, queries);
+    float** training = nullptr;
+    if ((config->use_grasp || config->use_cost_benefit) && !config->load_graph_file) {
+        training = new float*[config->num_training];
+        load_training(config, nodes, training, config->num_training);
+        remove_duplicates(config, training, queries);
+    }
+
+    int grid_size = min({config->grid_num_return.size(), config->grid_runs_prefix.size(), config->grid_graph_file.size()});
+    if (grid_size == 0) {
+        run_benchmarks(config, nodes, queries, training);
+    } else {
+        for (int i = 0; i < grid_size; ++i) {
+            int default_num_return = config->num_return;
+            string default_runs_prefix = config->runs_prefix;
+            string default_graph_file = config->loaded_graph_file;
+            config->num_return = config->grid_num_return[i];
+            config->runs_prefix = config->grid_runs_prefix[i];
+            config->loaded_graph_file = config->grid_graph_file[i];
+            run_benchmarks(config, nodes, queries, training);
+            config->num_return = default_num_return;
+            config->runs_prefix = default_runs_prefix;
+            config->loaded_graph_file = default_graph_file;
+        }
+    }
 
     // Clean up
-    if (results_file != NULL) {
-        results_file->close();
-        delete results_file;
-        cout << "Results exported to " << config->runs_prefix << "benchmark.txt" << endl;
-    }
     for (int i = 0; i < config->num_nodes; ++i)
         delete[] nodes[i];
     delete[] nodes;

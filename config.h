@@ -83,6 +83,11 @@ public:
     int initial_cost = 1;
     int initial_benefit = 1;
     
+    // Grid parameters: repeat all benchmarks for each set of grid values
+    std::vector<int> grid_num_return = {1, 10, 50}; 
+    std::vector<std::string> grid_runs_prefix = {"./runs/efs1_", "./runs/efs10_", "./runs/efs50_"};
+    std::vector<std::string> grid_graph_file = {"./runs/basic_grasp_sift/grasp_graph_num_return_1.bin", "./runs/basic_grasp_sift/grasp_graph_num_return_10.bin", "./runs/basic_grasp_sift/grasp_graph_num_return_50.bin"};
+    
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {};
     std::vector<int> benchmark_optimal_connections = {};
@@ -115,7 +120,7 @@ public:
     bool print_path_size = false;
     int interval_for_neighbor_percent = 100;
     int interval_for_weight_histogram = 1; 
-    int interval_for_num_of_updates_histogram = 10;
+    int interval_for_num_of_updates_histogram = 1;
     int interval_for_cost_histogram = 10; 
     int interval_for_benefit_histogram = 1; 
 
