@@ -434,13 +434,16 @@ int main() {
             int default_num_return = config->num_return;
             string default_runs_prefix = config->runs_prefix;
             string default_graph_file = config->loaded_graph_file;
+            string default_info_file = config->loaded_info_file;
             config->num_return = config->grid_num_return[i];
             config->runs_prefix = config->grid_runs_prefix[i];
             config->loaded_graph_file = config->grid_graph_file[i];
+            config->loaded_info_file = std::regex_replace(std::regex_replace(config->grid_graph_file[i], std::regex("graph"), "info"), std::regex("bin"), "txt");
             run_benchmarks(config, nodes, queries, training);
             config->num_return = default_num_return;
             config->runs_prefix = default_runs_prefix;
             config->loaded_graph_file = default_graph_file;
+            config->loaded_info_file = default_info_file;
         }
     }
 
