@@ -185,13 +185,13 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         candidates.emplace(entry);
         found.emplace(entry);
         // Create an new edge pointing at entry point
-        if (layer_num == 0 && config->use_direct_path){
+        if (layer_num == 0 && is_training && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first, config->initial_cost, config->initial_benefit);
             candidates_edges.emplace(new_Edge);
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-        if (is_querying && layer_num == 0 && (config->use_distance_termination || config->combined_termination)) {
+        if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -244,7 +244,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         float close_dist = candidates.top().first;
         candidates.pop();
         Edge* closest_edge;
-        if(layer_num == 0 && config->use_direct_path){
+        if(layer_num == 0 && is_training && config->use_direct_path){
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
@@ -296,14 +296,18 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
-                    top_k.emplace(neighbor_dist, neighbor); 
+                    if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
+                        top_k.emplace(neighbor_dist, neighbor);
+                        if (neighbor_dist < top_1.first) {
+                            top_1 = make_pair(neighbor_dist, neighbor);
+                        }
+                        if (top_k.size() > config->num_return)
+                            top_k.pop();
+                    }
                     if (layer_num == 0) {
                         path.push_back(&neighbor_edge);
-                    }                   
-                    if (neighbor_dist < top_1.first) {
-                        top_1 = make_pair(neighbor_dist, neighbor);
                     }
-                    if (layer_num == 0 && config->use_direct_path) {
+                    if (layer_num == 0 && is_training && config->use_direct_path) {
                         neighbor_edge.distance = neighbor_dist;
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
@@ -328,12 +332,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         found_extension.emplace(far_dist, furthest);
                         if(found_extension.size() > num_to_return * config->efs_search_2)
                             found_extension.pop();
-                        
-                        
                     }
-                    if (top_k.size() > config->num_return)
-                        top_k.pop();
-                } else if(neighbor_dist < found_extension.top().first || found_extension.size() <   num_to_return * config->efs_search_2){
+                } else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() <   num_to_return * config->efs_search_2)){
                     found_extension.emplace(neighbor_dist, neighbor);
                     if(found_extension.size() > num_to_return * config->efs_search_2)
                         found_extension.pop();
@@ -354,7 +354,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         found.pop();
     }
     // Calculate direct path
-    if (config->use_direct_path && is_training) {
+    if (config->use_direct_path && layer_num == 0 && is_training) {
         find_direct_path(path, entry_points);
         for (Edge* edge : entry_point_edges) {
             delete edge;
@@ -516,7 +516,7 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
         } else {
             // Traverse back through the path
             int size = 0;
-            while (size < path.size() && current->prev_edge != nullptr) {
+            while (size < path.size() && current->prev_edge != nullptr && direct_path.find(current) == direct_path.end()) {
                 direct_path.insert(current);
                 current = current->prev_edge;
                 ++size;
@@ -535,7 +535,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     bool alpha_distance_1 = false;
     bool alpha_distance_2 = false;
     
-    if (is_querying && layer_num == 0 && ((config->combined_termination && config->use_latest) || config->combined_termination || config->use_distance_termination)) {
+    if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         alpha_distance_1 = top_k.size() >= config->num_return && close > config->termination_alpha * threshold;
