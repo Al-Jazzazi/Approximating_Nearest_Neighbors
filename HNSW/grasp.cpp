@@ -316,7 +316,9 @@ double calculate_weight_change(Config* config, vector<pair<float, int>>& origina
         }
 
         // Calculate weight change from average distances
-        weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        if (original_average != 0) {
+            weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        }
         if (config->export_negative_values && weight_change < 0) {
             if (results_file != nullptr) {
                 *results_file << "error weight is being updates by a negative value" << endl;
