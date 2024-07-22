@@ -201,12 +201,13 @@ public:
     }
 
     float calculate_efs(float multiplier) {
-        return multiplier * bw_slope * ef_search + bw_intercept;
+        float search_distance_calcs = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 0.0f;
+        return multiplier * bw_slope * search_distance_calcs + bw_intercept;
     }
 
     float calculate_alpha(float multiplier) {
         float search_distance_calcs = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 1.0f;
-        return use_distance_termination ? 0.5 : alpha_coefficient * log(multiplier * search_distance_calcs) + alpha_intercept;
+        return alpha_coefficient * log(multiplier * search_distance_calcs) + alpha_intercept;
     }
 };
 
