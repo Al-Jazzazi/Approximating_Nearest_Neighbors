@@ -56,9 +56,7 @@ public:
     float bw_intercept = -389.13;
     float alpha_coefficient = 0.0257;
     float alpha_intercept = 0.179;
-    float termination_alpha = use_distance_termination ? 0.5 : calculate_alpha(1.0);
-    float termination_alpha2 = use_distance_termination ? 0.5 : calculate_alpha(break_multiplier);
-    float ef_search2 = calculate_efs(break_multiplier);
+    float termination_alpha = use_distance_termination ? 0.5 : alpha_coefficient * log((ef_search - bw_intercept) / bw_slope) + alpha_intercept;
        
     // HNSW Training
     bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -198,16 +196,6 @@ public:
             std::cout << "Warning: Number of queries to return was set to " << ef_search << std::endl;
         }
         return true;
-    }
-
-    float calculate_efs(float multiplier) {
-        float search_distance_calcs = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 0.0f;
-        return multiplier * bw_slope * search_distance_calcs + bw_intercept;
-    }
-
-    float calculate_alpha(float multiplier) {
-        float search_distance_calcs = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 1.0f;
-        return alpha_coefficient * log(multiplier * search_distance_calcs) + alpha_intercept;
     }
 };
 

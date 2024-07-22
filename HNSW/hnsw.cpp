@@ -164,6 +164,13 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     priority_queue<pair<float, int>> found_extension;
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
+    float termination_alpha2 = 0;
+    float ef_search2 = 0;
+    if (config->use_latest && config->use_break && config->bw_slope != 0) {
+        float estimated_distance_calcs = (config->ef_search - config->bw_intercept) / config->bw_slope;
+        termination_alpha2 = config->alpha_coefficient * log(config->break_multiplier * estimated_distance_calcs) + config->alpha_intercept;
+        ef_search2 = config->break_multiplier * config->bw_slope * estimated_distance_calcs + config->bw_intercept;
+    }
     if (is_querying && layer_num == 0 && config->use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
     }
@@ -250,7 +257,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
 
         // If terminating, log statistics and break
-        if (should_terminate(config, top_k, top_1, close_dist, far_dist, found_extension.top().first ,is_querying, layer_num)) {
+        if (should_terminate(config, top_k, top_1, close_dist, far_dist, found_extension.top().first, termination_alpha2, is_querying, layer_num)) {
             if (layer_num == 0) {
                 actual_beam_width += found.size();
             }
@@ -331,13 +338,13 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         found.pop();
                         if (config->use_latest && config->use_break) {
                             found_extension.emplace(far_dist, furthest);
-                            if(found_extension.size() > config->ef_search2 - num_to_return)
+                            if(found_extension.size() > ef_search2 - num_to_return)
                                 found_extension.pop();
                         }
                     }
-                } else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() < config->ef_search2 - num_to_return)){
+                } else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() < ef_search2 - num_to_return)){
                     found_extension.emplace(neighbor_dist, neighbor);
-                    if(found_extension.size() > config->ef_search2 - num_to_return)
+                    if(found_extension.size() > ef_search2 - num_to_return)
                         found_extension.pop();
                 }
     
@@ -530,7 +537,7 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     path = direct_path_vector;
 }
 
-bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared, float far_extension_sqaured, bool is_querying, int layer_num) {
+bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared, float far_extension_sqaured, float alpha_break, bool is_querying, int layer_num) {
     // Compare closest distance to thresholds
     bool beam_width_1 = close_squared > far_squared;
     bool beam_width_2 =  false;
@@ -542,7 +549,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         alpha_distance_1 = top_k.size() >= config->num_return && close > config->termination_alpha * threshold;
         if (config->use_latest && config->use_break) {
-            alpha_distance_2 = top_k.size() >= config->num_return && close > config->termination_alpha2 * threshold;
+            alpha_distance_2 = top_k.size() >= config->num_return && close > alpha_break * threshold;
             if(far_extension_sqaured > 0 ) 
                 beam_width_2 = close_squared > far_extension_sqaured;
         }
