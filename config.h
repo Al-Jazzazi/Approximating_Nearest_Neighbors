@@ -43,21 +43,18 @@ public:
     int ef_search_upper = 1;
     int k_upper = 1;
 
-    // HNSW Search Parameters
+    // Termination Parameters
     bool use_distance_termination = false;
     bool combined_termination = true; 
     bool use_latest = true;
     bool use_break = true;
-
-   
-    //Beam_Width & alpha Equations' Parameters 
+    float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float break_multiplier = 1.5;
     float bw_slope = 0.2108; 
     float bw_intercept = -389.13;
     float alpha_coefficient = 0.0257;
     float alpha_intercept = 0.179;
-    float termination_alpha = use_distance_termination ? 0.5 : alpha_coefficient * log((ef_search - bw_intercept) / bw_slope) + alpha_intercept;
-       
+
     // HNSW Training
     bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     bool use_cost_benefit = false;
