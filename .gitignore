@@ -6,4 +6,4 @@ venv
 *.out
 graphs
 grphs 
-
+*.sbatch

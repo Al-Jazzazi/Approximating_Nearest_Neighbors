@@ -280,8 +280,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      //+ std::to_string(construction_duration) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", ";
-            if(config->combined_termination)
+            if(config->combined_termination){
                 line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination);
+                float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
+                float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+                line += std::to_string(termination_alpha)
+            }
             lines.push_back(line);
         }
         
