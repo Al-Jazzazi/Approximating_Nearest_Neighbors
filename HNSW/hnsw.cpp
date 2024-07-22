@@ -169,8 +169,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     vector<int> when_neigh_found(config->num_return, -1);
     int nn_found = 0;
     float ef_search2 = 0;
-    if (config->use_latest && config->use_break && config->bw_slope != 0) {
-        ef_search2 = config->break_multiplier * (config->ef_search - config->bw_intercept) + config->bw_intercept;
+    if (config->use_latest && config->use_break) {
+        // Convert efs to distance calcs, multiply, then convert distance calcs to efs
+        ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
     }
     if (is_querying && layer_num == 0 && config->use_distance_termination && !config->combined_termination) {
         num_to_return = 100000;
@@ -549,7 +550,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
         
         if (config->use_latest && config->use_break) {
-            float termination_alpha2 = config->alpha_coefficient * log(config->break_multiplier * estimated_distance_calcs) + config->alpha_intercept;
+            float termination_alpha2 = config->alpha_coefficient * log(config->alpha_break * estimated_distance_calcs) + config->alpha_intercept;
             alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
             if(far_extension_sqaured > 0 ) 
                 beam_width_2 = close_squared > far_extension_sqaured;

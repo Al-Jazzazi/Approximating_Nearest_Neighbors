@@ -328,7 +328,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                 << ", current Pruning method = " << config->weight_selection_method     
                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                << ", Use Break = " << config->use_break << ", break multiplier = " << config->break_multiplier << ", use_cost_benefit = " << config->use_cost_benefit 
+                << ", Use Break = " << config->use_break << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break << ", use_cost_benefit = " << config->use_cost_benefit 
                 << ", use_direct_path = " << config->use_direct_path << endl;
 
         if (config->export_histograms) {
@@ -378,8 +378,6 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         run_benchmark(config, config->final_keep_ratio, config->benchmark_final_keep_ratio, "final_keep_ratio",
             nodes, queries, training, results_file);
         run_benchmark(config, config->grasp_loops, config->benchmark_grasp_loops, "grasp_loops",
-            nodes, queries, training, results_file);
-        run_benchmark(config, config->use_stinky_points, config->benchmark_enablign_stinky, "stinky_points",
             nodes, queries, training, results_file);
     }
 }

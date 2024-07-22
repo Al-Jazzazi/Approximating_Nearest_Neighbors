@@ -28,39 +28,40 @@ public:
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
     // HNSW Construction
-    bool use_heuristic = true;
+    const bool use_heuristic = true;
     int max_connections = 14;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
 
     // Beam Search
-    bool single_ep_construction = true;
-    bool single_ep_query = true;
-    bool single_ep_training = true;
+    const bool single_ep_construction = true;
+    const bool single_ep_query = true;
+    const bool single_ep_training = true;
     int ef_construction = 500;
     int ef_search = 400;
     int ef_search_upper = 1;
     int k_upper = 1;
 
     // Termination Parameters
-    bool use_distance_termination = false;
-    bool combined_termination = true; 
-    bool use_latest = true;
-    bool use_break = true;
+    const bool use_distance_termination = false;
+    const bool combined_termination = true; 
+    const bool use_latest = true;
+    const bool use_break = true;
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
-    float break_multiplier = 1.5;
+    float alpha_break = 1.5;
+    float efs_break = 1.5;
     float bw_slope = 0.2108; 
     float bw_intercept = -389.13;
     float alpha_coefficient = 0.0257;
     float alpha_intercept = 0.179;
 
     // HNSW Training
-    bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
-    bool use_cost_benefit = false;
-    bool use_direct_path = false;
-    bool use_dynamic_sampling = false;
-    bool use_stinky_points = false;
+    const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    const bool use_cost_benefit = false;
+    const bool use_direct_path = false;
+    const bool use_dynamic_sampling = false;
+    const bool use_stinky_points = false;
     float stinky_value = 0.00005;
     float learning_rate = 0.1;
     float initial_temperature = 1;
@@ -98,18 +99,17 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-    std::vector<bool> benchmark_enablign_stinky = {}; 
 
     // Debugging Flags
-    bool export_benchmark = true;
-    bool export_graph = true;
-    bool export_histograms = true;
-    bool export_weight_updates = false;
-    bool export_training_queries = false; 
-    bool export_negative_values = false; 
-    bool print_weight_updates = true;
-    bool print_neighbor_percent = false;
-    bool print_path_size = false;
+    const bool export_benchmark = true;
+    const bool export_graph = true;
+    const bool export_histograms = true;
+    const bool export_weight_updates = false;
+    const bool export_training_queries = false; 
+    const bool export_negative_values = false; 
+    const bool print_weight_updates = true;
+    const bool print_neighbor_percent = false;
+    const bool print_path_size = false;
     int interval_for_neighbor_percent = 100;
     int interval_for_weight_histogram = 1; 
     int interval_for_num_of_updates_histogram = 1;
@@ -118,8 +118,8 @@ public:
 
     // Generation Settings
     std::string training_set = "";
-    bool generate_our_training = false;
-    bool regenerate_each_iteration = false;
+    const bool generate_our_training = false;
+    const bool regenerate_each_iteration = false;
     int num_training_generated = 0;  // 0 = don't generate training queries
     int graph_seed = 0;
     int shuffle_seed = 1;
@@ -130,23 +130,23 @@ public:
     int gen_min = 0;
     int gen_max = 100000;
     int gen_decimals = 2;
-
+ 
     // Old HNSW Flags
-    bool run_search = true;
-    bool print_results = false;
-    bool print_actual = false;
-    bool print_indiv_found = false;
-    bool print_total_found = false;
-    bool gt_dist_log = false;  // Log where the neighbors are found per query
-    bool gt_smart_termination = true;  // Use groundtruth to terminate search early
-    bool debug_insert = false;
-    bool debug_search = false;
-    bool print_graph = false;
-    bool export_queries = false;
-    bool export_indiv = false;
+    const bool run_search = true;
+    const bool print_results = false;
+    const bool print_actual = false;
+    const bool print_indiv_found = false;
+    const bool print_total_found = false;
+    const bool gt_dist_log = false;  // Log where the neighbors are found per query
+    const bool gt_smart_termination = true;  // Use groundtruth to terminate search early
+    const bool debug_insert = false;
+    const bool debug_search = false;
+    const bool print_graph = false;
+    const bool export_queries = false;
+    const bool export_indiv = false;
+    const bool benchmark_print_neighbors = false;
+    const bool benchmark_print_missing = false;
     int debug_query_search_index = -1;
-    bool benchmark_print_neighbors = false;
-    bool benchmark_print_missing = false;
 
     // HNSW Save Parameters
     std::vector<int> save_optimal_connections = {7, 14, 25};
