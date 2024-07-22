@@ -10,15 +10,15 @@
 class Config {
 public:
     // File Setup
-    std::string dataset_prefix = "./exports/deep1M/deep1M";
-    std::string runs_prefix = "./runs/testing/_randos_";
-    std::string loaded_graph_file = "./grphs/hnsw_deep.bin";
+    std::string dataset_prefix = "./exports/sift/sift";
+    std::string runs_prefix = "./runs/";
+    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
     bool load_graph_file = true;
-    int dimensions = 256;
+    int dimensions = 128;
     int num_nodes = 1000000;
     int num_training = 100000;
-    int num_queries = 1000;
-    int num_return = 10;
+    int num_queries = 10000;
+    int num_return = 50;
 
     // Interpreted File Setup
     std::string load_file = dataset_prefix + "_base.fvecs";
@@ -48,25 +48,22 @@ public:
     bool combined_termination = true; 
     bool use_latest = true;
     bool use_break = true;
-    float break_value = 3; 
-    float efs_search_2 = 1.1; 
 
    
     //Beam_Width & alpha Equations' Parameters 
-    float bw_slope = 0.197; 
-    float bw_intercept = -347.98;
-    float alpha_coefficient = 0.0187;
-    float alpha_interscept = 0.2361; 
-    
-    //Getting termination_alpha
-    float search_distance_calc_bw = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 1.0f;
-    float termination_alpha = use_distance_termination ? 0.5  :alpha_coefficient * log(search_distance_calc_bw ) + alpha_interscept;
-
+    float break_multiplier = 1.5;
+    float bw_slope = 0.2108; 
+    float bw_intercept = -389.13;
+    float alpha_coefficient = 0.0257;
+    float alpha_intercept = 0.179;
+    float termination_alpha = use_distance_termination ? 0.5 : calculate_alpha(1.0);
+    float termination_alpha2 = use_distance_termination ? 0.5 : calculate_alpha(break_multiplier);
+    float ef_search2 = calculate_efs(break_multiplier);
        
     // HNSW Training
-    bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
-    bool use_cost_benefit = true;
-    bool use_direct_path = true;
+    bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    bool use_cost_benefit = false;
+    bool use_direct_path = false;
     bool use_dynamic_sampling = false;
     bool use_stinky_points = false;
     float stinky_value = 0.00005;
@@ -79,14 +76,14 @@ public:
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
     int weight_formula = 0;  // 0 = original distance formula, 1 = position-based formula
     float initial_keep_ratio = 0.9;
-    float final_keep_ratio = 0.9;
+    float final_keep_ratio = 0.7;
     int initial_cost = 1;
     int initial_benefit = 1;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
-    std::vector<int> grid_num_return = {1, 10, 50}; 
-    std::vector<std::string> grid_runs_prefix = {"./runs/efs1_", "./runs/efs10_", "./runs/efs50_"};
-    std::vector<std::string> grid_graph_file = {"./runs/basic_grasp_sift/grasp_graph_num_return_1.bin", "./runs/basic_grasp_sift/grasp_graph_num_return_10.bin", "./runs/basic_grasp_sift/grasp_graph_num_return_50.bin"};
+    std::vector<int> grid_num_return = {}; 
+    std::vector<std::string> grid_runs_prefix = {};
+    std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {};
@@ -201,6 +198,15 @@ public:
             std::cout << "Warning: Number of queries to return was set to " << ef_search << std::endl;
         }
         return true;
+    }
+
+    float calculate_efs(float multiplier) {
+        return multiplier * bw_slope * ef_search + bw_intercept;
+    }
+
+    float calculate_alpha(float multiplier) {
+        float search_distance_calcs = (bw_slope != 0.0) ? ((ef_search - bw_intercept) / bw_slope) : 1.0f;
+        return use_distance_termination ? 0.5 : alpha_coefficient * log(multiplier * search_distance_calcs) + alpha_intercept;
     }
 };
 

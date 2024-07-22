@@ -115,7 +115,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                  <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
                  << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
                  << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method  
-                 << "\nUse_distance_termination = " << config->use_distance_termination << ", alpha value " << config->termination_alpha << ", second beam_width = " << config->efs_search_2 << ", use_cost_benefit = " << config->use_cost_benefit 
+                 << "\nUse_distance_termination = " << config->use_distance_termination << ", alpha value " << config->termination_alpha << ", second beam_width = " << config->ef_search2 << ", use_cost_benefit = " << config->use_cost_benefit 
                  << ", use_direct_path = " << config->use_direct_path << endl;
 
 
@@ -324,7 +324,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                 << ", current Pruning method = " << config->weight_selection_method     
                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                << ", Use Break = " << config->use_break << ", break value = " << config->break_value  <<  ", alpha value "  << config->termination_alpha << ", second beam_width = " << config->efs_search_2 << ", use_cost_benefit = " << config->use_cost_benefit 
+                << ", Use Break = " << config->use_break << ", break multiplier = " << config->break_multiplier  <<  ", alpha value "  << config->termination_alpha << ", second beam_width = " << config->ef_search2 << ", use_cost_benefit = " << config->use_cost_benefit 
                 << ", use_direct_path = " << config->use_direct_path << endl;
 
         if (config->export_histograms) {

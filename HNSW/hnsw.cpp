@@ -329,13 +329,15 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     // If priority queues are too large, remove the furthest
                     if (found.size() > num_to_return){
                         found.pop();
-                        found_extension.emplace(far_dist, furthest);
-                        if(found_extension.size() > num_to_return * config->efs_search_2)
-                            found_extension.pop();
+                        if (config->use_latest && config->use_break) {
+                            found_extension.emplace(far_dist, furthest);
+                            if(found_extension.size() > config->ef_search2 - num_to_return)
+                                found_extension.pop();
+                        }
                     }
-                } else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() <   num_to_return * config->efs_search_2)){
+                } else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() < config->ef_search2 - num_to_return)){
                     found_extension.emplace(neighbor_dist, neighbor);
-                    if(found_extension.size() > num_to_return * config->efs_search_2)
+                    if(found_extension.size() > config->ef_search2 - num_to_return)
                         found_extension.pop();
                 }
     
@@ -540,7 +542,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         alpha_distance_1 = top_k.size() >= config->num_return && close > config->termination_alpha * threshold;
         if (config->use_latest && config->use_break) {
-            alpha_distance_2 = top_k.size() >= config->num_return && close > config->termination_alpha * config->break_value * threshold;
+            alpha_distance_2 = top_k.size() >= config->num_return && close > config->termination_alpha2 * threshold;
             if(far_extension_sqaured > 0 ) 
                 beam_width_2 = close_squared > far_extension_sqaured;
         }
