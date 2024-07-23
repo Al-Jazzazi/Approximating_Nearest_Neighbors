@@ -306,26 +306,30 @@ double calculate_weight_change(Config* config, vector<pair<float, int>>& origina
     double weight_change = 0;
     if (config->weight_formula == 0) {
         // Calculate the average distances between nearest neighbors and training point incrementally
-        double sample_average = 0;
-        double original_average = 0;
-        for (int i = 0; i < sample_nearest.size(); i++) {
-            sample_average += (sqrt(sample_nearest[i].first) - sample_average) / (i + 1);
-        }
+        // double sample_average = 0;
+        // double original_average = 0;
+        // for (int i = 0; i < sample_nearest.size(); i++) {
+        //     sample_average += (sqrt(sample_nearest[i].first) - sample_average) / (i + 1);
+        // }
+        // for (int i = 0; i < original_nearest.size(); i++) {
+        //     original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
+        // }
+        double ratio_total = 0;
         for (int i = 0; i < original_nearest.size(); i++) {
-            original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
+            if (i >= sample_nearest.size()) {
+                ratio_total += 100;
+            } else if (original_nearest[i].first > 0) {
+                ratio_total += sqrt(sample_nearest[i].first) / sqrt(original_nearest[i].first);
+            }
         }
 
         // Calculate weight change from average distances
-        if (original_average != 0) {
-            weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        if (original_nearest.size() != 0) {
+            // weight_change = (sample_average / original_average - 1) * config->learning_rate;
+            weight_change = (ratio_total / original_nearest.size() - 1) * config->learning_rate;
         }
-        if (config->export_negative_values && weight_change < 0) {
-            if (results_file != nullptr) {
-                *results_file << "error weight is being updates by a negative value" << endl;
-            } else {
-                cout << "negative value found, weight_change is " << weight_change <<  ", sample distance is " << sample_average 
-                << ", original distance is " << original_average << ", ration is " << sample_average / original_average << endl; 
-            }
+        if (config->export_negative_values && results_file != nullptr && weight_change < 0) {
+            *results_file << "weight is being updated by a negative value" << endl;
         } 
     } else if (config->weight_formula == 1) {
         // Use modified DCG formula to score using positions of missing neighbors
