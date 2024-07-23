@@ -305,15 +305,24 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
 double calculate_weight_change(Config* config, vector<pair<float, int>>& original_nearest, vector<pair<float, int>>& sample_nearest, ofstream* results_file) {
     double weight_change = 0;
     if (config->weight_formula == 0) {
-        // Calculate the average distances between nearest neighbors and training point incrementally
-        // double sample_average = 0;
-        // double original_average = 0;
-        // for (int i = 0; i < sample_nearest.size(); i++) {
-        //     sample_average += (sqrt(sample_nearest[i].first) - sample_average) / (i + 1);
-        // }
-        // for (int i = 0; i < original_nearest.size(); i++) {
-        //     original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
-        // }
+        // Find the average distances between nearest neighbors and training point incrementally
+        double sample_average = 0;
+        double original_average = 0;
+        for (int i = 0; i < sample_nearest.size(); i++) {
+            sample_average += (sqrt(sample_nearest[i].first) - sample_average) / (i + 1);
+        }
+        for (int i = 0; i < original_nearest.size(); i++) {
+            original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
+        }
+        // Calculate weight change from average distances
+        if (original_nearest.size() != 0) {
+            weight_change = (sample_average / original_average - 1) * config->learning_rate;
+        }
+        if (config->export_negative_values && results_file != nullptr && weight_change < 0) {
+            *results_file << "weight is being updated by a negative value" << endl;
+        } 
+    } else if (config->weight_formula == 1) {
+        // Sum up the distance ratios for each pair of nearest neighbors
         double ratio_total = 0;
         for (int i = 0; i < original_nearest.size(); i++) {
             if (i >= sample_nearest.size()) {
@@ -322,20 +331,16 @@ double calculate_weight_change(Config* config, vector<pair<float, int>>& origina
                 ratio_total += sqrt(sample_nearest[i].first) / sqrt(original_nearest[i].first);
             }
         }
-
-        // Calculate weight change from average distances
+        // Calculate weight change from ratio total
         if (original_nearest.size() != 0) {
-            // weight_change = (sample_average / original_average - 1) * config->learning_rate;
             weight_change = (ratio_total / original_nearest.size() - 1) * config->learning_rate;
         }
-        if (config->export_negative_values && results_file != nullptr && weight_change < 0) {
-            *results_file << "weight is being updated by a negative value" << endl;
-        } 
-    } else if (config->weight_formula == 1) {
-        // Use modified DCG formula to score using positions of missing neighbors
+    } else if (config->weight_formula == 2) {
+        // Convert sample_nearest into a set for efficient lookups
         unordered_set<int> sample_nearest_set;
         std::transform(sample_nearest.begin(), sample_nearest.end(), std::inserter(sample_nearest_set, sample_nearest_set.end()),
                       [](const pair<float, int>& neighbor) { return neighbor.second; });
+        // Calculate weight change using discounted cumulative gain
         for (int i = 0; i < original_nearest.size(); i++) {
             if (sample_nearest_set.find(original_nearest[i].second) == sample_nearest_set.end()) {
                 weight_change += 1 / log2(i + 2);

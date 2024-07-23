@@ -10,25 +10,22 @@
 #include <map> 
 
 using namespace std;
+
 class Config {
 public:
-   
-    const std::string dataset = "sift";
+    // File Setup
+    std::string dataset = "sift";
     int num_return = 1;
-    
-     // File Setup
-    std::string dataset_prefix = "./exports/" +dataset+"/" +dataset ;
-    std::string runs_prefix = "./runs/"+ dataset+"/post_adding_square_root/k="+std::to_string(num_return)+"/distance_calcuations_break_ponts_latest/_efs_alpha_1.5_";
-    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    std::string runs_prefix = "./runs/";
+    std::string loaded_graph_file = "./grphs/" + dataset + "/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
-    int dimensions = dataset == "sift" ? 128: dataset == "deep" ? 256:960;
-    
+    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : 960;
     int num_nodes = 1000000;
-    int num_training = 100000 ;
-    int num_queries = dataset== "sift" ? 10000: 1000;
-   
+    int num_training = 100000;
+    int num_queries = dataset == "sift" ? 10000 : 1000;
 
     // Interpreted File Setup
+    std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
     std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset_prefix + "_groundtruth.ivecs";
@@ -37,12 +34,12 @@ public:
 
     // HNSW Construction
     const bool use_heuristic = true;
-    int max_connections = dataset == "gist"  ? 24: 14;
+    int max_connections = dataset == "gist" ? 24 : 14;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
 
-    // Beam Search
+    // Multiple Entry Points
     const bool single_ep_construction = true;
     const bool single_ep_query = true;
     const bool single_ep_training = true;
@@ -59,39 +56,29 @@ public:
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
-
     const std::map<std::string, std::pair<float, float>> bw = {
-        {"deep", {0.197f,  - 300.85f}},
-        {"sift", {0.2108f,  - 339.64}},
-        {"gist", {0.1114f, - 414.44f}}
+        {"deep", {0.197, -300.85}},
+        {"sift", {0.2108, -339.64}},
+        {"gist", {0.1114, -414.44}}
     };
-
-
-
-
-
     const std::map<std::string, std::pair<float, float>> alpha = {
-        {"50 deep", {0.0185,  0.2273}}, 
+        {"50 deep", {0.0185, 0.2273}}, 
         {"10 deep", {0.0169, 0.2548}},
         {"1 deep", {0.0151, 0.2857}},
-        {"50 sift", { 0.0269f, 0.1754}},
+        {"50 sift", {0.0269f, 0.1754}},
         {"10 sift", {0.0244, 0.2155}},
-        {"1 sift", {0.0222,0.2558}},
+        {"1 sift", {0.0222, 0.2558}},
         {"50 gist", {0.013f, 0.2454}}, 
         {"10 gist", {0.0111f, 0.2707}},
         {"1 gist", {0.0093, 0.2964}}
-
     };
 
-    //10 deep
-    float bw_slope =bw.at(dataset).first; 
-    float bw_intercept = bw.at(dataset).second;
-
+    // Interpreted Termination Parameters
     string nm = std::to_string(num_return) + " " + dataset;
+    float bw_slope = bw.at(dataset).first; 
+    float bw_intercept = bw.at(dataset).second;
     float alpha_coefficient = alpha.at(nm).first;
     float alpha_intercept = alpha.at(nm).second;
-
-
 
     // HNSW Training
     const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -107,7 +94,7 @@ public:
     int grasp_loops = 20;
     int grasp_subloops = 1;
     int weight_selection_method = 0;  // 0 = all edges on original path, 1 = only ignored edges, 2 = exclude edges on sample path
-    int weight_formula = 0;  // 0 = original distance formula, 1 = position-based formula
+    int weight_formula = 0;  // 0 = ratio of average distances, 1 = average of distance ratios, 2 = discounted cumulative gain
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
     int initial_cost = 1;
@@ -139,7 +126,7 @@ public:
 
     // Debugging Flags
     const bool export_benchmark = true;
-    const bool export_graph = false;
+    const bool export_graph = true;
     const bool export_histograms = false;
     const bool export_weight_updates = false;
     const bool export_training_queries = false; 
@@ -184,13 +171,6 @@ public:
     const bool benchmark_print_neighbors = false;
     const bool benchmark_print_missing = false;
     int debug_query_search_index = -1;
-
-    // HNSW Save Parameters
-    std::vector<int> save_optimal_connections = {7, 14, 25};
-    std::vector<int> save_max_connections = {11, 18, 30};
-    std::vector<int> save_max_connections_0 = {14, 28, 50};
-    std::vector<int> save_ef_constructions = {21, 42, 75};
-    int num_graphs_saved = 3;
 
     // Dataset Metrics Parameters
     std::string metrics_file = "./runs/dataset_metrics.txt";
