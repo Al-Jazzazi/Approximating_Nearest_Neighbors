@@ -6,19 +6,27 @@
 #include <regex>
 #include <vector>
 #include <math.h>
+#include <utility>
+#include <map> 
 
+using namespace std;
 class Config {
 public:
-    // File Setup
-    std::string dataset_prefix = "./exports/sift/sift";
-    std::string runs_prefix = "./runs/";
-    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
+   
+    const std::string dataset = "sift";
+    int num_return = 1;
+    
+     // File Setup
+    std::string dataset_prefix = "./exports/" +dataset+"/" +dataset ;
+    std::string runs_prefix = "./runs/"+ dataset+"/post_adding_square_root/k="+std::to_string(num_return)+"/distance_calcuations_break_ponts_latest/_efs_alpha_1.5_";
+    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
-    int dimensions = 128;
+    int dimensions = dataset == "sift" ? 128: dataset == "deep" ? 256:960;
+    
     int num_nodes = 1000000;
-    int num_training = 100000;
-    int num_queries = 10000;
-    int num_return = 50;
+    int num_training = 100000 ;
+    int num_queries = dataset== "sift" ? 10000: 1000;
+   
 
     // Interpreted File Setup
     std::string load_file = dataset_prefix + "_base.fvecs";
@@ -29,7 +37,7 @@ public:
 
     // HNSW Construction
     const bool use_heuristic = true;
-    int max_connections = 14;
+    int max_connections = dataset == "gist"  ? 24: 14;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
@@ -51,10 +59,39 @@ public:
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
-    float bw_slope = 0.2108; 
-    float bw_intercept = -389.13;
-    float alpha_coefficient = 0.0257;
-    float alpha_intercept = 0.179;
+
+    const std::map<std::string, std::pair<float, float>> bw = {
+        {"deep", {0.197f,  - 300.85f}},
+        {"sift", {0.2108f,  - 339.64}},
+        {"gist", {0.1114f, - 414.44f}}
+    };
+
+
+
+
+
+    const std::map<std::string, std::pair<float, float>> alpha = {
+        {"50 deep", {0.0185,  0.2273}}, 
+        {"10 deep", {0.0169, 0.2548}},
+        {"1 deep", {0.0151, 0.2857}},
+        {"50 sift", { 0.0269f, 0.1754}},
+        {"10 sift", {0.0244, 0.2155}},
+        {"1 sift", {0.0222,0.2558}},
+        {"50 gist", {0.013f, 0.2454}}, 
+        {"10 gist", {0.0111f, 0.2707}},
+        {"1 gist", {0.0093, 0.2964}}
+
+    };
+
+    //10 deep
+    float bw_slope =bw.at(dataset).first; 
+    float bw_intercept = bw.at(dataset).second;
+
+    string nm = std::to_string(num_return) + " " + dataset;
+    float alpha_coefficient = alpha.at(nm).first;
+    float alpha_intercept = alpha.at(nm).second;
+
+
 
     // HNSW Training
     const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -88,7 +125,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     //std::vector<int> benchmark_ef_search = {};
-    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800 }; //, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
@@ -102,12 +139,12 @@ public:
 
     // Debugging Flags
     const bool export_benchmark = true;
-    const bool export_graph = true;
-    const bool export_histograms = true;
+    const bool export_graph = false;
+    const bool export_histograms = false;
     const bool export_weight_updates = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
-    const bool print_weight_updates = true;
+    const bool print_weight_updates = false;
     const bool print_neighbor_percent = false;
     const bool print_path_size = false;
     int interval_for_neighbor_percent = 100;
@@ -157,8 +194,8 @@ public:
 
     // Dataset Metrics Parameters
     std::string metrics_file = "./runs/dataset_metrics.txt";
-    std::string metrics_dataset1_prefix = "./exports/deep1M/deep1M_base";
-    std::string metrics_dataset2_prefix = "./exports/deep1M/deep1M_query";
+    std::string metrics_dataset1_prefix = "./exports/deep/deep_base";
+    std::string metrics_dataset2_prefix = "./exports/deep/deep_query";
     bool compare_datasets = false;
     int comparison_num_nodes = 10000;
     int hopkins_sample_size = 1000;
