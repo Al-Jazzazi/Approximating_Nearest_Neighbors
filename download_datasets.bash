@@ -13,14 +13,15 @@ wget ftp://ftp.irisa.fr/local/texmex/corpus/gist.tar.gz
 tar -xzvf gist.tar.gz
 rm gist.tar.gz
 
-# Download GloVe (1000000 x 100)
+# Download GloVe (1000000 x 200)
 mkdir glove
 cd glove 
-wget http://ann-benchmarks.com/glove-100-angular.hdf5
-python3 ../../utils/hdf5_to_fvecs.py glove-100-angular.hdf5
-python3 ../../utils/split_fvecs.py train.fvecs glove_base.fvecs glove_learn.fvecs 1000000 100000
-rm neighbors.fvecs distances.fvecs train.fvecs glove-100-angular.hdf5
-mv test.fvecs glove_query.fvecs
+wget https://nlp.stanford.edu/data/glove.twitter.27B.zip
+unzip glove.twitter.27B.zip glove.twitter.27B.200d.txt
+python3 ../../utils/txt_to_fvecs.py glove.twitter.27B.200d.txt
+python3 ../../utils/split_fvecs.py glove.fvecs glove_base.fvecs temp.fvecs 1000000 110000
+python3 ../../utils/split_fvecs.py temp.fvecs glove_learn.fvecs glove_query.fvecs 100000 10000
+rm glove.twitter.27B.zip glove.twitter.27B.200d.txt glove.fvecs temp.fvecs
 cd ..
 
 # Download Deep (1000000 x 256)

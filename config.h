@@ -19,10 +19,10 @@ public:
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./grphs/" + dataset + "/graph_hnsw_heuristic.bin";
     bool load_graph_file = false;
-    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 100 : 960;
+    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_training = 100000;
-    int num_queries = dataset == "sift" ? 10000 : 1000;
+    int num_queries = dataset == "sift" || dataset == "glove" ? 10000 : 1000;
 
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
@@ -87,7 +87,7 @@ public:
     float alpha_intercept = alpha.at(nm).second;
 
     // HNSW Training
-    const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     const bool use_cost_benefit = false;
     const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
