@@ -286,6 +286,7 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             }
 
         ofstream histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
+        histogram << num_updates << " / " << config->num_training << ", ";
         for (int i = 0; i < 20; i++) {
             histogram << count_updates[i] << "," ;
         }

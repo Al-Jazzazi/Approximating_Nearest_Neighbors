@@ -18,8 +18,8 @@ public:
     int num_return = 1;
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./grphs/" + dataset + "/graph_hnsw_heuristic.bin";
-    bool load_graph_file = true;
-    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : 960;
+    bool load_graph_file = false;
+    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 100 : 960;
     int num_nodes = 1000000;
     int num_training = 100000;
     int num_queries = dataset == "sift" ? 10000 : 1000;
@@ -34,7 +34,7 @@ public:
 
     // HNSW Construction
     const bool use_heuristic = true;
-    int max_connections = dataset == "gist" ? 24 : 14;
+    int max_connections = dataset == "gist" ? 24 : dataset == "glove" ? 16 : 14;
     int max_connections_0 = max_connections;
     int optimal_connections = max_connections;
     double scaling_factor = 1 / log(max_connections);
@@ -50,9 +50,9 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool combined_termination = true; 
-    const bool use_latest = true;
-    const bool use_break = true;
+    const bool combined_termination = false; 
+    const bool use_latest = false;
+    const bool use_break = false;
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
@@ -106,13 +106,13 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {};
+    std::vector<int> benchmark_num_return = {50};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    //std::vector<int> benchmark_ef_search = {};
-    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    std::vector<int> benchmark_ef_search = {};
+    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
     std::vector<float> benchmark_learning_rate = {};
@@ -127,8 +127,8 @@ public:
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_graph = true;
-    const bool export_histograms = false;
-    const bool export_weight_updates = false;
+    const bool export_histograms = true;
+    const bool export_weight_updates = true;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = false;
