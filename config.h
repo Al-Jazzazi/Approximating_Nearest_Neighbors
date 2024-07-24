@@ -28,7 +28,7 @@ public:
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset_prefix + "_groundtruth.ivecs";
+    std::string groundtruth_file = num_nodes < 1000000 || dataset == "glove" ? "" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
@@ -53,13 +53,16 @@ public:
     const bool combined_termination = false; 
     const bool use_latest = false;
     const bool use_break = false;
+    const bool use_oracle_target = true;
+    const bool use_oracle_calcs = false;
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
     const std::map<std::string, std::pair<float, float>> bw = {
         {"deep", {0.197, -300.85}},
         {"sift", {0.2108, -339.64}},
-        {"gist", {0.1114, -414.44}}
+        {"gist", {0.1114, -414.44}},
+        {"glove", {0, 0}}
     };
     const std::map<std::string, std::pair<float, float>> alpha = {
         {"50 deep", {0.0185, 0.2273}}, 
@@ -70,7 +73,10 @@ public:
         {"1 sift", {0.0222, 0.2558}},
         {"50 gist", {0.013f, 0.2454}}, 
         {"10 gist", {0.0111f, 0.2707}},
-        {"1 gist", {0.0093, 0.2964}}
+        {"1 gist", {0.0093, 0.2964}},
+        {"50 glove", {0, 0}}, 
+        {"10 glove", {0, 0}},
+        {"1 glove", {0, 0}}
     };
 
     // Interpreted Termination Parameters
