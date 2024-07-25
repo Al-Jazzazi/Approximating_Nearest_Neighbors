@@ -14,7 +14,7 @@ using namespace std;
 class Config {
 public:
     // File Setup
-    std::string dataset = "sift";
+    std::string dataset = "deep";
     int num_return = 1;
     std::string runs_prefix = "./runs/";
     std::string loaded_graph_file = "./grphs/" + dataset + "/graph_hnsw_heuristic.bin";
@@ -87,7 +87,7 @@ public:
     float alpha_intercept = alpha.at(nm).second;
 
     // HNSW Training
-    const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     const bool use_cost_benefit = false;
     const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
@@ -137,7 +137,7 @@ public:
     const bool export_weight_updates = true;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
-    const bool print_weight_updates = false;
+    const bool print_weight_updates = true;
     const bool print_neighbor_percent = false;
     const bool print_path_size = false;
     int interval_for_neighbor_percent = 100;

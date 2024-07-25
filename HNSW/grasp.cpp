@@ -286,7 +286,6 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
             }
 
         ofstream histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
-        histogram << num_updates << " / " << config->num_training << ", ";
         for (int i = 0; i < 20; i++) {
             histogram << count_updates[i] << "," ;
         }
@@ -316,7 +315,7 @@ double calculate_weight_change(Config* config, vector<pair<float, int>>& origina
             original_average += (sqrt(original_nearest[i].first) - original_average) / (i + 1);
         }
         // Calculate weight change from average distances
-        if (original_nearest.size() != 0) {
+        if (original_average != 0) {
             weight_change = (sample_average / original_average - 1) * config->learning_rate;
         }
         if (config->export_negative_values && results_file != nullptr && weight_change < 0) {

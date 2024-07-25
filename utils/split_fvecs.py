@@ -22,8 +22,8 @@ def write_fvecs(file, vectors):
 
 def split_fvecs(input_file, output_file1, output_file2, output_size1, output_size2):
     vectors = read_fvecs(input_file)
-    first = vectors[:output_size1]
-    second = vectors[output_size1:(output_size1 + output_size2)]
+    first = vectors[:(output_size1 + 1)]
+    second = vectors[(output_size1 + 1):(output_size1 + output_size2 + 2)]
     write_fvecs(output_file1, first)
     write_fvecs(output_file2, second)
 
