@@ -18,7 +18,6 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
     if (use_groundtruth) {
         // Load actual nearest neighbors
         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
-
         if (config->benchmark_print_neighbors) {
             for (int i = 0; i < config->num_queries; ++i) {
                 cout << "Neighbors in ideal case for query " << i << endl;
@@ -30,39 +29,9 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
             }
         }
     } else {
-        // Calcuate actual nearest neighbors per query
+        // Calcuate actual nearest neighbors
         auto start = chrono::high_resolution_clock::now();
-        actual_neighbors.resize(config->num_queries);
-        for (int i = 0; i < config->num_queries; ++i) {
-            priority_queue<pair<float, int>> pq;
-
-            for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(queries[i], nodes[j], config->dimensions);
-                pq.emplace(dist, j);
-                if (pq.size() > config->num_return)
-                    pq.pop();
-            }
-
-            // Place actual nearest neighbors
-            actual_neighbors[i].resize(config->num_return);
-
-            size_t idx = pq.size();
-            while (idx > 0) {
-                --idx;
-                actual_neighbors[i][idx] = pq.top().second;
-                pq.pop();
-            }
-
-            // Print out neighbors
-            if (config->benchmark_print_neighbors) {
-                cout << "Neighbors in ideal case for query " << i << endl;
-                for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
-                    float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
-                    cout << actual_neighbors[i][j] << " (" << dist << ") ";
-                }
-                cout << endl;
-            }
-        }
+        knn_search(config, actual_neighbors, nodes, queries);
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;

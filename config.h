@@ -29,7 +29,7 @@ public:
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file = dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 || dataset == "glove" ? "" : dataset_prefix + "_groundtruth.ivecs";
+    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
@@ -84,13 +84,13 @@ public:
 
     // Interpreted Termination Parameters
     string nm = std::to_string(num_return) + " " + dataset;
-    float bw_slope = bw.at(dataset).first; 
-    float bw_intercept = bw.at(dataset).second;
-    float alpha_coefficient = alpha.at(nm).first;
-    float alpha_intercept = alpha.at(nm).second;
+    float bw_slope = use_break ? bw.at(dataset).first : 0; 
+    float bw_intercept = use_break ? bw.at(dataset).second : 0;
+    float alpha_coefficient = use_break ? alpha.at(nm).first : 0;
+    float alpha_intercept = use_break ? alpha.at(nm).second : 0;
 
     // HNSW Training
-    const bool use_grasp = true;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
+    const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     const bool use_cost_benefit = false;
     const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
@@ -138,6 +138,7 @@ public:
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
+    const bool export_groundtruth = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;

@@ -85,10 +85,12 @@ float calculate_l2_sq(HNSW* hnsw, int layer, float* a, float* b, int size);
 float calculate_l2_sq(float* a, float* b, int size);
 void load_fvecs(const std::string& file, const std::string& type, float** nodes, int num, int dim, bool has_groundtruth);
 void load_ivecs(const std::string& file, std::vector<std::vector<int>>& results, int num, int dim);
+void save_ivecs(const string& file, vector<vector<int>>& results);
 void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking = false);
 void load_hnsw_graph(Config* config, HNSW* hnsw, std::ifstream& graph_file, float** nodes, int num_nodes, int num_layers);
 void save_hnsw_files(Config* config, HNSW* hnsw, const std::string& name, long int duration);
 void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);
+void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries);
 
 #endif

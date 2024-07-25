@@ -590,43 +590,26 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (config->gt_dist_log)
         when_neigh_found_file = new ofstream(config->runs_prefix + "when_neigh_found.txt");
 
-    bool use_groundtruth = config->groundtruth_file != "";
+    bool use_groundtruth = config->groundtruth_file != "" && !config->export_groundtruth;
     if (use_groundtruth && config->query_file == "") {
         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
         use_groundtruth = false;
     }
 
     vector<vector<int>> actual_neighbors;
-    if (use_groundtruth)
+    if (use_groundtruth) {
         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
-    else
-        actual_neighbors.resize(config->num_queries);
+    } else {
+        knn_search(config, actual_neighbors, nodes, queries);
+        if (config->export_groundtruth) {
+            save_ivecs(config->groundtruth_file, actual_neighbors);
+        }
+    }
 
     int total_found = 0;
      reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
         pair<int, float*> query = make_pair(i, queries[i]);
-        if ((config->print_actual || config->print_indiv_found || config->print_total_found || config->export_indiv
-            || config->gt_dist_log) && !use_groundtruth) {
-            // Get actual nearest neighbors
-            priority_queue<pair<float, int>> pq;
-            for (int j = 0; j < config->num_nodes; ++j) {
-                float dist = calculate_l2_sq(query.second, nodes[j], num_dimensions);
-                pq.emplace(dist, j);
-                if (pq.size() > config->num_return)
-                    pq.pop();
-            }
-
-            // Place actual nearest neighbors
-            actual_neighbors[i].resize(config->num_return);
-
-            int idx = config->num_return;
-            while (idx > 0) {
-                --idx;
-                actual_neighbors[i][idx] = pq.top().second;
-                pq.pop();
-            }
-        }
         cur_groundtruth = actual_neighbors[i];
        layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
@@ -895,6 +878,62 @@ void load_ivecs(const string& file, vector<vector<int>>& results, int num, int n
         f.seekg((width - num_return) * 4, ios::cur);
     }
     f.close();
+}
+
+void save_ivecs(const string& file, vector<vector<int>>& results) {
+    ofstream f(file, ios::binary | ios::out);
+    if (!f) {
+        cout << "Unable to open " << file << " for writing" << endl;
+        exit(-1);
+    }
+    cout << "Saving groundtruth to file " << file << endl;
+
+    // Assume all vectors have the same width
+    int width = results[0].size();
+    for (int i = 0; i < results.size(); ++i) {
+        if (results[i].size() != width) {
+            cout << "Inconsistent vector sizes detected!" << endl;
+            exit(-1);
+        }
+        // Write width and values
+        f.write(reinterpret_cast<const char*>(&width), 4);
+        f.write(reinterpret_cast<const char*>(results[i].data()), width * 4);
+    }
+    f.close();
+}
+
+void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
+    actual_neighbors.resize(config->num_queries);
+    for (int i = 0; i < config->num_queries; ++i) {
+        priority_queue<pair<float, int>> pq;
+
+        for (int j = 0; j < config->num_nodes; ++j) {
+            float dist = calculate_l2_sq(queries[i], nodes[j], config->dimensions);
+            pq.emplace(dist, j);
+            if (pq.size() > config->num_return)
+                pq.pop();
+        }
+
+        // Place actual nearest neighbors
+        actual_neighbors[i].resize(config->num_return);
+
+        size_t idx = pq.size();
+        while (idx > 0) {
+            --idx;
+            actual_neighbors[i][idx] = pq.top().second;
+            pq.pop();
+        }
+
+        // Print out neighbors
+        if (config->benchmark_print_neighbors) {
+            cout << "Neighbors in ideal case for query " << i << endl;
+            for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
+                float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
+                cout << actual_neighbors[i][j] << " (" << dist << ") ";
+            }
+            cout << endl;
+        }
+    }
 }
 
 void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
