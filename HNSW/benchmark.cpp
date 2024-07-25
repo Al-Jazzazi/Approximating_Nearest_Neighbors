@@ -162,7 +162,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         for (int i = 0; i < config->num_queries; ++i) {
             hnsw->layer0_dist_comps_per_q = 0;
             float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
-            oracle_distance_calcs += nn_calculations[i].first;
+            if (config->oracle_file != "") {
+                oracle_distance_calcs += nn_calculations[i].first;
+            }
             if (oracle_distance_calcs > config->oracle_termination_total) {
                 break;
             }
