@@ -521,14 +521,14 @@ void load_training(Config* config, float** nodes, float** training, int num_trai
 
 }
 
-// Remove training points that are also found in queries
-void remove_duplicates(Config* config, float** training, float** queries) {
+// Remove training points that are also found in the other array
+void remove_duplicates(Config* config, float** training, float** other, int other_num) {
     int num_training_filtered = config->num_training;
     for (int i = config->num_training - 1; i >= 0; i--) {
-        for (int j = 0; j < config->num_queries; j++) {
+        for (int j = 0; j < other_num; j++) {
             bool is_same = true;
             for (int d = 0; d < config->dimensions; d++) {
-                if (training[i][d] != queries[j][d]) {
+                if (training[i][d] != other[j][d]) {
                     is_same = false;
                     break;
                 }
