@@ -543,7 +543,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     bool beam_width_2 =  false;
     bool alpha_distance_1 = false;
     bool alpha_distance_2 = false;
-    
+    bool num_of_dist_1 = false;
     if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
@@ -557,6 +557,9 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
             if(far_extension_sqaured > 0 ) 
                 beam_width_2 = close_squared > far_extension_sqaured;
         }
+
+        else if (config->use_number_of_distances)
+            num_of_dist_1 = config->number_of_distance_termination_per_q > layer0_dist_comps_per_q;
     }
 
     // Return whether closest is too far
@@ -568,7 +571,9 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         return alpha_distance_1 || beam_width_1;
     } else if (config->use_distance_termination) {
         return alpha_distance_1;
-    } else {
+    } else if(config->use_number_of_distances){
+        return num_of_dist_1;
+    }else {
         return beam_width_1;
     }
 }
