@@ -12,7 +12,7 @@ int main() {
     // Initialize time and config
     auto begin_time = chrono::high_resolution_clock::now();
     time_t now = time(NULL);
-    cout << "GraSP run started at " << ctime(&now);
+    cout << "Run started at " << ctime(&now);
     Config* config = new Config();
 
     cout << "Size " << config->num_nodes << "\nBenchmarking with Parameters: opt_con = "
@@ -118,7 +118,7 @@ int main() {
 
         // Run query search and print results
         hnsw->search_queries(config, queries);
-        
+
         auto search_end = chrono::high_resolution_clock::now();
         cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
 

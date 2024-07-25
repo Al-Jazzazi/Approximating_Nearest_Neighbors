@@ -14,11 +14,11 @@ using namespace std;
 class Config {
 public:
     // File Setup
-    std::string dataset = "deep";
+    std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs/"+ dataset+"/post_adding_square_root/k="+std::to_string(num_return)+"/distance_calcuations_break_ponts_latest/__efs_1.8_alpha_1.2_";
+    std::string runs_prefix = "./runs/hnsw_sift/gt1_";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
-    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_1.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
@@ -55,8 +55,7 @@ public:
     const bool use_number_of_distances = false; 
     const bool use_latest = false;
     const bool use_break = false;
-    const bool use_oracle_target = true;
-    const bool use_oracle_calcs = false;
+    const bool use_groundtruth_termination = true;  // Use groundtruth to terminate search early
     int number_of_distance_termination_per_q = 200; 
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
@@ -115,12 +114,12 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {50};
+    std::vector<int> benchmark_num_return = {};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {};
+    std::vector<int> benchmark_ef_search = {100000};
     // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
@@ -132,13 +131,13 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-    std::vector<int> benchmark_num_of_distance_termination = {2000, 5000};
+    std::vector<int> benchmark_num_of_distance_termination = {};
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_graph = true;
-    const bool export_histograms = true;
+    const bool export_histograms = false;
     const bool export_weight_updates = true;
-    const bool export_groundtruth = false;
+    const bool export_oracle = true;  // Log where the neighbors are found per query
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
@@ -171,8 +170,6 @@ public:
     const bool print_actual = false;
     const bool print_indiv_found = false;
     const bool print_total_found = false;
-    const bool gt_dist_log = false;  // Log where the neighbors are found per query
-    const bool gt_smart_termination = true;  // Use groundtruth to terminate search early
     const bool debug_insert = false;
     const bool debug_search = false;
     const bool print_graph = false;

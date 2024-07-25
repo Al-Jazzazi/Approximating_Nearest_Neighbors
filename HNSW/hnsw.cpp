@@ -13,7 +13,6 @@ using namespace std;
 ofstream* debug_file = NULL;
 
 int correct_nn_found = 0;
-bool log_neighbors = false;
 vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
@@ -200,7 +199,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             top_k.emplace(entry);
             top_1 = entry;
         }
-        if (log_neighbors) {
+        if ((config->use_groundtruth_termination || config->export_oracle) && is_querying && layer_num == 0) {
             auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
             if (loc != cur_groundtruth.end()) {
                 // Get neighbor index (xth closest) and log distance comp
@@ -209,7 +208,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     when_neigh_found[index] = layer0_dist_comps_per_q;
                 ++nn_found;
                 ++correct_nn_found;
-                if (config->gt_smart_termination && nn_found == config->num_return)
+                if (config->use_groundtruth_termination && nn_found == config->num_return)
                     // End search
                     candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
             }
@@ -318,7 +317,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
                     }
-                    if (log_neighbors) {
+                    if ((config->use_groundtruth_termination || config->export_oracle) && is_querying && layer_num == 0) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
                         if (loc != cur_groundtruth.end()) {
                             // Get neighbor index (xth closest) and log distance comp
@@ -326,7 +325,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                            when_neigh_found[index] = layer0_dist_comps_per_q;
                             ++nn_found;
                             ++correct_nn_found;
-                            if (config->gt_smart_termination && nn_found == config->num_return)
+                            if (config->use_groundtruth_termination && nn_found == config->num_return)
                                 // End search
                                 candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                         }
@@ -369,9 +368,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
     }
     // Export when_neigh_found data
-    if (log_neighbors) {
+    if (config->export_oracle && is_querying && layer_num == 0 && when_neigh_found_file != nullptr) {
         for (int i = 0; i < when_neigh_found.size(); ++i) {
-
             *when_neigh_found_file << when_neigh_found[i] << " ";
         }
     }
@@ -475,15 +473,11 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
     if (config->debug_query_search_index == query.first) {
         debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
-    if (config->gt_dist_log)
-        log_neighbors = true;
     
     search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring);
     if (config->print_path_size) {
         total_path_size += path.size();
     }
-    if (config->gt_dist_log)
-        log_neighbors = false;
     if (config->debug_query_search_index == query.first) {
         debug_file->close();
         delete debug_file;
@@ -587,10 +581,10 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (config->export_indiv)
         indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
 
-    if (config->gt_dist_log)
+    if (config->export_oracle)
         when_neigh_found_file = new ofstream(config->runs_prefix + "when_neigh_found.txt");
 
-    bool use_groundtruth = config->groundtruth_file != "" && !config->export_groundtruth;
+    bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
         use_groundtruth = false;
@@ -601,9 +595,6 @@ void HNSW::search_queries(Config* config, float** queries) {
         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
     } else {
         knn_search(config, actual_neighbors, nodes, queries);
-        if (config->export_groundtruth) {
-            save_ivecs(config->groundtruth_file, actual_neighbors);
-        }
     }
 
     int total_found = 0;
@@ -614,7 +605,7 @@ void HNSW::search_queries(Config* config, float** queries) {
        layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
-        if (config->gt_dist_log)
+        if (config->export_oracle)
             *when_neigh_found_file << endl;
         
         if (config->print_results) {
@@ -676,8 +667,8 @@ void HNSW::search_queries(Config* config, float** queries) {
         }
     }
 
-    if (config->gt_dist_log) {
-        cout << "Total neighbors found (gt comparison): " << correct_nn_found << " (" << correct_nn_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
+    if (config->export_oracle) {
+        cout << "Total neighbors found (groundtruth comparison): " << correct_nn_found << " (" << correct_nn_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
     }
     if (config->print_total_found) {
         cout << "Total neighbors found: " << total_found << " (" << total_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
@@ -695,11 +686,11 @@ void HNSW::search_queries(Config* config, float** queries) {
         cout << "Exported individual query results to " << config->runs_prefix << "indiv.txt" << endl;
     }
 
-    // if (config->gt_dist_log) {
-    //     when_neigh_found_file->close();
-    //     delete when_neigh_found_file;
-    //     cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
-    // }
+    if (config->export_oracle) {
+        when_neigh_found_file->close();
+        delete when_neigh_found_file;
+        cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
+    }
 }
 
 vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
