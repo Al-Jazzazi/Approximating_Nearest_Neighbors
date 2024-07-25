@@ -18,7 +18,7 @@ public:
     int num_return = 1;
     std::string runs_prefix = "./runs/hnsw_sift/gt1_";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
-    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_1.bin";
+    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
@@ -55,8 +55,11 @@ public:
     const bool use_number_of_distances = true; 
     const bool use_latest = false;
     const bool use_break = false;
-    const bool use_groundtruth_termination = true;  // Use groundtruth to terminate search early
-    int number_of_distance_termination_per_q = 200; 
+    const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
+    const bool export_oracle = false;  // Log where the neighbors are found per query
+    std::string oracle_file = "";
+    int number_of_distance_termination_per_q = 200;  // Used if use_number_of_distances = true
+    int oracle_termination_total = 10000;  // Used if oracle_file exists
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
@@ -137,7 +140,6 @@ public:
     const bool export_graph = true;
     const bool export_histograms = false;
     const bool export_weight_updates = true;
-    const bool export_oracle = true;  // Log where the neighbors are found per query
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;

@@ -150,13 +150,25 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         if (config->print_path_size) {
             hnsw->total_path_size = 0;
         }
+        
+        vector<pair<int, int>> nn_calculations;
+        if (config->oracle_file != "") {
+            load_oracle(config, nn_calculations);
+        }
         auto start = chrono::high_resolution_clock::now();
         neighbors.reserve(config->num_queries);
+        int oracle_distance_calcs = 0;
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
             hnsw->layer0_dist_comps_per_q = 0;
-            pair<int, float*> query = make_pair(i, queries[i]);
-            neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));
+            float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
+            oracle_distance_calcs += nn_calculations[i].first;
+            if (oracle_distance_calcs > config->oracle_termination_total) {
+                break;
+            }
+            pair<int, float*> query_pair = make_pair(i, query);
+
+            neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
 
             if (config->print_neighbor_percent) {
                 for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {

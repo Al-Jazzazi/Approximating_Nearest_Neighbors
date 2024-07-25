@@ -204,7 +204,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             if (loc != cur_groundtruth.end()) {
                 // Get neighbor index (xth closest) and log distance comp
                 int index = distance(cur_groundtruth.begin(), loc);
-                if(index > 0 && index < when_neigh_found.capacity())
+                if(index >= 0 && index < when_neigh_found.capacity())
                     when_neigh_found[index] = layer0_dist_comps_per_q;
                 ++nn_found;
                 ++correct_nn_found;
@@ -597,23 +597,34 @@ void HNSW::search_queries(Config* config, float** queries) {
     } else {
         knn_search(config, actual_neighbors, nodes, queries);
     }
+    
+    vector<pair<int, int>> nn_calculations;
+    if (config->oracle_file != "") {
+        load_oracle(config, nn_calculations);
+    }
 
     int total_found = 0;
-     reset_statistics();
+    int oracle_distance_calcs = 0;
+    reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
-        pair<int, float*> query = make_pair(i, queries[i]);
+        float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
+        oracle_distance_calcs += nn_calculations[i].first;
+        if (oracle_distance_calcs > config->oracle_termination_total) {
+            break;
+        }
+        pair<int, float*> query_pair = make_pair(i, query);
         cur_groundtruth = actual_neighbors[i];
-       layer0_dist_comps_per_q = 0;
+        layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
-        vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
+        vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
         if (config->export_oracle)
             *when_neigh_found_file << endl;
         
         if (config->print_results) {
             // Print out found
-            cout << "Found " << found.size() << " nearest neighbors of [" << query.second[0];
+            cout << "Found " << found.size() << " nearest neighbors of [" << query_pair.second[0];
             for (int dim = 1; dim < num_dimensions; ++dim)
-                cout << " " << query.second[dim];
+                cout << " " << query_pair.second[dim];
             cout << "] : ";
             for (auto n_pair : found)
                 cout << n_pair.second << " ";
@@ -628,9 +639,9 @@ void HNSW::search_queries(Config* config, float** queries) {
 
         if (config->print_actual) {
             // Print out actual
-            cout << "Actual " << config->num_return << " nearest neighbors of [" << query.second[0];
+            cout << "Actual " << config->num_return << " nearest neighbors of [" << query_pair.second[0];
             for (int dim = 1; dim < num_dimensions; ++dim)
-                cout << " " << query.second[dim];
+                cout << " " << query_pair.second[dim];
             cout << "] : ";
             for (int index : actual_neighbors[i])
                 cout << index << " ";
@@ -654,9 +665,9 @@ void HNSW::search_queries(Config* config, float** queries) {
         }
 
         if (config->export_queries) {
-            *export_file << "Query " << i << endl << query.second[0];
+            *export_file << "Query " << i << endl << query_pair.second[0];
             for (int dim = 1; dim < num_dimensions; ++dim)
-                *export_file << "," << query.second[dim];
+                *export_file << "," << query_pair.second[dim];
             *export_file << endl;
             for (auto n_pair : found)
                 *export_file << n_pair.second << ",";
@@ -1184,4 +1195,21 @@ void load_queries(Config* config, float** nodes, float** queries) {
     delete[] lower_bound;
     delete[] upper_bound;
     delete[] dis_array;
+}
+
+void load_oracle(Config* config, vector<pair<int, int>>& result) {
+    cout << "Loading oracle file: " << config->oracle_file;
+    ifstream f(config->oracle_file);
+    if (!f) {
+        cout << config->oracle_file << " not found";
+        exit(-1);
+    }
+    int calculation = 0;
+    int index = 0;
+    while (f >> calculation) {
+        result.push_back(make_pair(calculation, index));
+        ++index;
+    }
+    f.close();
+    std::sort(result.begin(), result.end());
 }

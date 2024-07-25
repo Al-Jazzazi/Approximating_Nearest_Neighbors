@@ -91,6 +91,7 @@ void load_hnsw_graph(Config* config, HNSW* hnsw, std::ifstream& graph_file, floa
 void save_hnsw_files(Config* config, HNSW* hnsw, const std::string& name, long int duration);
 void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);
-void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries);
+void load_oracle(Config* config, std::vector<std::pair<int, int>>& result);
+void knn_search(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
 
 #endif
