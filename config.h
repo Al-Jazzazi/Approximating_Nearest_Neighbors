@@ -52,7 +52,7 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool combined_termination = false; 
-    const bool use_number_of_distances = false; 
+    const bool use_number_of_distances = true; 
     const bool use_latest = false;
     const bool use_break = false;
     const bool use_groundtruth_termination = true;  // Use groundtruth to terminate search early

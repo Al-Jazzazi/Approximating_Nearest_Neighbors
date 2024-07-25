@@ -154,9 +154,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         neighbors.reserve(config->num_queries);
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
-            //hnsw->layer0_dist_comps_per_q = 0;
+            hnsw->layer0_dist_comps_per_q = 0;
             pair<int, float*> query = make_pair(i, queries[i]);
             neighbors.emplace_back(hnsw->nn_search(config, path, query, config->num_return));
+
             if (config->print_neighbor_percent) {
                 for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
                     cout << hnsw->percent_neighbors[i] << " ";
@@ -335,8 +336,8 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         queries, training, results_file);
     run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
         queries, training, results_file);
-    // run_benchmark(config, config->number_of_distance_termination_per_q, config->benchmark_num_of_distance_termination, "number_of_distances_termination", nodes,
-    //     queries, training, results_file);
+    run_benchmark(config, config->number_of_distance_termination_per_q, config->benchmark_num_of_distance_termination, "number_of_distance_termination_per_q", nodes,
+        queries, training, results_file);
 
     if (config->use_grasp) {
         run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",

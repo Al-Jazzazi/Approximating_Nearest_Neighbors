@@ -172,7 +172,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         // Convert efs to distance calcs, multiply, then convert distance calcs to efs
         ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
     }
-    if (is_querying && layer_num == 0 && config->use_distance_termination && !config->combined_termination) {
+    if (is_querying && layer_num == 0 && (config->use_distance_termination|| config->use_number_of_distances)  && !config->combined_termination) {
         num_to_return = 100000;
     }
     if (layer_num == 0 && config->print_neighbor_percent) {
@@ -350,6 +350,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
            
         }
     }
+   
 
     // Place found elements into entry_points
     size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : min(config->k_upper, static_cast<int>(found.size()));
@@ -552,8 +553,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
                 beam_width_2 = close_squared > far_extension_sqaured;
         }
 
-        else if (config->use_number_of_distances)
-            num_of_dist_1 = config->number_of_distance_termination_per_q > layer0_dist_comps_per_q;
+      
     }
 
     // Return whether closest is too far
@@ -566,7 +566,8 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     } else if (config->use_distance_termination) {
         return alpha_distance_1;
     } else if(config->use_number_of_distances){
-        return num_of_dist_1;
+        //cout << "check check " << layer0_dist_comps_per_q << endl;
+        return  config->number_of_distance_termination_per_q < layer0_dist_comps_per_q;
     }else {
         return beam_width_1;
     }
