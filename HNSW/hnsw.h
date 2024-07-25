@@ -46,6 +46,7 @@ public:
     int num_layers;
     int num_nodes;
     int num_dimensions;
+    long long int layer0_dist_comps_per_q; 
 
     // Probability function
     std::mt19937 gen;

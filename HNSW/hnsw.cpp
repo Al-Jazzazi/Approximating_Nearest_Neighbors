@@ -24,7 +24,7 @@ Edge::Edge(int target, float distance, int initial_cost, int initial_benefit) : 
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0) {
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0),layer0_dist_comps_per_q(0) {
     reset_statistics();
 }
 
@@ -205,7 +205,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             if (loc != cur_groundtruth.end()) {
                 // Get neighbor index (xth closest) and log distance comp
                 int index = distance(cur_groundtruth.begin(), loc);
-                when_neigh_found[index] = layer0_dist_comps;
+                if(index > 0 && index < when_neigh_found.capacity())
+                    when_neigh_found[index] = layer0_dist_comps_per_q;
                 ++nn_found;
                 ++correct_nn_found;
                 if (config->gt_smart_termination && nn_found == config->num_return)
@@ -322,7 +323,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         if (loc != cur_groundtruth.end()) {
                             // Get neighbor index (xth closest) and log distance comp
                             int index = distance(cur_groundtruth.begin(), loc);
-                            when_neigh_found[index] = layer0_dist_comps;
+                           when_neigh_found[index] = layer0_dist_comps_per_q;
                             ++nn_found;
                             ++correct_nn_found;
                             if (config->gt_smart_termination && nn_found == config->num_return)
@@ -369,7 +370,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
     // Export when_neigh_found data
     if (log_neighbors) {
-        for (int i = 0; i < config->num_return; ++i) {
+        for (int i = 0; i < when_neigh_found.size(); ++i) {
+
             *when_neigh_found_file << when_neigh_found[i] << " ";
         }
     }
@@ -596,6 +598,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         actual_neighbors.resize(config->num_queries);
 
     int total_found = 0;
+     reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
         pair<int, float*> query = make_pair(i, queries[i]);
         if ((config->print_actual || config->print_indiv_found || config->print_total_found || config->export_indiv
@@ -620,7 +623,7 @@ void HNSW::search_queries(Config* config, float** queries) {
             }
         }
         cur_groundtruth = actual_neighbors[i];
-        reset_statistics();
+       layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query, config->num_return);
         if (config->gt_dist_log)
@@ -704,11 +707,11 @@ void HNSW::search_queries(Config* config, float** queries) {
         cout << "Exported individual query results to " << config->runs_prefix << "indiv.txt" << endl;
     }
 
-    if (config->gt_dist_log) {
-        when_neigh_found_file->close();
-        delete when_neigh_found_file;
-        cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
-    }
+    // if (config->gt_dist_log) {
+    //     when_neigh_found_file->close();
+    //     delete when_neigh_found_file;
+    //     cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
+    // }
 }
 
 vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
@@ -763,8 +766,10 @@ std::ostream& operator<<(std::ostream& os, const HNSW& hnsw) {
 }
 
 float calculate_l2_sq(HNSW* hnsw, int layer, float* a, float* b, int size) {
-    if (layer == 0)
+    if (layer == 0){
         ++hnsw->layer0_dist_comps;
+        ++hnsw->layer0_dist_comps_per_q;
+    }
     else if (layer > 0)
         ++hnsw->upper_dist_comps;
     return calculate_l2_sq(a, b, size);
