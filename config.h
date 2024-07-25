@@ -16,9 +16,10 @@ public:
     // File Setup
     std::string dataset = "deep";
     int num_return = 1;
-    std::string runs_prefix = "./runs/";
-    std::string loaded_graph_file = "./grphs/" + dataset + "/graph_hnsw_heuristic.bin";
-    bool load_graph_file = false;
+    std::string runs_prefix = "./runs/"+ dataset+"/post_adding_square_root/k="+std::to_string(num_return)+"/distance_calcuations_break_ponts_latest/__efs_1.8_alpha_1.2_";
+    // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
+    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_training = 100000;
@@ -51,10 +52,12 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool combined_termination = false; 
+    const bool use_number_of_distances = false; 
     const bool use_latest = false;
     const bool use_break = false;
     const bool use_oracle_target = true;
     const bool use_oracle_calcs = false;
+    int number_of_distance_termination_per_q = 200; 
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
     float alpha_break = 1.5;
     float efs_break = 1.5;
@@ -129,7 +132,7 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-
+    std::vector<int> benchmark_num_of_distance_termination = {2000, 5000};
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_graph = true;
