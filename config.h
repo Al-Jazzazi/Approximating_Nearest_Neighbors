@@ -23,7 +23,7 @@ public:
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_training = 100000;
-    int num_queries = dataset == "sift" || dataset == "glove" ? 10000 : 1000;
+    int num_queries = dataset == "sift" || dataset == "glove" || dataset == "deep" ? 10000 : 1000;
 
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
@@ -60,7 +60,7 @@ public:
     const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
     const bool export_oracle = false;  // Log where the neighbors are found per query
     const bool use_oracle_2 = false;
-    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
+    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "oracle"), std::regex("bin"), "txt");
     int number_of_distance_termination_per_q = 200;  // Used if use_number_of_distances = true
     int oracle_termination_total = 10000;  // Used if oracle_file exists
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
