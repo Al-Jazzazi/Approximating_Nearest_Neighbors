@@ -413,7 +413,6 @@ int main() {
         training = new float*[config->num_training];
         load_training(config, nodes, training, config->num_training);
         remove_duplicates(config, training, queries, config->num_queries);
-        remove_duplicates(config, training, nodes, config->num_nodes);
     }
 
     int grid_size = min({config->grid_num_return.size(), config->grid_runs_prefix.size(), config->grid_graph_file.size()});

@@ -78,7 +78,6 @@ int main() {
                 histogram.close();
             }
             remove_duplicates(config, training, queries, config->num_queries);
-            remove_duplicates(config, training, nodes, config->num_nodes);
 
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
             learn_edge_importance(config, hnsw, edges, training);
@@ -92,7 +91,6 @@ int main() {
             vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
             load_training(config, nodes, training, config->num_training);
             remove_duplicates(config, training, queries, config->num_queries);
-            remove_duplicates(config, training, nodes, config->num_nodes);
             learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
             for (int i = 0; i < config->num_training; i++)
                 delete[] training[i];
