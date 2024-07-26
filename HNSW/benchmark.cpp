@@ -352,6 +352,8 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         queries, training, results_file);
     run_benchmark(config, config->number_of_distance_termination_per_q, config->benchmark_num_of_distance_termination, "number_of_distance_termination_per_q", nodes,
         queries, training, results_file);
+    run_benchmark(config, config->oracle_termination_total, config->benchmark_oracle_termination_total, "oracle_termination_total", nodes,
+        queries, training, results_file);
 
     if (config->use_grasp) {
         run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",

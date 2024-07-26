@@ -122,7 +122,7 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {100000};
+    std::vector<int> benchmark_ef_search = {};
     // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
@@ -135,6 +135,8 @@ public:
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
     std::vector<int> benchmark_num_of_distance_termination = {};
+    std::vector<int> benchmark_oracle_termination_total = {};
+
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_graph = true;
