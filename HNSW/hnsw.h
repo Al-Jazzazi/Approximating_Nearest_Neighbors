@@ -46,7 +46,6 @@ public:
     int num_layers;
     int num_nodes;
     int num_dimensions;
-    long long int layer0_dist_comps_per_q; 
 
     // Probability function
     std::mt19937 gen;
@@ -55,6 +54,7 @@ public:
 
     // Statistics
     long long int layer0_dist_comps;
+    long long int layer0_dist_comps_per_q; 
     long long int upper_dist_comps;
     long long int actual_beam_width;
     long long int processed_neighbors;
@@ -63,6 +63,7 @@ public:
     long long int num_original_termination;
     long long int total_path_size;
     std::vector<float> percent_neighbors;
+    std::vector<int> cur_groundtruth;
 
 
     HNSW(Config* config, float** nodes);

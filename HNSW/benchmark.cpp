@@ -160,6 +160,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         int oracle_distance_calcs = 0;
         vector<Edge*> path;
         for (int i = 0; i < config->num_queries; ++i) {
+            hnsw->cur_groundtruth = actual_neighbors[i];
             hnsw->layer0_dist_comps_per_q = 0;
             float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
             if (config->oracle_file != "") {

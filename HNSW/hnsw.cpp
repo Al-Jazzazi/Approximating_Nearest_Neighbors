@@ -14,7 +14,6 @@ using namespace std;
 ofstream* debug_file = NULL;
 
 int correct_nn_found = 0;
-vector<int> cur_groundtruth;
 ofstream* when_neigh_found_file;
 
 Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
