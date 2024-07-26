@@ -599,7 +599,7 @@ void HNSW::search_queries(Config* config, float** queries) {
     }
     
     vector<pair<int, int>> nn_calculations;
-    if (config->oracle_file != "") {
+    if (config->use_oracle_2) {
         load_oracle(config, nn_calculations);
     }
 
@@ -607,8 +607,8 @@ void HNSW::search_queries(Config* config, float** queries) {
     int oracle_distance_calcs = 0;
     reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
-        float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
-        if (config->oracle_file != "") {
+        float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
+        if (config->use_oracle_2) {
             oracle_distance_calcs += nn_calculations[i].first;
         }
         if (oracle_distance_calcs > config->oracle_termination_total) {

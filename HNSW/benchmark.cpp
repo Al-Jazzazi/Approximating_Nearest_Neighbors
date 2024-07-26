@@ -89,6 +89,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
 
 
+
                 
 
 
@@ -152,7 +153,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         }
         
         vector<pair<int, int>> nn_calculations;
-        if (config->oracle_file != "") {
+        if (config->use_oracle_2) {
             load_oracle(config, nn_calculations);
         }
         auto start = chrono::high_resolution_clock::now();
@@ -162,8 +163,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         for (int i = 0; i < config->num_queries; ++i) {
             hnsw->cur_groundtruth = actual_neighbors[i];
             hnsw->layer0_dist_comps_per_q = 0;
-            float* query = config->oracle_file != "" ? queries[nn_calculations[i].second] : queries[i];
-            if (config->oracle_file != "") {
+            float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
+            if (config->use_oracle_2) {
                 oracle_distance_calcs += nn_calculations[i].first;
             }
             if (oracle_distance_calcs > config->oracle_termination_total) {
@@ -310,12 +311,15 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", final_keep_ratio = " << config->final_keep_ratio << ", grasp_loops = " << config->grasp_loops  << ", Single training = " << config->single_ep_training 
                 
                 <<"\nCurrent Run Properties: Stinky Values = "  << std::boolalpha  <<  config->use_stinky_points << " [" <<config->stinky_value <<"]" 
-                << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling 
-                << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
-                << ", current Pruning method = " << config->weight_selection_method     
+                << ", use_heuristic = " << config->use_heuristic << ", use_grasp = " << config->use_grasp << ", use_dynamic_sampling = " << config->use_dynamic_sampling  << ", use_cost_benefit = " << config->use_cost_benefit 
+                << ", use_direct_path = " << config->use_direct_path << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
+                << ", current Pruning method = " << config->weight_selection_method 
+                << "\nCurrent Termination Method : "
                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                << ", Use Break = " << config->use_break << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break << ", use_cost_benefit = " << config->use_cost_benefit 
-                << ", use_direct_path = " << config->use_direct_path << endl;
+                << ", Use Break = " << config->use_break << ", use_number_of_distances = " << config->use_number_of_distances  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use oracle 2" << config->use_oracle_2 
+                << "\nTermination values : "
+                << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  << endl;
+
 
         if (config->export_histograms) {
             if (config->use_grasp) {

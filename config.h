@@ -28,11 +28,13 @@ public:
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
-    std::string query_file = dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset_prefix + "_groundtruth.ivecs";
+    std::string query_file =  dataset == "sift" ? dataset_prefix + "_query.fvecs" : dataset_prefix + "_learn.fvecs";
+    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "sift" ? dataset_prefix + "_groundtruth.ivecs" : dataset_prefix + "_groundtruth_10000.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
+
+   
     // HNSW Construction
     const bool use_heuristic = true;
     int max_connections = dataset == "gist" ? 24 : dataset == "glove" ? 16 : 14;
@@ -57,7 +59,8 @@ public:
     const bool use_break = false;
     const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
     const bool export_oracle = false;  // Log where the neighbors are found per query
-    std::string oracle_file = "";
+    const bool use_oracle_2 = false;
+    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt"); ;
     int number_of_distance_termination_per_q = 200;  // Used if use_number_of_distances = true
     int oracle_termination_total = 10000;  // Used if oracle_file exists
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
@@ -125,7 +128,7 @@ public:
     std::vector<int> benchmark_ef_search = {};
     // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
-    // std::vector<float> benchmark_termination_alpha = {0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
+    // std::vector<float> benchmark_termination_alpha = {0.35,0.355,0.36,0.365,0.37,0.375,0.38,0.385,0.39,0.4,0.41,0.42,0.425,0.43,0.44,0.45};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
@@ -134,6 +137,7 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
+    // std::vector<int> benchmark_num_of_distance_termination = {2000, 5000,7500, 10000,12500,15000,17500, 20000,22500,25000,27500, 30000,32500,35000};
     std::vector<int> benchmark_num_of_distance_termination = {};
     std::vector<int> benchmark_oracle_termination_total = {};
 
