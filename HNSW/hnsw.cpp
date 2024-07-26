@@ -7,6 +7,7 @@
 #include "hnsw.h"
 #include <float.h>
 #include <set>
+#include <limits>
 
 using namespace std;
 
@@ -1209,6 +1210,9 @@ void load_oracle(Config* config, vector<pair<int, int>>& result) {
     int calculation = 0;
     int index = 0;
     while (f >> calculation) {
+        if (calculation == -1) {
+            calculation = std::numeric_limits<int>::max();
+        }
         result.push_back(make_pair(calculation, index));
         ++index;
     }
