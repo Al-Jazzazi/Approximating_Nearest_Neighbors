@@ -60,7 +60,7 @@ public:
     const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
     const bool export_oracle = false;  // Log where the neighbors are found per query
     const bool use_oracle_2 = false;
-    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt"); ;
+    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
     int number_of_distance_termination_per_q = 200;  // Used if use_number_of_distances = true
     int oracle_termination_total = 10000;  // Used if oracle_file exists
     float termination_alpha = 0.5;  // Used for distance-only termination (not combined)

@@ -583,7 +583,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
 
     if (config->export_oracle)
-        when_neigh_found_file = new ofstream(config->runs_prefix + "when_neigh_found.txt");
+        when_neigh_found_file = new ofstream(config->oracle_file);
 
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
