@@ -29,13 +29,12 @@ mkdir deep
 cd deep
 git clone https://github.com/matsui528/deep1b_gt.git
 cd deep1b_gt
-python3 download_deep1b.py --root ./deep1b --base_n 1 --learn_n 1 --ops query base learn gt
+python3 download_deep1b.py --root ./deep1b --base_n 1 --learn_n 1 --ops query base learn
 python3 pickup_vecs.py --src ./deep1b/base/base_00 --dst ./deep1b/deep1M_base.fvecs --topk 1000000
 python3 pickup_vecs.py --src ./deep1b/learn/learn_00 --dst ./deep1b/deep1M_learn.fvecs --topk 100000
 cd ..
 mv deep1b_gt/deep1b/deep1M_base.fvecs deep_base.fvecs
 mv deep1b_gt/deep1b/deep1M_learn.fvecs deep_learn.fvecs
 mv deep1b_gt/deep1b/deep1B_queries.fvecs deep_query.fvecs
-mv deep1b_gt/deep1b/deep1B_groundtruth.ivecs deep_groundtruth.ivecs
 rm -rf ./deep1b_gt
 cd ../..
