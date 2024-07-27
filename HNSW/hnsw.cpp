@@ -211,6 +211,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (config->use_groundtruth_termination && nn_found == config->num_return)
                     // End search
                     candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                    break;
             }
         }
     }
