@@ -35,7 +35,7 @@ python3 pickup_vecs.py --src ./deep1b/learn/learn_00 --dst ./deep1b/deep1M_learn
 cd ..
 mv deep1b_gt/deep1b/deep1M_base.fvecs deep_base.fvecs
 mv deep1b_gt/deep1b/deep1M_learn.fvecs deep_learn.fvecs
-mv deep1b_gt/deep1b/deep1B_queries.fvecs deep_queries.fvecs
+mv deep1b_gt/deep1b/deep1B_queries.fvecs deep_query.fvecs
 mv deep1b_gt/deep1b/deep1B_groundtruth.ivecs deep_groundtruth.ivecs
 rm -rf ./deep1b_gt
 cd ../..
