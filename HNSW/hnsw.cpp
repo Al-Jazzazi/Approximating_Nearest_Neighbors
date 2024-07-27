@@ -328,6 +328,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                             if (config->use_groundtruth_termination && nn_found == config->num_return)
                                 // End search
                                 candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                                break;
                         }
                     }
 
@@ -703,7 +704,7 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (config->export_oracle) {
         when_neigh_found_file->close();
         delete when_neigh_found_file;
-        cout << "Exported when neighbors were found to " << config->runs_prefix << "when_neigh_found.txt" << endl;
+        cout << "Exported when neighbors were found to " << config->oracle_file << endl;
     }
 }
 
