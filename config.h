@@ -28,8 +28,8 @@ public:
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
-    std::string query_file =  dataset == "sift" ? dataset_prefix + "_query.fvecs" : dataset_prefix + "_learn.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "sift" ? dataset_prefix + "_groundtruth.ivecs" : dataset_prefix + "_groundtruth_10000.ivecs";
+    std::string query_file =  dataset == "gist" ? dataset_prefix + "_learn.fvecs" : dataset_prefix + "_query.fvecs";
+    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "gist" ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
