@@ -96,5 +96,5 @@ void load_nodes(Config* config, float** nodes);
 void load_queries(Config* config, float** nodes, float** queries);
 void load_oracle(Config* config, std::vector<std::pair<int, int>>& result);
 void knn_search(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
-
+void save_fvecs(const string& file, float** results, int dim, int num);
 #endif

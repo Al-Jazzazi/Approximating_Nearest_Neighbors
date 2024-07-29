@@ -992,6 +992,24 @@ void save_ivecs(const string& file, vector<vector<int>>& results) {
     f.close();
 }
 
+void save_fvecs(const string& file, float** results, int dim, int num) {
+    ofstream f(file, ios::binary | ios::out);
+    if (!f) {
+        cout << "Unable to open file " << file << " for writing!" << endl;
+        exit(-1);
+    }
+    cout << "Saving " << num << " vectors to file " << file << endl;
+
+    for (int i = 0; i < num; i++) {
+        f.write(reinterpret_cast<const char*>(&dim), 4);
+
+        // Write the vector
+        f.write(reinterpret_cast<const char*>(results[i]), dim * 4);
+    }
+
+    f.close();
+}
+
 void knn_search(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
     actual_neighbors.resize(config->num_queries);
     for (int i = 0; i < config->num_queries; ++i) {
