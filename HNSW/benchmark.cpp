@@ -151,106 +151,121 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         if (config->print_path_size) {
             hnsw->total_path_size = 0;
         }
-        
-        vector<pair<int, int>> nn_calculations;
-        if (config->use_oracle_2) {
-            load_oracle(config, nn_calculations);
-        }
-        auto start = chrono::high_resolution_clock::now();
-        neighbors.reserve(config->num_queries);
-        int oracle_distance_calcs = 0;
-        vector<Edge*> path;
-        for (int i = 0; i < config->num_queries; ++i) {
-            hnsw->cur_groundtruth = actual_neighbors[i];
-            hnsw->layer0_dist_comps_per_q = 0;
-            float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
-            if (config->use_oracle_2) {
-                oracle_distance_calcs += nn_calculations[i].first;
-            }
-            if (oracle_distance_calcs > config->oracle_termination_total) {
-                break;
-            }
-            pair<int, float*> query_pair = make_pair(i, query);
-
-            neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
-
-            if (config->print_neighbor_percent) {
-                for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
-                    cout << hnsw->percent_neighbors[i] << " ";
-                }
-                cout << endl;
-                hnsw->percent_neighbors.clear();
-            }
-        }
-
-        auto end = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-        cout << "Query time: " << duration / 1000.0 << " seconds, ";
-        cout << "Distance computations (layer 0): " << hnsw->layer0_dist_comps << ", ";
-        cout << "Distance computations (top layers): " << hnsw->upper_dist_comps << endl;
-        if (config->print_path_size) {
-            cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
-            hnsw->total_path_size = 0;
-        }
-
-        search_duration = duration;
-        search_dist_comp = hnsw->layer0_dist_comps;
-        total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
-
-        if (neighbors.empty())
-            break;
-
-        cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
-            << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
 
         int similar = 0;
         float total_ndcg = 0;
-        for (int j = 0; j < config->num_queries; ++j) {
-            // Find similar neighbors
-            unordered_set<int> actual_set(actual_neighbors[j].begin(), actual_neighbors[j].end());
-            unordered_set<int> intersection;
-            float actual_gain = 0;
-            float ideal_gain = 0;
+        vector<pair<int, int>> nn_calculations;
+        if (config->use_oracle_2) {
+            load_oracle(config, nn_calculations);
+            int distance_left = config->oracle_termination_total;
+            for(auto cur_found: nn_calculations ){
+                distance_left -= cur_found.first; 
+                if(distance_left <=0)
+                    break; 
+                similar++;
+            }
 
-            for (size_t k = 0; k < neighbors[j].size(); ++k) {
-                auto n_pair = neighbors[j][k];
-                float gain = 1 / log2(k + 2);
-                ideal_gain += gain;
-                if (actual_set.find(n_pair.second) != actual_set.end()) {
-                    intersection.insert(n_pair.second);
-                    actual_gain += gain;
+            search_duration = 0;
+            search_dist_comp = 0;
+            total_dist_comp = 0;
+            
+        }
+        else 
+        {
+            auto start = chrono::high_resolution_clock::now();
+            neighbors.reserve(config->num_queries);
+            int oracle_distance_calcs = 0;
+            vector<Edge*> path;
+            for (int i = 0; i < config->num_queries; ++i) {
+                hnsw->cur_groundtruth = actual_neighbors[i];
+                hnsw->layer0_dist_comps_per_q = 0;
+                float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
+                if (config->use_oracle_2) {
+                    oracle_distance_calcs += nn_calculations[i].first;
+                }
+                if (oracle_distance_calcs > config->oracle_termination_total) {
+                    break;
+                }
+                pair<int, float*> query_pair = make_pair(i, query);
+
+                neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
+
+                if (config->print_neighbor_percent) {
+                    for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
+                        cout << hnsw->percent_neighbors[i] << " ";
+                    }
+                    cout << endl;
+                    hnsw->percent_neighbors.clear();
                 }
             }
-            similar += intersection.size();
-            total_ndcg += actual_gain / ideal_gain;
 
-            // Print out neighbors[i][j]
-            if (config->benchmark_print_neighbors) {
-                cout << "Neighbors for query " << j << ": ";
+            auto end = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+            cout << "Query time: " << duration / 1000.0 << " seconds, ";
+            cout << "Distance computations (layer 0): " << hnsw->layer0_dist_comps << ", ";
+            cout << "Distance computations (top layers): " << hnsw->upper_dist_comps << endl;
+            if (config->print_path_size) {
+                cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
+                hnsw->total_path_size = 0;
+            }
+        
+            search_duration = duration;
+            search_dist_comp = hnsw->layer0_dist_comps;
+            total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
+
+            if (neighbors.empty())
+                break;
+
+            cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
+                << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
+
+            
+            for (int j = 0; j < config->num_queries; ++j) {
+                // Find similar neighbors
+                unordered_set<int> actual_set(actual_neighbors[j].begin(), actual_neighbors[j].end());
+                unordered_set<int> intersection;
+                float actual_gain = 0;
+                float ideal_gain = 0;
+
                 for (size_t k = 0; k < neighbors[j].size(); ++k) {
                     auto n_pair = neighbors[j][k];
-                    cout << n_pair.second << " (" << n_pair.first << ") ";
-                }
-                cout << endl;
-            }
-
-            // Print missing neighbors between intersection and actual_neighbors
-            if (config->benchmark_print_missing) {
-                cout << "Missing neighbors for query " << j << ": ";
-                if (intersection.size() == actual_neighbors[j].size()) {
-                    cout << "None" << endl;
-                    continue;
-                }
-                for (size_t k = 0; k < actual_neighbors[j].size(); ++k) {
-                    if (intersection.find(actual_neighbors[j][k]) == intersection.end()) {
-                        float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions);
-                        cout << actual_neighbors[j][k] << " (" << dist << ") ";
+                    float gain = 1 / log2(k + 2);
+                    ideal_gain += gain;
+                    if (actual_set.find(n_pair.second) != actual_set.end()) {
+                        intersection.insert(n_pair.second);
+                        actual_gain += gain;
                     }
                 }
-                cout << endl;
+                similar += intersection.size();
+                total_ndcg += actual_gain / ideal_gain;
+
+                // Print out neighbors[i][j]
+                if (config->benchmark_print_neighbors) {
+                    cout << "Neighbors for query " << j << ": ";
+                    for (size_t k = 0; k < neighbors[j].size(); ++k) {
+                        auto n_pair = neighbors[j][k];
+                        cout << n_pair.second << " (" << n_pair.first << ") ";
+                    }
+                    cout << endl;
+                }
+
+                // Print missing neighbors between intersection and actual_neighbors
+                if (config->benchmark_print_missing) {
+                    cout << "Missing neighbors for query " << j << ": ";
+                    if (intersection.size() == actual_neighbors[j].size()) {
+                        cout << "None" << endl;
+                        continue;
+                    }
+                    for (size_t k = 0; k < actual_neighbors[j].size(); ++k) {
+                        if (intersection.find(actual_neighbors[j][k]) == intersection.end()) {
+                            float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions);
+                            cout << actual_neighbors[j][k] << " (" << dist << ") ";
+                        }
+                    }
+                    cout << endl;
+                }
             }
         }
-
         double recall = (double) similar / (config->num_queries * config->num_return);
         cout << "Correctly found neighbors: " << similar << " ("
             << recall * 100 << "%)" << endl;

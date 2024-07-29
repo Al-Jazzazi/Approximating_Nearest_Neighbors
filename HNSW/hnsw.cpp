@@ -669,18 +669,39 @@ void HNSW::search_queries(Config* config, float** queries) {
         }
 
         if (config->export_queries) {
-            *export_file << "Query " << i << endl << query_pair.second[0];
-            for (int dim = 1; dim < num_dimensions; ++dim)
-                *export_file << "," << query_pair.second[dim];
-            *export_file << endl;
-            for (auto n_pair : found)
-                *export_file << n_pair.second << ",";
-            *export_file << endl;
-            for (Edge* edge : path) {
-                *export_file << edge->target << ",";
+            *export_file << "Query " << i+1<< endl << query_pair.second[0] << endl;
+            if(config->num_return == 1 )
+            {
+                for(int j =0; j< found.size(); j++){
+                    *export_file << found[j].second << "," << found[j].first << endl;
+                    *export_file << cur_groundtruth[j] ;
+                if(found[j].second != cur_groundtruth[j]){ 
+                    *export_file << "," << calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
+                }
+                 *export_file<< endl;
+                }
             }
+            else
+            {
+
+                for (int dim = 1; dim < num_dimensions; ++dim)
+                    *export_file << "," << query_pair.second[dim];
+                *export_file << endl;
+                for (auto n_pair : found)
+                    *export_file << n_pair.second << ",";
+                *export_file << endl;
+                for (int index : cur_groundtruth)
+                    *export_file << index << " ";
+                *export_file << endl;
+                
+                for (Edge* edge : path) {
+                    *export_file << edge->target << ",";
+                }
+            }
+           
             *export_file << endl;
         }
+      
     }
 
     if (config->export_oracle) {
@@ -707,6 +728,8 @@ void HNSW::search_queries(Config* config, float** queries) {
         delete when_neigh_found_file;
         cout << "Exported when neighbors were found to " << config->oracle_file << endl;
     }
+
+  
 }
 
 vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
