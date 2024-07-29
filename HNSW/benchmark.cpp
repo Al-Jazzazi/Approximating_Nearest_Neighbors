@@ -165,8 +165,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 similar++;
             }
             search_duration = 0;
-            search_dist_comp = nn_calculations;
-            total_dist_comp = nn_calculations;
+            search_dist_comp = 0;
+            total_dist_comp = 0;
         } else {
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
@@ -261,6 +261,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
         if (config->export_benchmark ) {
             std::string average_cc_string = config->export_clustering_coefficient ? std::to_string(hnsw->calculate_average_clustering_coefficient()) + ", " : "";
+            std::string global_cc_string = config->export_clustering_coefficient ? std::to_string(hnsw->calculate_global_clustering_coefficient()) + ", " : "";
             std::string line = std::to_string(parameter) + ", " 
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", " 
@@ -269,7 +270,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      //+ std::to_string(construction_duration) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
-                     + average_cc_string;
+                     + average_cc_string
+                     + global_cc_string;
             if (config->combined_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;

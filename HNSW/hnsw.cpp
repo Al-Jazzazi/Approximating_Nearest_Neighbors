@@ -745,6 +745,38 @@ vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
     return edges;
 }
 
+// Computes the average ratio of closed triplets to total triplets
+float HNSW::calculate_global_clustering_coefficient() {
+    int num_closed_triplets;
+    int num_triplets;
+    for (int i = 0; i < mappings.size(); ++i) {
+        vector<Edge>& first_neighbors = mappings[i][0];
+        // Convert vector of edges to set of nodes
+        unordered_set<int> target_set;
+        for (int j = 0; j < first_neighbors.size(); ++j) {
+            target_set.insert(first_neighbors[j].target);
+        }
+        // Count the number of neighbors' neighbors that are adjacent to node i
+        for (int j = 0; j < first_neighbors.size(); ++j) {
+            vector<Edge>& second_neighbors = mappings[first_neighbors[j].target][0];
+            for (int k = 0; k < second_neighbors.size(); ++k) {
+                if (target_set.find(second_neighbors[k].target) != target_set.end()) {
+                    ++num_closed_triplets;
+                } else {
+                    vector<Edge>& third_neighbors = mappings[second_neighbors[k].target][0];
+                    for (int l = 0; l < third_neighbors.size(); ++l) {
+                        if (third_neighbors[l].target == i) {
+                            ++num_closed_triplets;
+                        }
+                    }
+                }
+                ++num_triplets;
+            }
+        }
+    }
+    return static_cast<float>(num_closed_triplets) / num_triplets;
+}
+
 // Computes the average ratio of actual connected neighbors to possible connected neighbors
 float HNSW::calculate_average_clustering_coefficient() {
     float coefficient = 0;

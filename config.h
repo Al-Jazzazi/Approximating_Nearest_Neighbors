@@ -19,7 +19,7 @@ public:
     std::string runs_prefix = "./runs/";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
     std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_training = 100000;
@@ -118,7 +118,7 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {};
+    std::vector<int> benchmark_num_return = {1};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -144,7 +144,7 @@ public:
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
-    const bool export_clustering_coefficient = false;
+    const bool export_clustering_coefficient = true;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
