@@ -158,20 +158,16 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         if (config->use_oracle_2) {
             load_oracle(config, nn_calculations);
             int distance_left = config->oracle_termination_total;
-            for(auto cur_found: nn_calculations ){
+            for (pair<int, int>& cur_found : nn_calculations ) {
                 distance_left -= cur_found.first; 
-                if(distance_left <=0)
+                if(distance_left <= 0)
                     break; 
                 similar++;
             }
-
             search_duration = 0;
-            search_dist_comp = 0;
-            total_dist_comp = 0;
-            
-        }
-        else 
-        {
+            search_dist_comp = nn_calculations;
+            total_dist_comp = nn_calculations;
+        } else {
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
             int oracle_distance_calcs = 0;
@@ -180,7 +176,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 hnsw->cur_groundtruth = actual_neighbors[i];
                 hnsw->layer0_dist_comps_per_q = 0;
                 pair<int, float*> query_pair = make_pair(i, queries[i]);
-
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
 
                 if (config->print_neighbor_percent) {
@@ -201,7 +196,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
                 hnsw->total_path_size = 0;
             }
-        
             search_duration = duration;
             search_dist_comp = hnsw->layer0_dist_comps;
             total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
@@ -211,7 +205,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
             cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
                 << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
-
             
             for (int j = 0; j < config->num_queries; ++j) {
                 // Find similar neighbors
@@ -277,11 +270,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
                      + average_cc_string;
-            if(config->combined_termination){
-                line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", ";
+            if (config->combined_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-                line += std::to_string(termination_alpha);
+                line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", " + std::to_string(termination_alpha);
             }
             lines.push_back(line);
         }
@@ -414,7 +406,7 @@ string get_cpu_brand() {
 */
 int main() {
 
-    string CPUBrand = get_cpu_brand();
+    // string CPUBrand = get_cpu_brand();
 
     time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
