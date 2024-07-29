@@ -179,14 +179,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             for (int i = 0; i < config->num_queries; ++i) {
                 hnsw->cur_groundtruth = actual_neighbors[i];
                 hnsw->layer0_dist_comps_per_q = 0;
-                float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
-                if (config->use_oracle_2) {
-                    oracle_distance_calcs += nn_calculations[i].first;
-                }
-                if (oracle_distance_calcs > config->oracle_termination_total) {
-                    break;
-                }
-                pair<int, float*> query_pair = make_pair(i, query);
+                pair<int, float*> query_pair = make_pair(i, queries[i]);
 
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
 
