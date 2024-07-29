@@ -722,6 +722,34 @@ vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
     return edges;
 }
 
+// Computes the average ratio of actual connected neighbors to possible connected neighbors
+float HNSW::calculate_average_clustering_coefficient() {
+    float coefficient = 0;
+    for (int i = 0; i < mappings.size(); ++i) {
+        vector<Edge>& first_neighbors = mappings[i][0];
+        // Convert vector of edges to set of nodes
+        unordered_set<int> target_set;
+        for (int j = 0; j < first_neighbors.size(); ++j) {
+            target_set.insert(first_neighbors[j].target);
+        }
+        // Count the number of neighbors' neighbors that are adjacent to node i
+        int num_connected = 0;
+        for (int j = 0; j < first_neighbors.size(); ++j) {
+            vector<Edge>& second_neighbors = mappings[first_neighbors[j].target][0];
+            for (int k = 0; k < second_neighbors.size(); ++k) {
+                if (target_set.find(second_neighbors[k].target) != target_set.end()) {
+                    ++num_connected;
+                }
+            }
+        }
+        // Add the current coefficient to the total if there is at least 2 neighbors
+        if (first_neighbors.size() > 1) {
+            coefficient += static_cast<float>(num_connected) / (first_neighbors.size() * (first_neighbors.size() - 1));
+        }
+    }
+    return coefficient / mappings.size();
+}
+
 HNSW* init_hnsw(Config* config, float** nodes) {
     HNSW* hnsw = new HNSW(config, nodes);
     hnsw->mappings.resize(hnsw->num_nodes);

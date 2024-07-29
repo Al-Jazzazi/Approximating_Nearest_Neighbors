@@ -72,7 +72,8 @@ public:
     std::vector<Edge*> get_layer_edges(Config* config, int layer);
     void find_direct_path(std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points);
     bool should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared, float far_extension_sqaured, bool is_querying, int layer_num);
-    
+    float calculate_average_clustering_coefficient();
+
     // Main algorithms
     void insert(Config* config, int query);
     void search_layer(Config* config, float* query, std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying = false, bool is_training = false, bool is_ignoring = false);

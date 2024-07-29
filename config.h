@@ -33,8 +33,6 @@ public:
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
-
-   
     // HNSW Construction
     const bool use_heuristic = true;
     int max_connections = dataset == "gist" ? 24 : dataset == "glove" ? 16 : 14;
@@ -54,7 +52,7 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool combined_termination = false; 
-    const bool use_number_of_distances = true; 
+    const bool use_number_of_distances = false; 
     const bool use_latest = false;
     const bool use_break = false;
     const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
@@ -144,8 +142,9 @@ public:
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_graph = true;
-    const bool export_histograms = false;
+    const bool export_histograms = true;
     const bool export_weight_updates = true;
+    const bool export_clustering_coefficient = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;

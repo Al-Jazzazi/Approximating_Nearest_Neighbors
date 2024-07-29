@@ -29,7 +29,7 @@ int main() {
         << ", use_direct_path = " << config->use_direct_path << endl;
         
     // Clear histogram files if they exist
-    if (config->export_histograms) {
+    if (config->export_histograms && !config->load_graph_file) {
         if (config->use_grasp) {
             ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
             histogram.close();

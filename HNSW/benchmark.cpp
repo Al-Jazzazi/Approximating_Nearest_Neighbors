@@ -259,6 +259,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
 
         if (config->export_benchmark ) {
+            std::string average_cc_string = config->export_clustering_coefficient ? std::to_string(hnsw->calculate_average_clustering_coefficient()) + ", " : "";
             std::string line = std::to_string(parameter) + ", " 
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", " 
@@ -266,7 +267,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_duration / config->num_queries) + ", " 
                      //+ std::to_string(construction_duration) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
-                     + std::to_string(average_ndcg) + ", ";
+                     + std::to_string(average_ndcg) + ", "
+                     + average_cc_string;
             if(config->combined_termination){
                 line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", ";
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
@@ -321,7 +323,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  << endl;
 
 
-        if (config->export_histograms) {
+        if (config->export_histograms && !config->load_graph_file) {
             if (config->use_grasp) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt");
                 histogram.close();

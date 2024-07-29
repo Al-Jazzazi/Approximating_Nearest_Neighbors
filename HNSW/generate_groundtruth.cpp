@@ -1,8 +1,5 @@
 #include <iostream>
-#include <algorithm>
-#include <chrono>
-#include <unordered_set>
-#include <string.h>
+#include <vector>
 #include "hnsw.h"
 
 int main() {
