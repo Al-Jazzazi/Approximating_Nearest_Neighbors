@@ -747,8 +747,8 @@ vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
 
 // Computes the average ratio of closed triplets to total triplets
 float HNSW::calculate_global_clustering_coefficient() {
-    int num_closed_triplets;
-    int num_triplets;
+    int num_closed_triplets=0;
+    int num_triplets=0;
     for (int i = 0; i < mappings.size(); ++i) {
         vector<Edge>& first_neighbors = mappings[i][0];
         // Convert vector of edges to set of nodes

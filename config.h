@@ -16,9 +16,9 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs/";
+    std::string runs_prefix = "./runs/test/__global_cluster";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
-    std::string loaded_graph_file = "./runs/hnsw_sift/graph_num_return_50.bin";
+    std::string loaded_graph_file = "./grphs/sift/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
