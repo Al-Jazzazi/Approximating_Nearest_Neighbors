@@ -13,16 +13,20 @@ BUILD_PATH := build
 all: $(TARGETS)
 
 run: HNSW/run.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
-	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 generate_groundtruth: HNSW/generate_groundtruth.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 generate_training: HNSW/generate_training.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
-	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^

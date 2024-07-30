@@ -6,15 +6,14 @@ Silvia Wei in summer 2023: https://github.com/t-h24/Summer2023-Research
 ## Setup
 Run the following to download the SIFT1M, Deep1M, GIST1M, and GloVe datasets: `source download_datasets.bash`
 
-If you want to use the GloVe dataset, you should also run `make generate_groundtruth && ./build/generate_groundtruth.out` with the following config.h arguments:
-- dataset = "glove"
+If you want to use the Deep or GloVe datasets, you should also run `make generate_groundtruth && ./build/generate_groundtruth.out` with the following config.h arguments:
+- dataset = "glove" (or "deep")
 - num_return = 100
 - num_nodes = 1000000
 
-This will generate a groundtruth file for GloVe, which will make future runs faster. If you want to
-use num_return values greater than 100 in future runs, set the above num_return accordingly.
+This will generate groundtruth files, which future runs can compare against to evaluate recall. If you want to use num_return values greater than 100 in future runs, set the above num_return accordingly.
 
 ## Usage
-Run: `make <target> && ./build/<target>.out`
+Run: `make <target> && ./build/<target>`
 
-For example, `make && ./build/run_hnsw.out`
+For example, `make run && ./build/run`
