@@ -70,7 +70,7 @@ public:
         {"deep", {0.197, -300.85}},
         {"sift", {0.2108, -339.64}},
         {"gist", {0.1114, -414.44}},
-        {"glove", {0, 0}}
+        {"glove", {0.3663, -15.865}}
     };
     const std::map<std::string, std::pair<float, float>> alpha = {
         {"50 deep", {0.0185, 0.2273}}, 
@@ -84,7 +84,7 @@ public:
         {"1 gist", {0.0093, 0.2964}},
         {"50 glove", {0, 0}}, 
         {"10 glove", {0, 0}},
-        {"1 glove", {0, 0}}
+        {"1 glove", {0.0184, 0.222}}
     };
 
     // Interpreted Termination Parameters
@@ -120,7 +120,7 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {1};
+    std::vector<int> benchmark_num_return = {};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -146,7 +146,7 @@ public:
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
-    const bool export_clustering_coefficient = true;
+    const bool export_clustering_coefficient = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
