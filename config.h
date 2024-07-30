@@ -18,13 +18,13 @@ public:
     int num_return = 1;
     std::string runs_prefix = "./runs/";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
-    std::string loaded_graph_file = "./grphs/sift/graph_hnsw_heuristic.bin";
-    bool load_graph_file = false;
+    std::string loaded_graph_file = "./runs/hnsw_glove/graph_num_return_50.bin";
+    bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 10000;
-    int num_queries = 1000;
-    int num_training = 1000;
-    int num_training_generated = 1000000;  // Used in generate_training
+    int num_nodes = 1000000;
+    int num_queries = 10000;
+    int num_training = 100000;
+    int num_training_generated = 1000000;  // Used in generate_training.cpp
 
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
@@ -96,7 +96,7 @@ public:
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
-    const bool use_cost_benefit = true;
+    const bool use_cost_benefit = false;
     const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
     const bool use_stinky_points = false;

@@ -35,6 +35,7 @@ void HNSW::reset_statistics() {
     total_neighbors = 0;
     num_distance_termination = 0;
     num_original_termination = 0;
+    candidates_popped = 0;
     percent_neighbors.clear();
 }
 
@@ -254,6 +255,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
+        ++candidates_popped;
 
         // If terminating, log statistics and break
         if (should_terminate(config, top_k, top_1, close_dist, far_dist, found_extension.top().first, is_querying, layer_num)) {

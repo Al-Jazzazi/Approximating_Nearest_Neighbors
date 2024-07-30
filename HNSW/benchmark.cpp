@@ -63,6 +63,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         double search_duration;
         long long search_dist_comp;
         long long total_dist_comp;
+        long long candidates_popped;
         HNSW* hnsw = NULL;
         vector<vector<int>> actual_neighbors;
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
@@ -143,6 +144,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_duration = 0;
             search_dist_comp = 0;
             total_dist_comp = 0;
+            candidates_popped = 0;
             break;
         }
 
@@ -167,6 +169,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_duration = 0;
             search_dist_comp = 0;
             total_dist_comp = 0;
+            candidates_popped = 0;
         } else {
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
@@ -199,6 +202,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_duration = duration;
             search_dist_comp = hnsw->layer0_dist_comps;
             total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
+            candidates_popped = hnsw->candidates_popped;
 
             if (neighbors.empty())
                 break;
@@ -270,6 +274,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      //+ std::to_string(construction_duration) + ", "
                      + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
+                     + std::to_string(candidates_popped / config->num_queries) + ", "
                      + average_cc_string
                      + global_cc_string;
             if (config->combined_termination) {
@@ -287,7 +292,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG, ratio termination (distance based/origianl), alpha" << endl;
+        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG, ratio termination (distance based/origianl), alpha, candidates_popped/query" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
