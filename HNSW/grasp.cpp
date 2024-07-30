@@ -23,23 +23,6 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
             path[j]->benefit++;
         }
     }
-    // Repeat for generated set if applicable
-    if (config->num_training_generated > 0) {
-        float** generated = new float*[config->num_training_generated];
-        load_training(config, hnsw->nodes, generated, config->num_training_generated, true);
-        for (int i = 0; i < config->num_training_generated; i++) {
-            pair<int, float*> query = make_pair(i, generated[i]);
-            vector<Edge*> path;
-            vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true);
-            for (int j = 0; j < path.size(); j++) {
-                path[j]->benefit++;
-            }
-        }
-        for (int i = 0; i < config->num_training_generated; ++i) {
-            delete[] generated[i];
-        }
-        delete[] generated;
-    }
     // Initialize histograms
     vector<long long> counts_cost;
     vector<long long> counts_benefit;

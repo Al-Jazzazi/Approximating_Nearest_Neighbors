@@ -22,8 +22,9 @@ public:
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
+    int num_queries = 10000;
     int num_training = 100000;
-    int num_queries = dataset == "gist" ? 1000 : 10000;
+    int num_training_generated = 1000000;  // Used in generate_training
 
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
@@ -31,6 +32,7 @@ public:
     std::string query_file =  dataset == "gist" ? dataset_prefix + "_learn.fvecs" : dataset_prefix + "_query.fvecs";
     std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "gist" ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
+    std::string generated_training_file = dataset_prefix + "_learn_1M.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
 
     // HNSW Construction
@@ -160,7 +162,6 @@ public:
     std::string training_set = "";
     const bool generate_our_training = false;
     const bool regenerate_each_iteration = false;
-    int num_training_generated = 0;  // 0 = don't generate training queries
     int graph_seed = 0;
     int shuffle_seed = 1;
     int sample_seed = 2;
