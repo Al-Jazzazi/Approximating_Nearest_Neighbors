@@ -48,15 +48,26 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     }
     // Remove all edges in layer 0 that are marked for deletion
     int count = 0;
+    ofstream* pruned_file = nullptr;
+    if (config->export_cost_benefit_pruned) {
+        pruned_file = new ofstream(config->runs_prefix + "cost_benefit_pruned.txt");
+    }
     for (int i = 0; i < hnsw->num_nodes; i++) {
         for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
             vector<Edge>& neighbors = hnsw->mappings[i][0];
             if (neighbors[j].ignore) {
+                if (config->export_cost_benefit_pruned) {
+                    *pruned_file << neighbors[j].target << " " << neighbors[j].cost << " " << neighbors[j].benefit << endl;
+                }
                 neighbors[j] = neighbors[neighbors.size() - 1];
                 neighbors.pop_back();
                 count++;
             }
         }
+    }
+    if (config->export_cost_benefit_pruned) {
+        pruned_file->close();
+        delete pruned_file;
     }
 
     // Export histograms to files

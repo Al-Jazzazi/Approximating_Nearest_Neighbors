@@ -14,16 +14,16 @@ using namespace std;
 class Config {
 public:
     // File Setup
-    std::string dataset = "sift";
+    std::string dataset = "glove";
     int num_return = 1;
-    std::string runs_prefix = "./runs/test/__global_cluster";
+    std::string runs_prefix = "./runs/";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
     std::string loaded_graph_file = "./grphs/sift/graph_hnsw_heuristic.bin";
-    bool load_graph_file = true;
+    bool load_graph_file = false;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 1000000;
-    int num_queries = 10000;
-    int num_training = 100000;
+    int num_nodes = 10000;
+    int num_queries = 1000;
+    int num_training = 1000;
     int num_training_generated = 1000000;  // Used in generate_training
 
     // Interpreted File Setup
@@ -96,7 +96,7 @@ public:
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
-    const bool use_cost_benefit = false;
+    const bool use_cost_benefit = true;
     const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
     const bool use_stinky_points = false;
@@ -120,7 +120,7 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {};
+    std::vector<int> benchmark_num_return = {50};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
@@ -147,6 +147,7 @@ public:
     const bool export_histograms = true;
     const bool export_weight_updates = true;
     const bool export_clustering_coefficient = false;
+    const bool export_cost_benefit_pruned = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
