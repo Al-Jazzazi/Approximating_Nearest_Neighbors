@@ -15,24 +15,38 @@ using namespace std;
 
 void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, int num_keep) {
     // Check how costly and beneficial each edge is
+    int total_benefit = 0;
+    int total_cost = 0;
+    int* total_cost_pointer = &total_cost;
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
-        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true);
+        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true, false, total_cost_pointer);
         for (int j = 0; j < path.size(); j++) {
-            path[j]->benefit++;
+            path[j]->benefit += 1;
+            total_benefit += 1;
         }
     }
-    // Initialize histograms
+    float average_benefit = static_cast<float>(total_benefit) / edges.size();
+    float average_cost = static_cast<float>(total_cost) / edges.size();
+    
+    // Initialize exports
     vector<long long> counts_cost;
     vector<long long> counts_benefit;
     for (int i = 0; i < 20; i++) {
         counts_cost.push_back(0);
         counts_benefit.push_back(0);
     }
+    ofstream* pruned_file = nullptr;
+    if (config->export_cost_benefit_pruned) {
+        pruned_file = new ofstream(config->runs_prefix + "cost_benefit_pruned.txt");
+    }
+    cout << "Average Benefit: " << average_benefit << " Average Cost: " << average_cost << endl;
 
     // Mark edges for deletion
-    auto compare = [](Edge* lhs, Edge* rhs) { return static_cast<float>(lhs->benefit) / lhs->cost > static_cast<float>(rhs->benefit) / rhs->cost; };
+    auto compare = [average_benefit, average_cost](Edge* lhs, Edge* rhs) {
+        return (average_benefit + lhs->benefit) / (average_cost + lhs->cost) > (average_benefit + rhs->benefit) / (average_cost + rhs->cost);
+    };
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_histogram)]++;
@@ -47,11 +61,6 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         }
     }
     // Remove all edges in layer 0 that are marked for deletion
-    int count = 0;
-    ofstream* pruned_file = nullptr;
-    if (config->export_cost_benefit_pruned) {
-        pruned_file = new ofstream(config->runs_prefix + "cost_benefit_pruned.txt");
-    }
     for (int i = 0; i < hnsw->num_nodes; i++) {
         for (int j = hnsw->mappings[i][0].size() - 1; j >= 0; j--) {
             vector<Edge>& neighbors = hnsw->mappings[i][0];
@@ -61,16 +70,10 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
                 }
                 neighbors[j] = neighbors[neighbors.size() - 1];
                 neighbors.pop_back();
-                count++;
             }
         }
     }
-    if (config->export_cost_benefit_pruned) {
-        pruned_file->close();
-        delete pruned_file;
-    }
-
-    // Export histograms to files
+    // Write and close exports
     if (config->export_histograms) {
         ofstream cost_histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
         ofstream benefit_histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
@@ -83,7 +86,10 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
         benefit_histogram << endl;
         benefit_histogram.close();
     }
-    cout << "Edges Removed: " << static_cast<float>(count) / edges.size() << endl;
+    if (config->export_cost_benefit_pruned) {
+        pruned_file->close();
+        delete pruned_file;
+    }
 }
 
 /**

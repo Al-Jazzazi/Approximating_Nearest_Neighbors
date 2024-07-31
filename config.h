@@ -111,8 +111,8 @@ public:
     int weight_formula = 0;  // 0 = ratio of average distances, 1 = average of distance ratios, 2 = discounted cumulative gain
     float initial_keep_ratio = 0.9;
     float final_keep_ratio = 0.7;
-    int initial_cost = 1;
-    int initial_benefit = 1;
+    int initial_cost = 0;
+    int initial_benefit = 0;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
     std::vector<int> grid_num_return = {}; 

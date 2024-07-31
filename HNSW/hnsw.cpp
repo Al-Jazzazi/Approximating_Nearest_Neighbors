@@ -151,7 +151,7 @@ void HNSW::insert(Config* config, int query) {
  *       , and the path taken is saved into path which can be the direct path or beam_search bath dependent on variable config->use_direct_path
  *         
 */
-void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying, bool is_training, bool is_ignoring) {
+void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying, bool is_training, bool is_ignoring, int* total_cost) {
     // Initialize search structures
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
@@ -298,8 +298,12 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 // Add cost point to neighbor's edge if we are training
                 if (is_training && config->use_stinky_points)
                     neighbor_edge.stinky -= config->stinky_value;
-                if (is_training && config->use_cost_benefit)
-                    ++neighbor_edge.cost;
+                if (is_training && config->use_cost_benefit) {
+                    neighbor_edge.cost += 1;
+                    if (total_cost != nullptr) {
+                        *total_cost += 1;
+                    }
+                }
                 
                 // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
                 float far_inner_dist = found.top().first;
@@ -458,7 +462,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
  * K-NN-SEARCH(hnsw, q, K, ef)
  * This also stores the traversed bottom-layer edges in the path vector
 */
-vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_querying, bool is_training, bool is_ignoring) {
+vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_querying, bool is_training, bool is_ignoring, int* total_cost) {
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
@@ -483,7 +487,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
     
-    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring);
+    search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring, total_cost);
     if (config->print_path_size) {
         total_path_size += path.size();
     }
