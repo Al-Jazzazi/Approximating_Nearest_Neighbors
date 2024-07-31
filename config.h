@@ -20,7 +20,7 @@ public:
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
     std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
     bool load_graph_file = true;
-    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
+    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
     int num_training = 100000;
@@ -29,8 +29,8 @@ public:
     // Interpreted File Setup
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
-    std::string query_file =  dataset == "gist" ? dataset_prefix + "_learn.fvecs" : dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "gist" ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
+    std::string query_file =  dataset == "deep" || dataset == "gist" ? dataset_prefix + "_learn.fvecs" : dataset_prefix + "_query.fvecs";
+    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "deep" || dataset == "gist" ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string generated_training_file = dataset_prefix + "_learn_1M.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
@@ -53,7 +53,7 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool combined_termination = true; 
+    const bool combined_termination = false; 
     const bool use_number_of_distances = false; 
     const bool use_latest = false;
     const bool use_break = false;
@@ -68,6 +68,7 @@ public:
     float efs_break = 1.5;
     const std::map<std::string, std::pair<float, float>> bw = {
         {"deep", {0.197, -300.85}},
+        {"deep96", {0.197, -300.85}},
         {"sift", {0.2108, -339.64}},
         {"gist", {0.1114, -414.44}},
         {"glove", {0.3663, -15.865}}
@@ -82,9 +83,12 @@ public:
         {"50 gist", {0.013f, 0.2454}}, 
         {"10 gist", {0.0111f, 0.2707}},
         {"1 gist", {0.0093, 0.2964}},
-        {"50 glove", {0, 0}}, 
-        {"10 glove", {0, 0}},
+        {"50 glove", {0.0191, 0.2111}}, 
+        {"10 glove", {0.0188, 0.216}},
         {"1 glove", {0.0184, 0.222}}
+        {"50 deep96", {0.0215, 0.2152}}, 
+        {"10 deep96", {0.0199, 0.2438}},
+        {"1 deep96", {0.0184, 0.2759}}
     };
 
     // Interpreted Termination Parameters
