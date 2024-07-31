@@ -179,6 +179,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 hnsw->cur_groundtruth = actual_neighbors[i];
                 hnsw->layer0_dist_comps_per_q = 0;
                 pair<int, float*> query_pair = make_pair(i, queries[i]);
+                cout << "nodes" << i << endl;
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
 
                 if (config->print_neighbor_percent) {

@@ -14,11 +14,11 @@ using namespace std;
 class Config {
 public:
     // File Setup
-    std::string dataset = "glove";
+    std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs/";
+    std::string runs_prefix = "./runs/testing/_earliast_updated_";
     // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
-    std::string loaded_graph_file = "./runs/hnsw_glove/graph_num_return_50.bin";
+    std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
@@ -53,7 +53,7 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool combined_termination = false; 
+    const bool combined_termination = true; 
     const bool use_number_of_distances = false; 
     const bool use_latest = false;
     const bool use_break = false;
@@ -89,10 +89,10 @@ public:
 
     // Interpreted Termination Parameters
     string nm = std::to_string(num_return) + " " + dataset;
-    float bw_slope = use_break ? bw.at(dataset).first : 0; 
-    float bw_intercept = use_break ? bw.at(dataset).second : 0;
-    float alpha_coefficient = use_break ? alpha.at(nm).first : 0;
-    float alpha_intercept = use_break ? alpha.at(nm).second : 0;
+    float bw_slope = combined_termination ? bw.at(dataset).first : 0; 
+    float bw_intercept = combined_termination ? bw.at(dataset).second : 0;
+    float alpha_coefficient = combined_termination ? alpha.at(nm).first : 0;
+    float alpha_intercept = combined_termination ? alpha.at(nm).second : 0;
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -120,13 +120,13 @@ public:
     std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
-    std::vector<int> benchmark_num_return = {50};
+    std::vector<int> benchmark_num_return = {};
     std::vector<int> benchmark_optimal_connections = {};
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {};
-    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    // std::vector<int> benchmark_ef_search = {};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.35,0.355,0.36,0.365,0.37,0.375,0.38,0.385,0.39,0.4,0.41,0.42,0.425,0.43,0.44,0.45};
     std::vector<float> benchmark_learning_rate = {};
