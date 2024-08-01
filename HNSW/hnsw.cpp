@@ -266,7 +266,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 actual_beam_width += found.size();
             }
             if(is_querying && layer_num == 0 && config->combined_termination){
-                if(close_dist > far_dist)
+                if(candidates_popped_per_q > config->ef_search)
                     num_original_termination++;
                 else 
                     num_distance_termination++;
