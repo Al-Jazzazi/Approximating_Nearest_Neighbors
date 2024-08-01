@@ -30,7 +30,6 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nod
 void HNSW::reset_statistics() {
     layer0_dist_comps = 0;
     upper_dist_comps = 0;
-    actual_beam_width = 0;
     processed_neighbors = 0;
     total_neighbors = 0;
     num_distance_termination = 0;
@@ -181,9 +180,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         total_neighbors = 0;
     }
     path.clear();
-  
-    //to not have found_extension empty 
-    //found_extension.emplace(-FLT_MAX, -1);
+
     // Add entry points to search structures
     for (const auto& entry : entry_points) {
         visited.insert(entry.second);
@@ -221,7 +218,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     int candidates_popped_per_q = 0;
     int iteration = 0;
     while (!candidates.empty()) {
-        
         if (debug_file != NULL) {
             // Export search data
             *debug_file << "Iteration " << iteration << endl;
@@ -252,19 +248,16 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         float close_dist = candidates.top().first;
         candidates.pop();
         Edge* closest_edge;
-        if(layer_num == 0 && is_training && config->use_direct_path){
+        if (layer_num == 0 && is_training && config->use_direct_path) {
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
-	if(layer_num ==0) {
-        	++candidates_popped;
+        if (layer_num == 0) {
+            ++candidates_popped;
             ++candidates_popped_per_q;
-    }
+        }
         // If terminating, log statistics and break
         if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num, candidates_popped_per_q)) {
-            if (layer_num == 0) {
-                actual_beam_width += found.size();
-            }
             if(is_querying && layer_num == 0 && config->combined_termination){
                 if(candidates_popped_per_q > config->ef_search)
                     num_original_termination++;
@@ -332,7 +325,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         if (loc != cur_groundtruth.end()) {
                             // Get neighbor index (xth closest) and log distance comp
                             int index = distance(cur_groundtruth.begin(), loc);
-                           when_neigh_found[index] = layer0_dist_comps_per_q;
+                            when_neigh_found[index] = layer0_dist_comps_per_q;
                             ++nn_found;
                             ++correct_nn_found;
                             if (config->use_groundtruth_termination && nn_found == config->num_return)
@@ -345,21 +338,9 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     // If priority queues are too large, remove the furthest
                     if (found.size() > num_to_return){
                         found.pop();
-                        // if (config->use_latest && config->use_break) {
-                        //     found_extension.emplace(far_dist, furthest);
-                        //     if(found_extension.size() > ef_search2 - num_to_return)
-                        //         found_extension.pop();
-                        // }
                     }
-                } 
-                // else if(config->use_latest && config->use_break && (neighbor_dist < found_extension.top().first || found_extension.size() < ef_search2 - num_to_return)){
-                //     found_extension.emplace(neighbor_dist, neighbor);
-                //     if(found_extension.size() > ef_search2 - num_to_return)
-                //         found_extension.pop();
-                // }
-    
-            } 
-           
+                }
+            }
         }
     }
    

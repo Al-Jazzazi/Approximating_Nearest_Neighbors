@@ -270,9 +270,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
-                     + std::to_string(search_duration / config->num_queries) + ", " 
-                     //+ std::to_string(construction_duration) + ", "
-                     + std::to_string(static_cast<double>(hnsw->actual_beam_width) / config->num_queries) + ", "
+                     + std::to_string(search_duration / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
                      + std::to_string(candidates_popped / config->num_queries) + ", "
                      + average_cc_string
@@ -292,7 +290,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, actual_beam_width, Avg NDCG, ratio termination (distance based/origianl), alpha, candidates_popped/query" << endl;
+        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
