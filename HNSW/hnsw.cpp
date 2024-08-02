@@ -535,7 +535,11 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     bool num_of_dist_1 = false;
     if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
-        float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+  	float threshold;
+  	if(config->always_top_1)
+		threshold = 2 * sqrt(top_1.first) + sqrt(top_1.first);
+	else
+		threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
         

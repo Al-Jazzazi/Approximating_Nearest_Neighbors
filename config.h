@@ -52,7 +52,7 @@ public:
     int k_upper = 1;
 
     // Termination Parameters
-    const bool use_distance_termination = false;
+    const bool use_distance_termination = false;   const bool always_top_1 = false; 
     const bool combined_termination = false; 
     const bool use_number_of_distances = false; 
     const bool use_latest = false;
