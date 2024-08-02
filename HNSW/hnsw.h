@@ -65,7 +65,6 @@ public:
     std::vector<float> percent_neighbors;
     std::vector<int> cur_groundtruth;
 
-
     HNSW(Config* config, float** nodes);
     void reset_statistics();
     void search_queries(Config* config, float** queries);

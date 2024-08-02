@@ -8,6 +8,8 @@
 #include <thread>
 #include <queue>
 #include <immintrin.h>
+#include "vamana.h"
+
 using namespace std;
 
 /// reduce K_QUERY to 1, 50, etc -> find out what's the issue
@@ -29,92 +31,17 @@ int R = 50; // Max outedge
 int L = 100; // beam search width
 int L_QUERY = 100;
 size_t DIMENSION = 128;
-string FILENAME = "../HNSW/exports/sift/sift_base.fvecs";
-string QUERY_FILE = "../HNSW/exports/sift/sift_query.fvecs";
-string GROUND_TRUTH = "../HNSW/exports/sift/sift_groundtruth.fvecs";
-//string FILENAME = "glove.6B.50d.txt";
-//string QUERY_FILE = "sift_query.txt";
-//string GROUND_TRUTH = "sift_groundtruth.txt";
-//string FILENAME = "sifttest_base.txt";
-
-class DataNode {
-    friend ostream& operator<<(ostream& os, const DataNode& rhs) {
-        for (size_t i = 0; i < DIMENSION; i++) {
-            os << rhs.coordinates[i] << ' ';
-        }
-        os << endl;
-        return os;
-    }
-    friend bool operator==(const DataNode& lhs, const DataNode& rhs) {
-        if (lhs.dimension != rhs.dimension) return false;
-        for (size_t ind = 0; ind < lhs.dimension; ind++) {
-            if (lhs.coordinates[ind] != rhs.coordinates[ind]) return false;
-        }
-        return true;
-    }
-public:
-    DataNode();
-    DataNode(double* coord);
-//    void sumArraysAVX(float* array1, float* array2, float* result, int size) const;
-    long long int findDistanceAVX(const DataNode& other) const;
-    double findDistance(const DataNode& other) const;
-    bool compare(double* coord) const;
-    void addCoord(double* coord) const;
-    void setWord(const string& theWord);
-private:
-    size_t dimension;
-    double* coordinates;
-    string word;
-};
-
-struct Node {
-    DataNode val;
-    set<size_t> outEdge;
-};
-
-class Graph {
-public:
-    Graph();
-    size_t findNode(const DataNode& val);
-    void addNode(const DataNode& val, set<size_t>& neighbors, size_t pos);
-    void randomize(int R);
-    set<size_t> getNeighbors(const DataNode& i);
-    void clearNeighbors(size_t i);
-    double findDistance(size_t i, const DataNode& query) const;
-    Node getNode(size_t i) const;
-    set<size_t> getNodeNeighbor(size_t i) const;
-    void setEdge(size_t i, set<size_t> edges);
-    void display() const;
-    vector<vector<size_t>> query(size_t start);
-    void queryBruteForce(size_t start);
-    void sanityCheck(vector<vector<size_t>> allResults) const;
-    void queryTest(size_t start);
-private:
-    Node* allNodes = new Node[TOTAL];
-};
-
-void constructGraph(vector<DataNode>& allNodes, Graph& graph);
-void randomEdges(Graph& graph, int R);
-template<typename T>
-bool findInSet(const set<T>& set, T target);
-template<typename Y>
-set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo);
-vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L);
-void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R);
-Graph Vamana(vector<DataNode>& allNodes, long alpha, int L, int R);
-void load_fvecs(vector<DataNode>& allNodes, const string& file);
-size_t findStart(const Graph& g);
+string FILENAME = "./exports/sift/sift_base.fvecs";
+string QUERY_FILE = "./exports/sift/sift_query.fvecs";
+string GROUND_TRUTH = "./exports/sift/sift_groundtruth.fvecs";
 
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
     vector<DataNode> allNodes = {};
     load_fvecs(allNodes, FILENAME);
-    // getNodes(allNodes, FILENAME, DIMENSION);
-    // getNodesGlove(allNodes, FILENAME, DIMENSION);
     Graph G = Vamana(allNodes, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // G.display();
     size_t s = findStart(G);
     G.queryTest(s);
     start = std::chrono::high_resolution_clock::now();
@@ -126,6 +53,22 @@ int main() {
     cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/QUERY_TOTAL << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/QUERY_TOTAL << endl;
+}
+
+ostream& operator<<(ostream& os, const DataNode& rhs) {
+    for (size_t i = 0; i < DIMENSION; i++) {
+        os << rhs.coordinates[i] << ' ';
+    }
+    os << endl;
+    return os;
+}
+
+bool operator==(const DataNode& lhs, const DataNode& rhs) {
+    if (lhs.dimension != rhs.dimension) return false;
+    for (size_t ind = 0; ind < lhs.dimension; ind++) {
+        if (lhs.coordinates[ind] != rhs.coordinates[ind]) return false;
+    }
+    return true;
 }
 
 DataNode::DataNode() {}
@@ -189,7 +132,25 @@ void DataNode::addCoord(double* coord) const {
     }
 }
 
-Graph::Graph(){}
+ostream& operator<<(ostream& os, const Graph& rhs) {
+    for (size_t i = 0; i < TOTAL; i++) {
+        cout << i << " : ";
+        for (size_t neighbor : rhs.allNodes[i].outEdge) {
+            cout << neighbor << " ";
+        }
+        cout << endl;
+    }
+    return os;
+}
+
+Graph::Graph() {
+    allNodes = new Node[TOTAL];
+}
+
+Graph::~Graph() {
+    delete[] allNodes;
+}
+
 size_t Graph::findNode(const DataNode& val) {
     for (size_t i = 0; i < TOTAL; i++) {
         if (allNodes[i].val == val) {
@@ -241,15 +202,6 @@ void Graph::setEdge(size_t i, set<size_t> edges) {
     newNode.val = allNodes[i].val;
     newNode.outEdge = edges;
     allNodes[i] = newNode;
-}
-void Graph::display() const {
-    for (size_t i = 0; i < TOTAL; i++) {
-        cout << i << " : ";
-        for (size_t neighbor : allNodes[i].outEdge) {
-            cout << neighbor << ' ';
-        }
-        cout << endl;
-    }
 }
 
 void Graph::sanityCheck(vector<vector<size_t>> allResults) const {
@@ -556,7 +508,6 @@ Graph Vamana(vector<DataNode>& allNodes, long alpha, int L, int R) {
     constructGraph(allNodes, graph);
     randomEdges(graph, R);
     cout << "Random graph: " << endl;
-//    graph.display();
     size_t s = findStart(graph);
     cout << "The centroid is #" << s << endl;
     for (int i = 0; i < 2; i++) {
