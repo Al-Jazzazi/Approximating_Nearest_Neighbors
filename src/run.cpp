@@ -3,7 +3,7 @@
 #include <cpuid.h>
 #include <string.h>
 #include "grasp.h"
-#include "../HNSW/hnsw.h"
+#include "hnsw.h"
 
 using namespace std;
 

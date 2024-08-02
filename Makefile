@@ -5,37 +5,38 @@ MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 EPOCH_TIME := $(shell date +%s)
 SRCS := $(wildcard HNSW/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
-TARGETS := run dataset_metrics generate_groundtruth benchmark benchmark_slurm
+COMMON_SRCS := config.h src/common.cpp src/common.h
+TARGETS := run_hnsw run_vamana dataset_metrics generate_groundtruth benchmark benchmark_slurm
 BUILD_PATH := build
 
 .PHONY: all clean
 
 all: $(TARGETS)
 
-run_hnsw: HNSW/run.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
+run_hnsw: src/run.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-run_vamana: Vamana/vamana.cpp Vamana/vamana.h config.h
+run_vamana: src/vamana.cpp src/vamana.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-dataset_metrics: HNSW/dataset_metrics.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
+dataset_metrics: src/dataset_metrics.cpp src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-generate_groundtruth: HNSW/generate_groundtruth.cpp HNSW/hnsw.cpp HNSW/hnsw.h config.h
+generate_groundtruth: src/generate_groundtruth.cpp src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-generate_training: HNSW/generate_training.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
+generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-benchmark: HNSW/benchmark.cpp HNSW/hnsw.cpp HNSW/hnsw.h HNSW/grasp.cpp HNSW/grasp.h config.h
+benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm: HNSW/benchmark.cpp HNSW/grasp.cpp HNSW/grasp.h HNSW/hnsw.cpp HNSW/hnsw.h config.h
+benchmark_slurm: src/benchmark.cpp src/grasp.cpp src/grasp.h src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 

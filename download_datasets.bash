@@ -18,9 +18,9 @@ mkdir glove
 cd glove 
 wget https://nlp.stanford.edu/data/glove.twitter.27B.zip
 unzip glove.twitter.27B.zip glove.twitter.27B.200d.txt
-python3 ../../utils/txt_to_fvecs.py glove.twitter.27B.200d.txt
-python3 ../../utils/split_fvecs.py glove.fvecs glove_base.fvecs temp.fvecs 1000000 110000
-python3 ../../utils/split_fvecs.py temp.fvecs glove_learn.fvecs glove_query.fvecs 100000 10000
+python3 ../../conversions/txt_to_fvecs.py glove.twitter.27B.200d.txt
+python3 ../../conversions/split_fvecs.py glove.fvecs glove_base.fvecs temp.fvecs 1000000 110000
+python3 ../../conversions/split_fvecs.py temp.fvecs glove_learn.fvecs glove_query.fvecs 100000 10000
 rm glove.twitter.27B.zip glove.twitter.27B.200d.txt glove.fvecs temp.fvecs
 cd ..
 
