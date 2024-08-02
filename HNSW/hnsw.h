@@ -53,8 +53,8 @@ public:
     double normal_factor;
 
     // Statistics
+    int layer0_dist_comps_per_q; 
     long long int layer0_dist_comps;
-    long long int layer0_dist_comps_per_q; 
     long long int upper_dist_comps;
     long long int processed_neighbors;
     long long int total_neighbors;

@@ -593,6 +593,11 @@ void HNSW::search_queries(Config* config, float** queries) {
     } else {
         knn_search(config, actual_neighbors, nodes, queries);
     }
+
+    vector<int> counts_calcs;
+    for (int i = 0; i < 20; i++) {
+        counts_calcs.push_back(0);
+    }
     
     vector<pair<int, int>> nn_calculations;
     if (config->use_oracle_2) {
@@ -615,6 +620,9 @@ void HNSW::search_queries(Config* config, float** queries) {
         layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
+        if (config->export_calcs_per_query) {
+            ++counts_calcs[std::min(19, layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
+        }
         if (config->export_oracle)
             *when_neigh_found_file << endl;
         
@@ -696,6 +704,15 @@ void HNSW::search_queries(Config* config, float** queries) {
             *export_file << endl;
         }
       
+    }
+
+    if (config->export_calcs_per_query) {
+        ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
+        for (int i = 0; i < 20; ++i) {
+            histogram << counts_calcs[i] << ",";
+        }
+        histogram << endl;
+        histogram.close();
     }
 
     if (config->export_oracle) {

@@ -90,8 +90,6 @@ public:
         {"10 deep96", {0.0199, 0.2438}},
         {"1 deep96", {0.0184, 0.2759}}
     };
-
-    // Interpreted Termination Parameters
     string nm = std::to_string(num_return) + " " + dataset;
     float bw_slope = combined_termination ? bw.at(dataset).first : 0; 
     float bw_intercept = combined_termination ? bw.at(dataset).second : 0;
@@ -129,8 +127,8 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    // std::vector<int> benchmark_ef_search = {};
-    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    std::vector<int> benchmark_ef_search = {};
+    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     // std::vector<float> benchmark_termination_alpha = {0.35,0.355,0.36,0.365,0.37,0.375,0.38,0.385,0.39,0.4,0.41,0.42,0.425,0.43,0.44,0.45};
     std::vector<float> benchmark_learning_rate = {};
@@ -152,6 +150,7 @@ public:
     const bool export_weight_updates = true;
     const bool export_clustering_coefficient = false;
     const bool export_cost_benefit_pruned = false;
+    const bool export_calcs_per_query = false;
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
@@ -162,6 +161,7 @@ public:
     int interval_for_num_of_updates_histogram = 1;
     int interval_for_cost_histogram = 10; 
     int interval_for_benefit_histogram = 1; 
+    int interval_for_calcs_histogram = 500;
 
     // Generation Settings
     std::string training_set = "";

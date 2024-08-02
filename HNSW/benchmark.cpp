@@ -171,16 +171,21 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             total_dist_comp = 0;
             candidates_popped = 0;
         } else {
+            vector<int> counts_calcs;
+            for (int i = 0; i < 20; i++) {
+                counts_calcs.push_back(0);
+            }
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
-            int oracle_distance_calcs = 0;
             vector<Edge*> path;
             for (int i = 0; i < config->num_queries; ++i) {
                 hnsw->cur_groundtruth = actual_neighbors[i];
                 hnsw->layer0_dist_comps_per_q = 0;
                 pair<int, float*> query_pair = make_pair(i, queries[i]);
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
-
+                if (config->export_calcs_per_query) {
+                    ++counts_calcs[std::min(19, hnsw->layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
+                }
                 if (config->print_neighbor_percent) {
                     for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
                         cout << hnsw->percent_neighbors[i] << " ";
@@ -198,6 +203,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             if (config->print_path_size) {
                 cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
                 hnsw->total_path_size = 0;
+            }
+            if (config->export_calcs_per_query) {
+                ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
+                for (int i = 0; i < 20; ++i) {
+                    histogram << counts_calcs[i] << ",";
+                }
+                histogram << endl;
+                histogram.close();
             }
             search_duration = duration;
             search_dist_comp = hnsw->layer0_dist_comps;
@@ -343,6 +356,10 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 histogram = ofstream(config->runs_prefix + "histogram_benefit.txt");
                 histogram.close();
             }
+        }
+        if (config->export_calcs_per_query) {
+            ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt");
+            histogram.close();
         }
     }
 
