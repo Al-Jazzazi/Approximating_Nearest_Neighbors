@@ -57,5 +57,5 @@ int main() {
             generated[i][j] = u * training[index_first][j] + v * nodes[index_second][j] + w * nodes[index_third][j];
         }
     }
-    save_fvecs(config->generated_training_file, generated, config->dimensions, config->num_training_generated);
+    save_fvecs(config->generated_training_file, generated, config->num_training_generated, config->dimensions);
 }

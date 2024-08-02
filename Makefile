@@ -3,9 +3,9 @@ CXXFLAGS := -O2 -mavx -g
 
 MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 EPOCH_TIME := $(shell date +%s)
-SRCS := $(wildcard HNSW/*.cpp)
+SRCS := $(wildcard src/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
-COMMON_SRCS := config.h src/common.cpp src/common.h
+COMMON_SRCS := config.h src/utils.cpp src/utils.h
 TARGETS := run_hnsw run_vamana dataset_metrics generate_groundtruth benchmark benchmark_slurm
 BUILD_PATH := build
 
@@ -36,7 +36,7 @@ generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp.c
 benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm: src/benchmark.cpp src/grasp.cpp src/grasp.h src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
+benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 

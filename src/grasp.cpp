@@ -445,7 +445,7 @@ void load_training(Config* config, float** nodes, float** training, int num_trai
     if (!is_generating && config->training_file != "") {
         if (config->query_file.size() >= 6 && config->training_file.substr(config->training_file.size() - 6) == ".fvecs") {
             // Load training from fvecs file
-            load_fvecs(config->training_file, "training", training, num_training, config->dimensions, config->groundtruth_file != "");
+            load_fvecs(config->training_file, training, num_training, config->dimensions);
             return;
         }
 

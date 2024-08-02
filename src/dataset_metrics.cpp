@@ -237,7 +237,7 @@ void calculate_stats(Config* config, const string& name, float** nodes, bool dis
     int num_same = 0;
     if (config->compare_datasets) {
         float** comparison_nodes = new float*[config->comparison_num_nodes];
-        load_fvecs(config->metrics_dataset2_prefix + ".fvecs", "base", comparison_nodes, config->comparison_num_nodes, config->dimensions, config->groundtruth_file != "");
+        load_fvecs(config->metrics_dataset2_prefix + ".fvecs", comparison_nodes, config->comparison_num_nodes, config->dimensions);
         num_same = count_same_nodes(config, nodes, config->num_nodes, comparison_nodes, config->comparison_num_nodes);
     }
     
@@ -408,7 +408,7 @@ int main() {
     Config* config = new Config();
 
     float** nodes = new float*[config->num_nodes];
-    load_fvecs(config->metrics_dataset1_prefix + ".fvecs", "base", nodes, config->num_nodes, config->dimensions, config->groundtruth_file != "");
+    load_fvecs(config->metrics_dataset1_prefix + ".fvecs", nodes, config->num_nodes, config->dimensions);
 
     // Calculate stats
     cout << endl << "Base nodes:";
