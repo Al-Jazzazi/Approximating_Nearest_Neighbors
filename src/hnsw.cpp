@@ -20,10 +20,12 @@ Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_
 Edge::Edge(int target, float distance, int initial_cost, int initial_benefit) : target(target), distance(distance),
     weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(initial_cost), cost(initial_benefit), prev_edge(nullptr){}
 
-HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(0), num_nodes(config->num_nodes),
-           num_dimensions(config->dimensions), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0),layer0_dist_comps_per_q(0) {
+HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(1), num_nodes(config->num_nodes),
+           num_dimensions(config->dimensions), entry_point(0), normal_factor(1 / -log(config->scaling_factor)),
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0), layer0_dist_comps_per_q(0) {
     reset_statistics();
+    mappings.resize(num_nodes);
+    mappings[0].resize(1);
 }
 
 void HNSW::reset_statistics() {
@@ -829,17 +831,6 @@ float HNSW::calculate_distance(float* a, float* b, int size, int layer) {
     return calculate_l2_sq(a, b, size);
 }
 
-HNSW* init_hnsw(Config* config, float** nodes) {
-    HNSW* hnsw = new HNSW(config, nodes);
-    hnsw->mappings.resize(hnsw->num_nodes);
-
-    // Insert first node into first layer with empty connections vector
-    hnsw->num_layers = 1;
-    hnsw->mappings[0].resize(1);
-    hnsw->entry_point = 0;
-    return hnsw;
-}
-
 std::ostream& operator<<(std::ostream& os, const HNSW& hnsw) {
     vector<int> nodes_per_layer(hnsw.num_layers);
     for (int i = 0; i < hnsw.num_nodes; ++i) {
@@ -867,12 +858,11 @@ std::ostream& operator<<(std::ostream& os, const HNSW& hnsw) {
     return os;
 }
 
-void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking) {
-    // Check file and parameters
+void HNSW::from_files(Config* config, bool is_benchmarking) {
+    // Open files
     ifstream graph_file(config->loaded_graph_file);
     ifstream info_file(config->loaded_info_file);
     cout << "Loading saved graph from " << config->loaded_graph_file << endl;
-
     if (!graph_file) {
         cout << "File " << config->loaded_graph_file << " not found!" << endl;
         return;
@@ -882,126 +872,110 @@ void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmar
         return;
     }
 
+    // Process info file
     int opt_con, max_con, max_con_0, ef_con;
     int num_nodes;
-    int num_layers;
+    int read_num_layers;
+    long long construct_layer0_dist_comps;
+    long long construct_upper_dist_comps;
+    double construct_duration;
     info_file >> opt_con >> max_con >> max_con_0 >> ef_con;
     info_file >> num_nodes;
-    info_file >> num_layers;
+    info_file >> read_num_layers;
+    if (is_benchmarking) {
+        info_file >> construct_layer0_dist_comps;
+        info_file >> construct_upper_dist_comps;
+        info_file >> construct_duration;
+    }
+    num_layers = read_num_layers;
 
-    // Check if number of nodes match
+    // Verify config parameters
     if (num_nodes != config->num_nodes) {
         cout << "Mismatch between loaded and expected number of nodes" << endl;
         return;
     }
-
-    // Check if construction parameters match
     if (opt_con != config->optimal_connections || max_con != config->max_connections ||
         max_con_0 != config->max_connections_0 || ef_con != config->ef_construction) {
         cout << "Mismatch between loaded and expected construction parameters" << endl;
         return;
     }
 
-    if (is_benchmarking) {
-        long long construct_layer0_dist_comps;
-        long long construct_upper_dist_comps;
-        double construct_duration;
-        info_file >> construct_layer0_dist_comps;
-        info_file >> construct_upper_dist_comps;
-        info_file >> construct_duration;
+    // Process graph file
+    auto start = chrono::high_resolution_clock::now();
+    cout << "Loading graph with construction parameters: "
+         << config->optimal_connections << ", " << config->max_connections << ", "
+         << config->max_connections_0 << ", " << config->ef_construction << endl;
+    for (int i = 0; i < num_nodes; ++i) {
+        int layers;
+        graph_file.read(reinterpret_cast<char*>(&layers), sizeof(layers));
+        mappings[i].resize(layers);
+        // Load each layer
+        for (int j = 0; j < layers; ++j) {
+            int num_neighbors;
+            graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
+            mappings[i][j].reserve(num_neighbors);
+            // Load each neighbor
+            for (int k = 0; k < num_neighbors; ++k) {
+                int index;
+                float distance;
+                graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
+                graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
+                mappings[i][j].emplace_back(Edge(index, distance, config->initial_cost, config->initial_benefit));
+            }
+        }
+    }
+    int read_entry_point;
+    graph_file.read(reinterpret_cast<char*>(&read_entry_point), sizeof(read_entry_point));
+    entry_point = read_entry_point;
 
-        auto start = chrono::high_resolution_clock::now();
-        cout << "Loading graph with construction parameters: "
-            << config->optimal_connections << ", " << config->max_connections << ", "
-            << config->max_connections_0 << ", " << config->ef_construction << endl;
-        
-        hnsw->num_layers = num_layers;
-        load_hnsw_graph(config, hnsw, graph_file, nodes, num_nodes, num_layers);
-        
+    // Conditionally print benchmark data
+    if (is_benchmarking) {
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         cout << "Load time: " << duration / 1000.0 << " seconds, ";
         cout << "Construction time: " << construct_duration << " seconds, ";
         cout << "Distance computations (layer 0): " << construct_layer0_dist_comps <<", ";
         cout << "Distance computations (top layers): " << construct_upper_dist_comps << endl;
-    } else {
-        hnsw->num_layers = num_layers;
-        load_hnsw_graph(config, hnsw, graph_file, nodes, num_nodes, num_layers);
     }
 }
 
-void load_hnsw_graph(Config* config, HNSW* hnsw, ifstream& graph_file, float** nodes, int num_nodes, int num_layers) {
-    // Load node neighbors
-    for (int i = 0; i < num_nodes; ++i) {
-        int layers;
-        graph_file.read(reinterpret_cast<char*>(&layers), sizeof(layers));
-        hnsw->mappings[i].resize(layers);
-
-        // Load layers
-        for (int j = 0; j < layers; ++j) {
-            int num_neighbors;
-            graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
-            hnsw->mappings[i][j].reserve(num_neighbors);
-
-            // Load neighbors
-            for (int k = 0; k < num_neighbors; ++k) {
-                int index;
-                float distance;
-                graph_file.read(reinterpret_cast<char*>(&index), sizeof(index));
-                graph_file.read(reinterpret_cast<char*>(&distance), sizeof(distance));
-                hnsw->mappings[i][j].emplace_back(Edge(index, distance, config->initial_cost, config->initial_benefit));
-            }
-        }
-    }
-
-    // Load entry point
-    int entry_point;
-    graph_file.read(reinterpret_cast<char*>(&entry_point), sizeof(entry_point));
-    hnsw->entry_point = entry_point;
-}
-
-void save_hnsw_files(Config* config, HNSW* hnsw, const string& name, long int duration) {
+void HNSW::to_files(Config* config, const string& graph_name, long int construction_duration) {
     // Export graph to file
-    ofstream graph_file(config->runs_prefix + "graph_" + name + ".bin");
+    ofstream graph_file(config->runs_prefix + "graph_" + graph_name + ".bin");
 
     // Export edges
-    for (int i = 0; i < config->num_nodes; ++i) {
-        int layers = hnsw->mappings[i].size();
-
+    for (int i = 0; i < num_nodes; ++i) {
         // Write number of layers
+        int layers = mappings[i].size();
         graph_file.write(reinterpret_cast<const char*>(&layers), sizeof(layers));
 
-        // Write layers
+        // Write each layer
         for (int j = 0; j < layers; ++j) {
-            int num_neighbors = hnsw->mappings[i][j].size();
-
             // Write number of neighbors
+            int num_neighbors = mappings[i][j].size();
             graph_file.write(reinterpret_cast<const char*>(&num_neighbors), sizeof(num_neighbors));
 
-            // Write neighbors
+            // Write index and distance of each neighbor
             for (int k = 0; k < num_neighbors; ++k) {
-                auto n_pair = hnsw->mappings[i][j][k];
-                
-                // Write index and distance
+                auto n_pair = mappings[i][j][k];
                 graph_file.write(reinterpret_cast<const char*>(&n_pair.target), sizeof(n_pair.target));
                 graph_file.write(reinterpret_cast<const char*>(&n_pair.distance), sizeof(n_pair.distance));
             }
         }
     }
-
     // Save entry point
-    graph_file.write(reinterpret_cast<const char*>(&hnsw->entry_point), sizeof(hnsw->entry_point));
+    graph_file.write(reinterpret_cast<const char*>(&entry_point), sizeof(entry_point));
     graph_file.close();
 
     // Export construction parameters
-    ofstream info_file(config->runs_prefix + "info_" + name + ".txt");
+    ofstream info_file(config->runs_prefix + "info_" + graph_name + ".txt");
     info_file << config->optimal_connections << " " << config->max_connections << " "
               << config->max_connections_0 << " " << config->ef_construction << endl;
-    info_file << config->num_nodes << endl;
-    info_file << hnsw->num_layers << endl;
-    info_file << hnsw->layer0_dist_comps << endl;
-    info_file << hnsw->upper_dist_comps << endl;
-    info_file << duration << endl;
+    info_file << num_nodes << endl;
+    info_file << num_layers << endl;
+    info_file << layer0_dist_comps << endl;
+    info_file << upper_dist_comps << endl;
+    info_file << construction_duration << endl;
 
-    cout << "Exported graph to " << config->runs_prefix + "graph_" + name + ".bin" << endl;
+    cout << "Exported graph to " << config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
 }

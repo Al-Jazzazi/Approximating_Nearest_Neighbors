@@ -18,9 +18,9 @@ int main() {
 
     // Create HNSW graph using training set
     HNSW* hnsw = NULL;
-    hnsw = init_hnsw(config, nodes);
+    hnsw = new HNSW(config, nodes);
     if (config->load_graph_file) {
-        load_hnsw_files(config, hnsw, nodes, true);
+        hnsw->from_files(config, true);
     } else {
         for (int i = 1; i < config->num_nodes; ++i) {
             hnsw->insert(config, i);

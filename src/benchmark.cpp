@@ -69,8 +69,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
 
         if (config->load_graph_file) {
-            hnsw = init_hnsw(config, nodes);
-            load_hnsw_files(config, hnsw, nodes, true);
+            hnsw = new HNSW(config, nodes);
+            hnsw->from_files(config, true);
         } else {
             // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();
@@ -94,7 +94,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 
 
 
-            hnsw = init_hnsw(config, nodes);
+            hnsw = new HNSW(config, nodes);
             for (int i = 1; i < config->num_nodes; ++i) {
                 hnsw->insert(config, i);
             }
@@ -297,7 +297,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         }
         
         if (config->export_graph && !config->load_graph_file) {
-            save_hnsw_files(config, hnsw, parameter_name + "_" + to_string(parameter_values[i]), construction_duration);
+            hnsw->to_files(config, parameter_name + "_" + to_string(parameter_values[i]), construction_duration);
         }
 
         delete hnsw;

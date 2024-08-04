@@ -39,10 +39,8 @@ public:
 class HNSW {
     friend std::ostream& operator<<(std::ostream& os, const HNSW& hnsw);
 public:
-    // Stores nodes by node index, then dimensions
-    float** nodes;
-    // Stores edges in adjacency list by node index, then layer number, then connection pair
-    std::vector<std::vector<std::vector<Edge>>> mappings;
+    float** nodes; // Node index, then dimensions
+    std::vector<std::vector<std::vector<Edge>>> mappings; // Node index, then layer number, then neighbors
     int entry_point;
     int num_layers;
     int num_nodes;
@@ -67,8 +65,9 @@ public:
     std::vector<int> cur_groundtruth;
 
     HNSW(Config* config, float** nodes);
+    void to_files(Config* config, const std::string& graph_name, long int construction_duration = 0);
+    void from_files(Config* config, bool is_benchmarking = false);
     void reset_statistics();
-    void search_queries(Config* config, float** queries);
     std::vector<Edge*> get_layer_edges(Config* config, int layer);
     void find_direct_path(std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points);
     bool should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared, bool is_querying, int layer_num, int candidates_popped_per_q);
@@ -81,12 +80,7 @@ public:
     void search_layer(Config* config, float* query, std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying = false, bool is_training = false, bool is_ignoring = false, int* total_cost = nullptr);
     void select_neighbors_heuristic(Config* config, float* query, std::vector<Edge>& candidates, int num_to_return, int layer_num, bool extend_candidates = false, bool keep_pruned = true);
     std::vector<std::pair<float, int>> nn_search(Config* config, std::vector<Edge*>& path, std::pair<int, float*>& query, int num_to_return, bool is_querying = true, bool is_training = false, bool is_ignoring = false, int* total_cost = nullptr);
+    void search_queries(Config* config, float** queries);
 };
-
-// Helper functions
-HNSW* init_hnsw(Config* config, float** nodes);
-void load_hnsw_files(Config* config, HNSW* hnsw, float** nodes, bool is_benchmarking = false);
-void load_hnsw_graph(Config* config, HNSW* hnsw, std::ifstream& graph_file, float** nodes, int num_nodes, int num_layers);
-void save_hnsw_files(Config* config, HNSW* hnsw, const std::string& name, long int duration);
 
 #endif

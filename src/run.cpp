@@ -54,9 +54,9 @@ int main() {
     
     // Construct HNSW
     cout << "Beginning HNSW construction" << endl;
-    HNSW* hnsw = init_hnsw(config, nodes);
+    HNSW* hnsw = new HNSW(config, nodes);
     if (config->load_graph_file) {
-        load_hnsw_files(config, hnsw, nodes);
+        hnsw->from_files(config, nodes);
     } else {
         for (int i = 1; i < config->num_nodes; i++) {
             hnsw->insert(config, i);
@@ -103,7 +103,7 @@ int main() {
         cout << hnsw;
     }
     if (config->export_graph && !config->load_graph_file) {
-        save_hnsw_files(config, hnsw, "run", -1);
+        hnsw->to_files(config, "run");
     }
 
     // Run queries
