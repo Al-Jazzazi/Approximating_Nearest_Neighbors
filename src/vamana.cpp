@@ -163,9 +163,8 @@ void Graph::to_files(Config* config, const string& graph_name) {
     ofstream graph_file(config->runs_prefix + "graph_" + graph_name + ".bin");
 
     // Export edges
-    for (size_t i = 0; i < config->num_nodes; ++i) {
+    for (size_t i = 0; i < num_nodes; ++i) {
         // Write number of neighbors
-        int num_neighbors = mappings[i].size();
         int num_neighbors = mappings[i].size();
         graph_file.write(reinterpret_cast<const char*>(&num_neighbors), sizeof(num_neighbors));
 
