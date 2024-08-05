@@ -126,11 +126,6 @@ int main() {
 //     return true;
 // }
 
-// void DataNode::addCoord(double* coord) const {
-//     for (size_t i = 0; i < DIMENSION; i++) {
-//         coord[i] += coordinates[i];
-//     }
-// }
 
 ostream& operator<<(ostream& os, const Graph& rhs) {
     for (size_t i = 0; i < rhs.num_nodes; i++) {
@@ -148,22 +143,19 @@ Graph::Graph(Config* config) {
     DIMENSION = config->dimensions;
     nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);
+    mappings.resize(num_nodes);
+    for (int i = 0; i < mappings.size(); i++) {
+        mappings[i] = {};
+    }
 }
 
 Graph::~Graph() {
-    for (int i = 0; i < config->num_nodes; ++i) {
+    for (int i = 0; i < config->num_nodes; i++) {
         delete[] nodes[i];
     }
     delete[] nodes;
 }
 
-void Graph::addNode(float* val, set<size_t>& neighbors, size_t pos) {
-    nodes[pos] = 
-    Node newNode = Node();
-    newNode.val = val;
-    newNode.outEdge = neighbors;
-    allNodes[pos] = newNode;
-}
 void Graph::randomize(int R) {
     for (size_t i = 0; i < num_nodes; i++) {
         set<size_t> neighbors = {};
@@ -172,20 +164,14 @@ void Graph::randomize(int R) {
             while (random == i) random = rand() % num_nodes;
             neighbors.insert(random);
         }
-        setEdge(i, neighbors);
+        mappings[i] = edges;
     }
 }
 
-void Graph::clearNeighbors(size_t i) {
-    allNodes[i].outEdge = {};
+float Graph::findDistance(size_t i, float* query) const {
+    return calculate_l2_sq(nodes[i], query);
 }
-double Graph::findDistance(size_t i, const DataNode& query) const {
-    //return allNodes[i].val.findDistanceAVX(query);
-    return allNodes[i].val.findDistance(query);
-}
-Node Graph::getNode(size_t i) const {
-    return allNodes[i];
-}
+
 set<size_t> Graph::getNodeNeighbor(size_t i) const {
     return allNodes[i].outEdge;
 }
@@ -342,16 +328,6 @@ void Graph::queryBruteForce(Config* config, size_t start) {
     cout << "Average correctness: " << result << '%' << endl;
 }
 
-void constructGraph(vector<DataNode>& allNodes, Graph& graph) {
-    cout << "Constructing graph" << endl;
-    size_t j = 0;
-    for (DataNode& node : allNodes) {
-        set<size_t> neighbors;
-        graph.addNode(node, neighbors, j);
-        j++;
-    }
-}
-
 void randomEdges(Graph& graph, int R) {
     cout << "Randomizing edges" << endl;
     graph.randomize(R);
@@ -427,8 +403,8 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
 }
 
 void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R) {
-//    cout << "In RobustPrune, point " << point << endl;
-    set<size_t> neighbors = graph.getNodeNeighbor(point);
+    // cout << "In RobustPrune, point " << point << endl;
+    set<size_t> neighbors = graph.nodes[point];
     for (size_t i : neighbors) {
         candidates.push_back(i);
     }
@@ -439,12 +415,12 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
             break;
         }
     }
-    graph.clearNeighbors(point);
+    graph.mappings[point] = {};
     while (candidates.size() != 0) {
         // find p* <- closest neighbor to p
         size_t bestCandidate = *candidates.begin();
         for (size_t j : candidates) {
-            if (graph.findDistance(j, graph.getNode(point).val) < graph.findDistance(bestCandidate, graph.getNode(point).val)) {
+            if (graph.findDistance(j, graph.nodes[point]) < graph.findDistance(bestCandidate, graph.nodes[point])) {
                 bestCandidate = j;
             }
         }
@@ -456,16 +432,16 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
             }
         }
         // add best candidate back to p's neighborhood
-        set<size_t> edges = graph.getNodeNeighbor(point);
+        set<size_t> edges = graph.mappings[point];
         edges.insert(bestCandidate);
         graph.setEdge(point, edges);
         // neighborhood is full
-        if (graph.getNodeNeighbor(point).size() == R) {
+        if (graph.mappings[point].size() == R) {
             break;
         }
         vector<size_t> copy;
         for (size_t k : candidates) {
-            if (graph.findDistance(point, graph.getNode(k).val) < threshold * graph.findDistance(bestCandidate, graph.getNode(k).val)) {
+            if (graph.findDistance(point, graph.nodes[k]) < threshold * graph.findDistance(bestCandidate, graph.nodes[k])) {
                 copy.push_back(k);
             }
         }
@@ -474,14 +450,15 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
 }
 
 size_t findStart(Config* config, const Graph& g) {
-    double* coord = new double[DIMENSION];
+    float* center = new float[g.DIMENSION];
     for (size_t j = 0; j < g.num_nodes; j++) {
-        g.getNode(j).val.addCoord(coord);
+        for (size_t k = 0; k < g.DIMENSION; k++) {
+            center[k] += g.nodes[j][k];
+        }
     }
-    for (size_t i = 0; i < DIMENSION; i++) {
-        coord[i] /= g.num_nodes;
+    for (size_t i = 0; i < g.DIMENSION; i++) {
+        center[i] /= g.num_nodes;
     }
-    DataNode center = DataNode(coord);
     size_t closest = 0;
     float closest_dist = MAXFLOAT;
     for (size_t m = 0; m < g.num_nodes; m++) {
@@ -494,10 +471,9 @@ size_t findStart(Config* config, const Graph& g) {
     return closest;
 }
 
-Graph Vamana(Config* config, float** nodes, long alpha, int L, int R) {
-    Graph graph(config, nodes);
+Graph Vamana(Config* config, long alpha, int L, int R) {
+    Graph graph(config);
     cout << "Start of Vamana" << endl;
-    constructGraph(nodes, graph);
     randomEdges(graph, R);
     cout << "Random graph: " << endl;
     size_t s = findStart(config, graph);
@@ -518,7 +494,7 @@ Graph Vamana(Config* config, float** nodes, long alpha, int L, int R) {
             RobustPrune(graph, i, result, actual_alpha, R);
             set<size_t> neighbors = graph.mappings[i];
             for (size_t j : neighbors) {
-                set<size_t> unionV = graph.getNode(j).outEdge;
+                set<size_t> unionV = graph.mappings[j];
                 vector<size_t> unionVec;
                 for (size_t i : unionV) {
                     unionVec.push_back(i);
