@@ -31,17 +31,20 @@ int R = 50; // Max outedge
 int L = 100; // beam search width
 int L_QUERY = 100;
 size_t DIMENSION = 128;
-string FILENAME = "./exports/sift/sift_base.fvecs";
 string QUERY_FILE = "./exports/sift/sift_query.fvecs";
 string GROUND_TRUTH = "./exports/sift/sift_groundtruth.fvecs";
 
 int main() {
+    // Construct Vamana index
+    Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
     vector<DataNode> allNodes = {};
-    load_fvecs(allNodes, FILENAME);
+    load_fvecs(allNodes, config->load_file);
     Graph G = Vamana(allNodes, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    // Search queries
     size_t s = findStart(G);
     G.queryTest(s);
     start = std::chrono::high_resolution_clock::now();
@@ -53,6 +56,9 @@ int main() {
     cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/QUERY_TOTAL << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/QUERY_TOTAL << endl;
+
+    // Clean up
+    delete config;
 }
 
 ostream& operator<<(ostream& os, const DataNode& rhs) {

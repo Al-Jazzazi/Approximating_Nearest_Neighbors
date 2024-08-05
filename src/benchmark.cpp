@@ -157,7 +157,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         int similar = 0;
         float total_ndcg = 0;
         vector<pair<int, int>> nn_calculations;
-        if (config->use_oracle_2) {
+        if (config->use_calculation_oracle) {
             load_oracle(config, nn_calculations);
             int distance_left = config->oracle_termination_total;
             for (pair<int, int>& cur_found : nn_calculations ) {
@@ -288,7 +288,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(candidates_popped / config->num_queries) + ", "
                      + average_cc_string
                      + global_cc_string;
-            if (config->combined_termination) {
+            if (config->use_hybrid_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
                 line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", " + std::to_string(termination_alpha);
@@ -335,8 +335,8 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", use_direct_path = " << config->use_direct_path << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                 << ", current Pruning method = " << config->weight_selection_method 
                 << "\nCurrent Termination Method : "
-                << "\nUse_distance_termination = " << config->use_distance_termination  << ", Use_combined_termination " << config->combined_termination <<  ", use_latest: " << config->use_latest 
-                << ", Use Break = " << config->use_break << ", use_number_of_distances = " << config->use_number_of_distances  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use oracle 2" << config->use_oracle_2 
+                << "\nUse_distance_termination = " << config->use_distance_termination  << ", use_hybrid_termination " << config->use_hybrid_termination <<  ", use_latest: " << config->use_latest 
+                << ", Use Break = " << config->use_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
                 << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  << endl;
 
@@ -379,7 +379,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         queries, training, results_file);
     run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
         queries, training, results_file);
-    run_benchmark(config, config->number_of_distance_termination_per_q, config->benchmark_num_of_distance_termination, "number_of_distance_termination_per_q", nodes,
+    run_benchmark(config, config->calculations_per_query, config->benchmark_calculations_per_query, "calculations_per_query", nodes,
         queries, training, results_file);
     run_benchmark(config, config->oracle_termination_total, config->benchmark_oracle_termination_total, "oracle_termination_total", nodes,
         queries, training, results_file);

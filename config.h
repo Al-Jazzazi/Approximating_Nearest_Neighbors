@@ -9,15 +9,12 @@
 #include <utility>
 #include <map> 
 
-using namespace std;
-
 class Config {
 public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
     std::string runs_prefix = "./runs/testing/_earliast_updated_";
-    // std::string runs_prefix = "runs/test/testing_finding_neighbors/_";
     std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -34,6 +31,7 @@ public:
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string generated_training_file = dataset_prefix + "_learn_1M.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
+    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "oracle"), std::regex("bin"), "txt");
 
     // HNSW Construction
     const bool use_heuristic = true;
@@ -53,18 +51,16 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool always_top_1 = false; 
-    const bool combined_termination = false; 
-    const bool use_number_of_distances = false; 
+    const bool use_hybrid_termination = false; 
     const bool use_latest = false;
     const bool use_break = false;
-    const bool use_groundtruth_termination = false;  // Use groundtruth to terminate search early
-    const bool export_oracle = false;  // Log where the neighbors are found per query
-    const bool use_oracle_2 = false;
-    std::string oracle_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "oracle"), std::regex("bin"), "txt");
-    int number_of_distance_termination_per_q = 200;  // Used if use_number_of_distances = true
-    int oracle_termination_total = 10000;  // Used if oracle_file exists
-    float termination_alpha = 0.5;  // Used for distance-only termination (not combined)
+    const bool use_calculation_termination = false;
+    const bool use_groundtruth_termination = false;
+    const bool use_calculation_oracle = false;
+    const bool always_top_1 = false;  // Only used if use_distance_termination is true
+    int calculations_per_query = 200;  // Only used if use_calculation_termination = true
+    int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
+    float termination_alpha = 0.5;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;
     float efs_break = 1.5;
     const std::map<std::string, std::pair<float, float>> bw = {
@@ -91,11 +87,11 @@ public:
         {"10 deep96", {0.0199, 0.2438}},
         {"1 deep96", {0.0184, 0.2759}}
     };
-    string nm = std::to_string(num_return) + " " + dataset;
-    float bw_slope = combined_termination ? bw.at(dataset).first : 0; 
-    float bw_intercept = combined_termination ? bw.at(dataset).second : 0;
-    float alpha_coefficient = combined_termination ? alpha.at(nm).first : 0;
-    float alpha_intercept = combined_termination ? alpha.at(nm).second : 0;
+    std::string nm = std::to_string(num_return) + " " + dataset;
+    float bw_slope = use_hybrid_termination ? bw.at(dataset).first : 0; 
+    float bw_intercept = use_hybrid_termination ? bw.at(dataset).second : 0;
+    float alpha_coefficient = use_hybrid_termination ? alpha.at(nm).first : 0;
+    float alpha_intercept = use_hybrid_termination ? alpha.at(nm).second : 0;
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -140,8 +136,8 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-    // std::vector<int> benchmark_num_of_distance_termination = {2000, 5000,7500, 10000,12500,15000,17500, 20000,22500,25000,27500, 30000,32500,35000};
-    std::vector<int> benchmark_num_of_distance_termination = {};
+    // std::vector<int> benchmark_calculations_per_query = {2000, 5000,7500, 10000,12500,15000,17500, 20000,22500,25000,27500, 30000,32500,35000};
+    std::vector<int> benchmark_calculations_per_query = {};
     std::vector<int> benchmark_oracle_termination_total = {};
 
     // Debugging Flags
@@ -149,9 +145,10 @@ public:
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
+    const bool export_oracle = false;  // Log distance calcs needed to find exact nearest neighbors
     const bool export_clustering_coefficient = false;
     const bool export_cost_benefit_pruned = false;
-    const bool export_calcs_per_query = false;
+    const bool export_calcs_per_query = false;  // Log distance calcs used during search
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
@@ -162,7 +159,7 @@ public:
     int interval_for_num_of_updates_histogram = 1;
     int interval_for_cost_histogram = 10; 
     int interval_for_benefit_histogram = 1; 
-    int interval_for_calcs_histogram = 500;
+    int interval_for_calcs_histogram = 1000;
 
     // Generation Settings
     std::string training_set = "";

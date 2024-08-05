@@ -173,7 +173,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         // Convert efs to distance calcs, multiply, then convert distance calcs to efs
         ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
     }
-    if (is_querying && layer_num == 0 && (config->use_distance_termination|| config->use_number_of_distances || config->combined_termination)){
+    if (is_querying && layer_num == 0 && (config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination)){
         num_to_return = 100000;
     }
     if (layer_num == 0 && config->print_neighbor_percent) {
@@ -194,7 +194,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-        if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
+        if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -259,7 +259,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
         // If terminating, log statistics and break
         if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num, candidates_popped_per_q)) {
-            if(is_querying && layer_num == 0 && config->combined_termination){
+            if(is_querying && layer_num == 0 && config->use_hybrid_termination){
                 if(candidates_popped_per_q > config->ef_search)
                     num_original_termination++;
                 else 
@@ -305,7 +305,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
-                    if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
+                    if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
                         top_k.emplace(neighbor_dist, neighbor);
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
@@ -534,7 +534,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     bool alpha_distance_1 = false;
     bool alpha_distance_2 = false;
     bool num_of_dist_1 = false;
-    if (is_querying && layer_num == 0 && (config->combined_termination || config->use_distance_termination)) {
+    if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
   	float threshold;
   	if(config->always_top_1)
@@ -560,15 +560,15 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     // Return whether closest is too far
     if (!is_querying || layer_num > 0) {
         return beam_width_original;
-    } else if (config->combined_termination && config->use_latest) {
+    } else if (config->use_hybrid_termination && config->use_latest) {
         return (alpha_distance_1 && beam_width_1) || alpha_distance_2 || beam_width_2;
-    } else if (config->combined_termination) {
+    } else if (config->use_hybrid_termination) {
         return alpha_distance_1 || beam_width_1;
     } else if (config->use_distance_termination) {
         return alpha_distance_1;
-    } else if(config->use_number_of_distances){
+    } else if(config->use_calculation_termination) {
         //cout << "check check " << layer0_dist_comps_per_q << endl;
-        return  config->number_of_distance_termination_per_q < layer0_dist_comps_per_q;
+        return  config->calculations_per_query < layer0_dist_comps_per_q;
     }else {
         return beam_width_original;
     }
@@ -605,7 +605,7 @@ void HNSW::search_queries(Config* config, float** queries) {
     }
     
     vector<pair<int, int>> nn_calculations;
-    if (config->use_oracle_2) {
+    if (config->use_calculation_oracle) {
         load_oracle(config, nn_calculations);
     }
 
@@ -613,8 +613,8 @@ void HNSW::search_queries(Config* config, float** queries) {
     int oracle_distance_calcs = 0;
     reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
-        float* query = config->use_oracle_2 ? queries[nn_calculations[i].second] : queries[i];
-        if (config->use_oracle_2) {
+        float* query = config->use_calculation_oracle ? queries[nn_calculations[i].second] : queries[i];
+        if (config->use_calculation_oracle) {
             oracle_distance_calcs += nn_calculations[i].first;
         }
         if (oracle_distance_calcs > config->oracle_termination_total) {
