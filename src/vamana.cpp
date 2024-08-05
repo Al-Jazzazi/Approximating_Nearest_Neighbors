@@ -214,6 +214,7 @@ void Graph::randomize(int R) {
 
 
 float Graph::findDistance(size_t i, float* query) const {
+    distanceCalculationCount++;
     return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
