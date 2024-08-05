@@ -42,9 +42,8 @@ public:
 
     Graph(Config* config);
     ~Graph();
-    void to_files();
-    void from_files();
-    void addNode(const DataNode& val, std::set<size_t>& neighbors, size_t pos);
+    void to_files(Config* config, const std::string& graph_name);
+    void from_files(Config* config, bool is_benchmarking = false);
     void randomize(int R);
     float findDistance(size_t i, float* query) const;
     void setEdge(size_t i, std::set<size_t> edges);
