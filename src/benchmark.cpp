@@ -64,6 +64,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         long long search_dist_comp;
         long long total_dist_comp;
         long long candidates_popped;
+        long long candidates_size;
+        long long candidates_without_if;
         HNSW* hnsw = NULL;
         vector<vector<int>> actual_neighbors;
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
@@ -145,6 +147,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_dist_comp = 0;
             total_dist_comp = 0;
             candidates_popped = 0;
+            candidates_size = 0 ;
+            candidates_without_if = 0;
             break;
         }
 
@@ -170,6 +174,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_dist_comp = 0;
             total_dist_comp = 0;
             candidates_popped = 0;
+            candidates_size = 0 ;
+            candidates_without_if = 0;
         } else {
             vector<int> counts_calcs;
             for (int i = 0; i < 20; i++) {
@@ -216,6 +222,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             search_dist_comp = hnsw->layer0_dist_comps;
             total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
             candidates_popped = hnsw->candidates_popped;
+            candidates_size = hnsw->candidates_size;
+            candidates_without_if = hnsw->candidates_without_if;
 
             if (neighbors.empty())
                 break;
@@ -283,9 +291,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(search_dist_comp / config->num_queries) + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
+
                      + std::to_string(search_duration / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
                      + std::to_string(candidates_popped / config->num_queries) + ", "
+                     //+ std::to_string(candidates_size)+ "---" + std::to_string(candidates_without_if) 
+                     + std::to_string(candidates_size/(float)candidates_without_if) + ", "
                      + average_cc_string
                      + global_cc_string;
             if (config->use_hybrid_termination) {
@@ -303,7 +314,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete hnsw;
     }
     if (config->export_benchmark) {
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query" << endl;
+        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;

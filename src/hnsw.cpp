@@ -22,7 +22,7 @@ Edge::Edge(int target, float distance, int initial_cost, int initial_benefit) : 
 
 HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(1), num_nodes(config->num_nodes),
            num_dimensions(config->dimensions), entry_point(0), normal_factor(1 / -log(config->scaling_factor)),
-           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0), layer0_dist_comps_per_q(0) {
+           gen(config->insertion_seed), dis(0.0000001, 0.9999999), total_path_size(0), layer0_dist_comps_per_q(0), candidates_without_if(0),candidates_size(0) {
     reset_statistics();
     mappings.resize(num_nodes);
     mappings[0].resize(1);
@@ -36,6 +36,8 @@ void HNSW::reset_statistics() {
     num_distance_termination = 0;
     num_original_termination = 0;
     candidates_popped = 0;
+    candidates_size = 0 ;
+    candidates_without_if = 0;
     percent_neighbors.clear();
 }
 
@@ -275,7 +277,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             if (config->print_neighbor_percent && layer_num == 0) {
                 ++total_neighbors;
             }
-
+            candidates_without_if++;
             // Traverse newly discovered neighbor if we don't ignore it
             bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
             if (!(is_training && is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
@@ -305,6 +307,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
                     found.emplace(neighbor_dist, neighbor);
+                    candidates_size++;
                     if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
                         top_k.emplace(neighbor_dist, neighbor);
                         if (neighbor_dist < top_1.first) {

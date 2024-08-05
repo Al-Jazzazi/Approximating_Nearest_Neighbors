@@ -61,6 +61,8 @@ public:
     long long int num_original_termination;
     long long int total_path_size;
     long long int candidates_popped;
+    long long int candidates_size;
+    long long int candidates_without_if;
     std::vector<float> percent_neighbors;
     std::vector<int> cur_groundtruth;
 
