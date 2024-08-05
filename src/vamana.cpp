@@ -164,23 +164,18 @@ void Graph::randomize(int R) {
             while (random == i) random = rand() % num_nodes;
             neighbors.insert(random);
         }
-        mappings[i] = edges;
+        mappings[i] = neighbors;
     }
 }
 
 float Graph::findDistance(size_t i, float* query) const {
     return calculate_l2_sq(nodes[i], query);
 }
+Node Graph::getNode(size_t i) const {
+    return allNodes[i];
+}
 
-set<size_t> Graph::getNodeNeighbor(size_t i) const {
-    return allNodes[i].outEdge;
-}
-void Graph::setEdge(size_t i, set<size_t> edges) {
-    Node newNode = Node();
-    newNode.val = allNodes[i].val;
-    newNode.outEdge = edges;
-    allNodes[i] = newNode;
-}
+
 
 void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults) const {
     // vector<set<size_t>> gives all NNs
@@ -218,24 +213,22 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
     fstream f;
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
-    DataNode* queries = new DataNode[config->num_queries];
+    float** queries = new float*[config->num_queries];
     double each;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    for (size_t i = 0; i < config->num_queries; i++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
-        double* coord = new double[DIMENSION];
-        for (size_t i = 0; i < DIMENSION; i++) {
+        queries[i] = new float[DIMENSION];
+        for (size_t j = 0; j < DIMENSION; j++) {
             f >> each;
-            coord[i] = each;
+            queries[i][j] = each;
         }
-        DataNode data = DataNode(coord);
-        queries[j] = data;
     }
     cout << "All queries read" << endl;
     vector<vector<size_t>> allResults = {};
     for (size_t k = 0; k < config->num_queries; k++) {
         if (k % 1000 == 0) cout << "Processing " << k << endl;
-        DataNode thisQuery = queries[k];
+        float* thisQuery = queries[k];
         auto startTime = std::chrono::high_resolution_clock::now();
         vector<size_t> result = GreedySearch(*this, start, thisQuery, L_QUERY);
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -248,24 +241,24 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
 
 
 void Graph::queryTest(size_t start) {
-    vector<Node*> queryNodes = {};
+    vector<float*> queryNodes = {};
     int queryCount = 0;
     size_t correct = 0;
     while(queryCount < 100) {
         size_t random = rand() % num_nodes;
-        queryNodes.push_back(&allNodes[random]);
+        queryNodes.push_back(nodes[random]);
         queryCount++;
     }
-    for (Node* each : queryNodes) {
-        DataNode dataNode = each->val;
+    for (float* each : queryNodes) {
+
         auto startTime = std::chrono::high_resolution_clock::now();
-        vector<size_t> result = GreedySearch(*this, start, dataNode, L_QUERY);
+        vector<size_t> result = GreedySearch(*this, start, each, L_QUERY);
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
         size_t closestNode = 0;
-        double shortestDistance = findDistance(0, dataNode);
+        float shortestDistance = findDistance(0, each);
         for (size_t i = 0; i < num_nodes; i++) {
-            double distance = findDistance(i, dataNode);
+            float distance = findDistance(i, each);
             if (distance < shortestDistance) {
                 closestNode = i;
                 shortestDistance = distance;
@@ -283,20 +276,19 @@ void Graph::queryBruteForce(Config* config, size_t start) {
     fstream f;
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
-    DataNode* queries = new DataNode[config->num_queries];
-    double each;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    float** queries = new float*[config->num_queries];
+    float each;
+    for (size_t i = 0; i < config->num_queries; i++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
-        double* coord = new double[DIMENSION];
-        for (size_t i = 0; i < DIMENSION; i++) {
+        queries[i] = new float[DIMENSION];
+        for (size_t j = 0; j < DIMENSION; j++) {
             f >> each;
-            coord[i] = each;
+            queries[i][j] = each;
         }
-        DataNode data = DataNode(coord);
-        queries[j] = data;
     }
     cout << "All queries read" << endl;
+    
     fstream groundTruth;
     groundTruth.open(config->groundtruth_file);
     if (!groundTruth) {cout << "Ground truth file not open" << endl;}
@@ -308,7 +300,7 @@ void Graph::queryBruteForce(Config* config, size_t start) {
             groundTruth >> each;
             allTruths.push_back(each);
         }
-        DataNode query = queries[j];
+        float* query = queries[j];
         size_t closest = 0;
         double closestDist = findDistance(closest, query);
         for (size_t k = 0; k < num_nodes; k++) {
@@ -359,22 +351,22 @@ set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo) {
 /// L -> priority queue with distance and index
 /// V -> vector with index
 /// diff -> priority queue with distance and index -> 
-vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L) {    
+vector<size_t> GreedySearch(Graph& graph, size_t start, const float* query, size_t L) {    
     vector<size_t> result;
-    priority_queue<tuple<double, size_t>> List; // max priority queue
+    priority_queue<tuple<float, size_t>> List; // max priority queue
     set<size_t> ListSet = {};
-    double distance = graph.findDistance(start, query);
+    float distance = graph.findDistance(start, query);
     List.push({distance, start}); // L <- {s}
     ListSet.insert(start);
     vector<size_t> Visited = {};
-    priority_queue<tuple<double, size_t>> diff; // min priority queue
+    priority_queue<tuple<float, size_t>> diff; // min priority queue
     diff.push({-1 * distance, start});
     while (diff.size() != 0) {
-        tuple<double, size_t> top = diff.top(); // get the best candidate
+        tuple<float, size_t> top = diff.top(); // get the best candidate
         Visited.push_back(get<1>(top));
-        for (size_t j : graph.getNodeNeighbor(get<1>(top))) {
-            double dist = graph.findDistance(j, query);
-            tuple<double, size_t> newNode = {dist, j};
+        for (size_t j : graph.mappings[get<1>(top)]) {
+            float dist = graph.findDistance(j, query);
+            tuple<float, size_t> newNode = {dist, j};
             bool inserted = false;
             for (size_t i : ListSet) {
                 if (i == j) {inserted = true;}
@@ -383,10 +375,10 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
             ListSet.insert(j);
         }
         while (List.size() > L) List.pop();
-        priority_queue<tuple<double, size_t>> copy = List;
+        priority_queue<tuple<float, size_t>> copy = List;
         diff = {};
         while (copy.size() != 0) {
-            tuple<double, size_t> next = copy.top();
+            tuple<float, size_t> next = copy.top();
             copy.pop();
             bool exists = false;
             for (size_t k : Visited) {
@@ -403,8 +395,8 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
 }
 
 void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R) {
-    // cout << "In RobustPrune, point " << point << endl;
-    set<size_t> neighbors = graph.nodes[point];
+//    cout << "In RobustPrune, point " << point << endl;
+    set<size_t> neighbors = graph.mappings[point];
     for (size_t i : neighbors) {
         candidates.push_back(i);
     }
@@ -434,7 +426,7 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
         // add best candidate back to p's neighborhood
         set<size_t> edges = graph.mappings[point];
         edges.insert(bestCandidate);
-        graph.setEdge(point, edges);
+        graph.mappings[point] = edges;
         // neighborhood is full
         if (graph.mappings[point].size() == R) {
             break;
@@ -503,7 +495,7 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
                 if (unionV.size() > R) {
                     RobustPrune(graph, j, unionVec, actual_alpha, R);
                 } else {
-                    graph.setEdge(j, unionV);
+                    graph.mappings[j]= unionV;
                 }
             }
         }
