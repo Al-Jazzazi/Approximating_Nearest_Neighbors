@@ -40,6 +40,8 @@ public:
 
     Graph(Config* config, float** nodes);
     ~Graph();
+    void to_files();
+    void from_files();
     void addNode(const DataNode& val, std::set<size_t>& neighbors, size_t pos);
     void randomize(int R);
     float findDistance(size_t i, float* query) const;

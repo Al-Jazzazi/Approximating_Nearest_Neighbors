@@ -156,6 +156,49 @@ Graph::~Graph() {
     delete[] nodes;
 }
 
+void HNSW::to_files(Config* config, const string& graph_name) {
+    // Export graph to file
+    ofstream graph_file(config->runs_prefix + "graph_" + graph_name + ".bin");
+
+    // Export edges
+    for (int i = 0; i < num_nodes; ++i) {
+        // Write number of neighbors
+        int num_neighbors = mappings[i][j].size();
+        graph_file.write(reinterpret_cast<const char*>(&num_neighbors), sizeof(num_neighbors));
+
+        // Write index and distance of each neighbor
+        for (int j = 0; j < num_neighbors; ++j) {
+            size_t neighbor = mappings[i][j];
+            graph_file.write(reinterpret_cast<const char*>(&neighbor), sizeof(neighbor));
+        }
+    }
+    graph_file.close();
+    cout << "Exported graph to " << config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
+}
+
+void HNSW::from_files(Config* config, bool is_benchmarking) {
+    // Open files
+    ifstream graph_file(config->loaded_graph_file);
+    cout << "Loading saved graph from " << config->loaded_graph_file << endl;
+    if (!graph_file) {
+        cout << "File " << config->loaded_graph_file << " not found!" << endl;
+        return;
+    }
+
+    // Process graph file
+    for (int i = 0; i < num_nodes; ++i) {
+        int num_neighbors;
+        graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
+        mappings[i].reserve(num_neighbors);
+        // Load each neighbor
+        for (int j = 0; j < num_neighbors; ++j) {
+            int neighbor;
+            graph_file.read(reinterpret_cast<char*>(&neighbor), sizeof(neighbor));
+            mappings[i].insert(neighbor);
+        }
+    }
+}
+
 void Graph::randomize(int R) {
     for (size_t i = 0; i < num_nodes; i++) {
         set<size_t> neighbors = {};
