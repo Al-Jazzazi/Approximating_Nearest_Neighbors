@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include "../config.h"
 
 class DataNode {
     friend std::ostream& operator<<(std::ostream& os, const DataNode& rhs);
@@ -31,9 +32,10 @@ struct Node {
 class Graph {
     friend std::ostream& operator<<(std::ostream& os, const Graph& rhs);
 public:
-    Node* allNodes = nullptr;
+    Node* allNodes;
+    int num_nodes;
 
-    Graph();
+    Graph(Config* config);
     ~Graph();
     size_t findNode(const DataNode& val);
     void addNode(const DataNode& val, std::set<size_t>& neighbors, size_t pos);
@@ -44,9 +46,9 @@ public:
     Node getNode(size_t i) const;
     std::set<size_t> getNodeNeighbor(size_t i) const;
     void setEdge(size_t i, std::set<size_t> edges);
-    std::vector<std::vector<size_t>> query(size_t start);
-    void queryBruteForce(size_t start);
-    void sanityCheck(std::vector<std::vector<size_t>> allResults) const;
+    std::vector<std::vector<size_t>> query(Config* config, size_t start);
+    void queryBruteForce(Config* config, size_t start);
+    void sanityCheck(Config* config, const std::vector<std::vector<size_t>>& allResults) const;
     void queryTest(size_t start);
 };
 
@@ -54,9 +56,9 @@ void constructGraph(std::vector<DataNode>& allNodes, Graph& graph);
 void randomEdges(Graph& graph, int R);
 std::vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L);
 void RobustPrune(Graph& graph, size_t point, std::vector<size_t>& candidates, long threshold, int R);
-Graph Vamana(std::vector<DataNode>& allNodes, long alpha, int L, int R);
-void load_fvecs(std::vector<DataNode>& allNodes, const std::string& file);
-size_t findStart(const Graph& g);
+Graph Vamana(Config* config, std::vector<DataNode>& allNodes, long alpha, int L, int R);
+void load_fvecs(Config* config, std::vector<DataNode>& allNodes);
+size_t findStart(Config* config, const Graph& g);
 template<typename T>
 bool findInSet(const std::set<T>& set, T target);
 template<typename T>

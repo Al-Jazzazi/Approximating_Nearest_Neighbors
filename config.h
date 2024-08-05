@@ -18,8 +18,8 @@ public:
     std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 1000000;
-    int num_queries = 10000;
+    int num_nodes = 10000;
+    int num_queries = 1000;
     int num_training = 100000;
     int num_training_generated = 1000000;  // Used in generate_training.cpp
 
@@ -51,13 +51,13 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
+    const bool always_top_1 = false;  // Only used if use_distance_termination = true
     const bool use_hybrid_termination = false; 
-    const bool use_latest = false;
-    const bool use_break = false;
+    const bool use_latest = false;  // Only used if use_hybrid_termination = true
+    const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
     const bool use_calculation_oracle = false;
-    const bool always_top_1 = false;  // Only used if use_distance_termination is true
     int calculations_per_query = 200;  // Only used if use_calculation_termination = true
     int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
     float termination_alpha = 0.5;  // Only used if use_distance_termination = true
