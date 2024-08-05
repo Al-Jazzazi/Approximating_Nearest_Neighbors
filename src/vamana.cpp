@@ -10,7 +10,6 @@
 #include <immintrin.h>
 #include "vamana.h"
 
-using namespace std;
 
 /// reduce K_QUERY to 1, 50, etc -> find out what's the issue
 /// construction L and query L are different -> try diff vals
@@ -20,6 +19,9 @@ using namespace std;
 /// 2 round vamana
 /// try different / larger dataset
 
+using namespace std;
+
+
 int distanceCalculationCount = 0;
 int alpha = 1.2;
 int K = 30; // Num of NNs when building Vamana graph
@@ -28,12 +30,12 @@ int K_TRUTH = 100; // Num of NNs provided by ground truth for each query
 int R = 50; // Max outedge
 int L = 100; // beam search width
 int L_QUERY = 100;
-size_t DIMENSION = 128;
 
 int main() {
     // Construct Vamana index
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
+    float** nodes; 
     Graph G = Vamana(config, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -47,7 +49,7 @@ int main() {
     stop = std::chrono::high_resolution_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     // G.sanityCheck(config->groundtruth_file, allResults);
-    cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
+    std::cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/config->num_queries << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/config->num_queries << endl;
 
@@ -150,7 +152,7 @@ Graph::Graph(Config* config) {
 }
 
 Graph::~Graph() {
-    for (int i = 0; i < config->num_nodes; i++) {
+    for (int i = 0; i < num_nodes; i++) {
         delete[] nodes[i];
     }
     delete[] nodes;
@@ -211,11 +213,10 @@ void Graph::randomize(int R) {
     }
 }
 
+
+
 float Graph::findDistance(size_t i, float* query) const {
-    return calculate_l2_sq(nodes[i], query);
-}
-Node Graph::getNode(size_t i) const {
-    return allNodes[i];
+    return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
 
@@ -226,7 +227,7 @@ void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults
     groundTruth.open(config->groundtruth_file);
     if (!groundTruth) {cout << "Ground truth file not open" << endl;}
     int each;
-    int totalCorrect = 0;
+    float totalCorrect = 0;
     float result;
     for (size_t j = 0; j < config->num_queries; j++) {
         int correct = 0;
@@ -392,13 +393,13 @@ set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo) {
 
 /// L, V, diff between L and V
 /// L -> priority queue with distance and index
-/// V -> vector with index
+/// V -> vector with inde
 /// diff -> priority queue with distance and index -> 
-vector<size_t> GreedySearch(Graph& graph, size_t start, const float* query, size_t L) {    
+vector<size_t> GreedySearch(Graph& graph, size_t start,  float* query, size_t L) {    
     vector<size_t> result;
     priority_queue<tuple<float, size_t>> List; // max priority queue
     set<size_t> ListSet = {};
-    float distance = graph.findDistance(start, query);
+    float distance = graph.findDistance(start,  query);
     List.push({distance, start}); // L <- {s}
     ListSet.insert(start);
     vector<size_t> Visited = {};
@@ -525,11 +526,11 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
         for (size_t i : sigma) {
             if (count % 1000 == 0) cout << "Num of node processed: " << count << endl;
             count++;
-            vector<size_t> result = GreedySearch(graph, s, nodes[i], L);
+            vector<size_t> result = GreedySearch(graph, s, graph.nodes[i], L);
             RobustPrune(graph, i, result, actual_alpha, R);
             set<size_t> neighbors = graph.mappings[i];
             for (size_t j : neighbors) {
-                set<size_t> unionV = graph.mappings[j];
+                set<size_t> unionV = graph.mappings[j]; 
                 vector<size_t> unionVec;
                 for (size_t i : unionV) {
                     unionVec.push_back(i);
