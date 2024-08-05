@@ -362,33 +362,6 @@ void Graph::queryBruteForce(Config* config, size_t start) {
     cout << "Average correctness: " << result << '%' << endl;
 }
 
-void randomEdges(Graph& graph, int R) {
-    cout << "Randomizing edges" << endl;
-    graph.randomize(R);
-    cout << "Randomized edges" << endl;
-}
-
-template<typename T>
-bool findInSet(const set<T>& set, T target) {
-    for (T i : set) {
-        if (i == target) {
-            return true;
-        }
-    }
-    return false;
-}
-
-template<typename Y>
-set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo) {
-    set<Y> diff;
-    for (Y i : setOne) {
-        if (!findInSet(setTwo, i)) {
-            diff.insert(i);
-        }
-    }
-    return diff;
-}
-
 /// L, V, diff between L and V
 /// L -> priority queue with distance and index
 /// V -> vector with inde
@@ -508,7 +481,9 @@ size_t findStart(Config* config, const Graph& g) {
 Graph Vamana(Config* config, long alpha, int L, int R) {
     Graph graph(config);
     cout << "Start of Vamana" << endl;
-    randomEdges(graph, R);
+    cout << "Randomizing edges" << endl;
+    graph.randomize(R);
+    cout << "Randomized edges" << endl;
     cout << "Random graph: " << endl;
     size_t s = findStart(config, graph);
     cout << "The centroid is #" << s << endl;

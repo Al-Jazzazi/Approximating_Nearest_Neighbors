@@ -54,13 +54,9 @@ public:
 };
 
 void randomEdges(Graph& graph, int R);
-std::vector<size_t> GreedySearch(Graph& graph, size_t start, const float* query, size_t L);
+std::vector<size_t> GreedySearch(Graph& graph, size_t start, float* query, size_t L);
 void RobustPrune(Graph& graph, size_t point, std::vector<size_t>& candidates, long threshold, int R);
 Graph Vamana(Config* config, long alpha, int L, int R);
 size_t findStart(Config* config, const Graph& g);
-// template<typename T>
-// bool findInSet(const std::set<T>& set, T target);
-// template<typename T>
-// std::set<T> setDiff(const std::set<T>& setOne, const std::set<T>& setTwo);
 
 #endif
