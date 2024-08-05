@@ -34,9 +34,7 @@ int main() {
     // Construct Vamana index
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
-    vector<DataNode> allNodes = {};
-    load_fvecs(config, allNodes);
-    Graph G = Vamana(config, allNodes, alpha, K, R);
+    Graph G = Vamana(config, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
@@ -57,30 +55,30 @@ int main() {
     delete config;
 }
 
-ostream& operator<<(ostream& os, const DataNode& rhs) {
-    for (size_t i = 0; i < DIMENSION; i++) {
-        os << rhs.coordinates[i] << ' ';
-    }
-    os << endl;
-    return os;
-}
+// ostream& operator<<(ostream& os, const DataNode& rhs) {
+//     for (size_t i = 0; i < DIMENSION; i++) {
+//         os << rhs.coordinates[i] << ' ';
+//     }
+//     os << endl;
+//     return os;
+// }
 
-bool operator==(const DataNode& lhs, const DataNode& rhs) {
-    if (lhs.dimension != rhs.dimension) return false;
-    for (size_t ind = 0; ind < lhs.dimension; ind++) {
-        if (lhs.coordinates[ind] != rhs.coordinates[ind]) return false;
-    }
-    return true;
-}
+// bool operator==(const DataNode& lhs, const DataNode& rhs) {
+//     if (lhs.dimension != rhs.dimension) return false;
+//     for (size_t ind = 0; ind < lhs.dimension; ind++) {
+//         if (lhs.coordinates[ind] != rhs.coordinates[ind]) return false;
+//     }
+//     return true;
+// }
 
-DataNode::DataNode() {}
-DataNode::DataNode(double* coord) {
-    dimension = DIMENSION;
-    coordinates = coord;
-}
-void DataNode::setWord(const string& theWord) {
-    word = theWord;
-}
+// DataNode::DataNode() {}
+// DataNode::DataNode(double* coord) {
+//     dimension = DIMENSION;
+//     coordinates = coord;
+// }
+// void DataNode::setWord(const string& theWord) {
+//     word = theWord;
+// }
 //void DataNode::sumArraysAVX(int* array1, int* array2, int* result, int size) const {
 ////        cout << "In sumArraysAVX" << endl;
 //    int vectorSize = sizeof(__m256) / sizeof(float);
@@ -107,37 +105,37 @@ void DataNode::setWord(const string& theWord) {
 //}
 
 
-double DataNode::findDistance(const DataNode& other) const {
-    distanceCalculationCount++;
-    double distance = 0;
-//    cout << "In findDistance ";
-    if (dimension == other.dimension) {
-        for (size_t i = 0; i < DIMENSION; i++) {
-            double result = coordinates[i] - other.coordinates[i];
-            result *= result;
-            distance += result;
-        }
-    }
-    return sqrt(distance);
-}
+// double DataNode::findDistance(const DataNode& other) const {
+//     distanceCalculationCount++;
+//     double distance = 0;
+// //    cout << "In findDistance ";
+//     if (dimension == other.dimension) {
+//         for (size_t i = 0; i < DIMENSION; i++) {
+//             double result = coordinates[i] - other.coordinates[i];
+//             result *= result;
+//             distance += result;
+//         }
+//     }
+//     return sqrt(distance);
+// }
 
-bool DataNode::compare(double* coord) const {
-    for (size_t i = 0; i < DIMENSION; i++) {
-        if (coord[i] != coordinates[i]) return false;
-    }
-    return true;
-}
+// bool DataNode::compare(double* coord) const {
+//     for (size_t i = 0; i < DIMENSION; i++) {
+//         if (coord[i] != coordinates[i]) return false;
+//     }
+//     return true;
+// }
 
-void DataNode::addCoord(double* coord) const {
-    for (size_t i = 0; i < DIMENSION; i++) {
-        coord[i] += coordinates[i];
-    }
-}
+// void DataNode::addCoord(double* coord) const {
+//     for (size_t i = 0; i < DIMENSION; i++) {
+//         coord[i] += coordinates[i];
+//     }
+// }
 
 ostream& operator<<(ostream& os, const Graph& rhs) {
     for (size_t i = 0; i < rhs.num_nodes; i++) {
         cout << i << " : ";
-        for (size_t neighbor : rhs.allNodes[i].outEdge) {
+        for (size_t neighbor : rhs.mappings[i]) {
             cout << neighbor << " ";
         }
         cout << endl;
@@ -147,22 +145,20 @@ ostream& operator<<(ostream& os, const Graph& rhs) {
 
 Graph::Graph(Config* config) {
     num_nodes = config->num_nodes;
-    allNodes = new Node[num_nodes];
+    DIMENSION = config->dimensions;
+    nodes = new float*[config->num_nodes];
+    load_nodes(config, nodes);
 }
 
 Graph::~Graph() {
-    delete[] allNodes;
+    for (int i = 0; i < config->num_nodes; ++i) {
+        delete[] nodes[i];
+    }
+    delete[] nodes;
 }
 
-size_t Graph::findNode(const DataNode& val) {
-    for (size_t i = 0; i < num_nodes; i++) {
-        if (allNodes[i].val == val) {
-            return i;
-        }
-    }
-    return num_nodes;
-}
-void Graph::addNode(const DataNode& val, set<size_t>& neighbors, size_t pos) {
+void Graph::addNode(float* val, set<size_t>& neighbors, size_t pos) {
+    nodes[pos] = 
     Node newNode = Node();
     newNode.val = val;
     newNode.outEdge = neighbors;
@@ -179,14 +175,7 @@ void Graph::randomize(int R) {
         setEdge(i, neighbors);
     }
 }
-set<size_t> Graph::getNeighbors(const DataNode& i) {
-    set<size_t> result;
-    size_t thisNode = findNode(i);
-    for (size_t neighbor : allNodes[thisNode].outEdge) {
-        result.insert(neighbor);
-    }
-    return result;
-}
+
 void Graph::clearNeighbors(size_t i) {
     allNodes[i].outEdge = {};
 }
@@ -505,10 +494,10 @@ size_t findStart(Config* config, const Graph& g) {
     return closest;
 }
 
-Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int R) {
-    Graph graph(config);
+Graph Vamana(Config* config, float** nodes, long alpha, int L, int R) {
+    Graph graph(config, nodes);
     cout << "Start of Vamana" << endl;
-    constructGraph(allNodes, graph);
+    constructGraph(nodes, graph);
     randomEdges(graph, R);
     cout << "Random graph: " << endl;
     size_t s = findStart(config, graph);
@@ -516,7 +505,7 @@ Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int 
     for (int i = 0; i < 2; i++) {
         long actual_alpha = (i == 0) ? 1 : alpha;
         vector<size_t> sigma;
-        for (size_t i = 0; i < allNodes.size(); i++) {
+        for (size_t i = 0; i < config->num_nodes; i++) {
             sigma.push_back(i);
         }
         unsigned seed = chrono::system_clock::now().time_since_epoch().count();
@@ -525,9 +514,9 @@ Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int 
         for (size_t i : sigma) {
             if (count % 1000 == 0) cout << "Num of node processed: " << count << endl;
             count++;
-            vector<size_t> result = GreedySearch(graph, s, allNodes[i], L);
+            vector<size_t> result = GreedySearch(graph, s, nodes[i], L);
             RobustPrune(graph, i, result, actual_alpha, R);
-            set<size_t> neighbors = graph.getNeighbors(allNodes[i]);
+            set<size_t> neighbors = graph.mappings[i];
             for (size_t j : neighbors) {
                 set<size_t> unionV = graph.getNode(j).outEdge;
                 vector<size_t> unionVec;
@@ -545,42 +534,5 @@ Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int 
     }
     cout << "End of Vamana" << endl;
     return graph;
-}
-
-void load_fvecs(Config* config, vector<DataNode>& allNodes) {
-    ifstream f(config->load_file, ios::binary | ios::in);
-    if (!f) {
-        cout << "File " << config->load_file << " not found!" << endl;
-        exit(-1);
-    }
-
-    // Read dimension
-    int read_dim;
-    f.read(reinterpret_cast<char*>(&read_dim), 4);
-    if (DIMENSION != read_dim) {
-        cout << "Mismatch between expected and actual dimension: " << DIMENSION << " != " << read_dim << endl;
-        exit(-1);
-    }
-
-    // Check size
-    f.seekg(0, ios::end);
-    if (config->num_nodes > f.tellg() / (DIMENSION * 4 + 4)) {
-        cout << "Requested number of nodes is greater than number in file: "
-            << config->num_nodes << " > " << f.tellg() / (DIMENSION * 4 + 4) << endl;
-        exit(-1);
-    }
-
-    f.seekg(0, ios::beg);
-    for (int i = 0; i < config->num_nodes; i++) {
-        // Skip dimension size
-        f.seekg(4, ios::cur);
-
-        // Read point
-        double* coord = new double[DIMENSION];
-        f.read(reinterpret_cast<char*>(coord), DIMENSION * 4);
-        DataNode data = DataNode(coord);
-        allNodes.push_back(data);
-    }
-    f.close();
 }
 

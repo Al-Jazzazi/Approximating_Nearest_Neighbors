@@ -7,40 +7,41 @@
 #include <string>
 #include "../config.h"
 
-class DataNode {
-    friend std::ostream& operator<<(std::ostream& os, const DataNode& rhs);
-    friend bool operator==(const DataNode& lhs, const DataNode& rhs);
-public:
-    size_t dimension;
-    double* coordinates;
-    std::string word;
+// class DataNode {
+//     friend std::ostream& operator<<(std::ostream& os, const DataNode& rhs);
+//     friend bool operator==(const DataNode& lhs, const DataNode& rhs);
+// public:
+//     size_t dimension;
+//     double* coordinates;
+//     std::string word;
 
-    DataNode();
-    DataNode(double* coord);
-    long long int findDistanceAVX(const DataNode& other) const;
-    double findDistance(const DataNode& other) const;
-    bool compare(double* coord) const;
-    void addCoord(double* coord) const;
-    void setWord(const std::string& theWord);
-};
+//     DataNode();
+//     DataNode(double* coord);
+//     long long int findDistanceAVX(const DataNode& other) const;
+//     double findDistance(const DataNode& other) const;
+//     bool compare(double* coord) const;
+//     void addCoord(double* coord) const;
+//     void setWord(const std::string& theWord);
+// };
 
-struct Node {
-    DataNode val;
-    std::set<size_t> outEdge;
-};
+// struct Node {
+//     DataNode val;
+//     std::set<size_t> outEdge;
+// };
 
 class Graph {
     friend std::ostream& operator<<(std::ostream& os, const Graph& rhs);
 public:
-    Node* allNodes;
+    // Node* allNodes;
+    float** nodes;
+    std::vector<std::set<size_t>> mappings;
     int num_nodes;
+    int DIMENSION;
 
-    Graph(Config* config);
+    Graph(Config* config, float** nodes);
     ~Graph();
-    size_t findNode(const DataNode& val);
     void addNode(const DataNode& val, std::set<size_t>& neighbors, size_t pos);
     void randomize(int R);
-    std::set<size_t> getNeighbors(const DataNode& i);
     void clearNeighbors(size_t i);
     double findDistance(size_t i, const DataNode& query) const;
     Node getNode(size_t i) const;
@@ -56,7 +57,7 @@ void constructGraph(std::vector<DataNode>& allNodes, Graph& graph);
 void randomEdges(Graph& graph, int R);
 std::vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L);
 void RobustPrune(Graph& graph, size_t point, std::vector<size_t>& candidates, long threshold, int R);
-Graph Vamana(Config* config, std::vector<DataNode>& allNodes, long alpha, int L, int R);
+Graph Vamana(Config* config, float** nodes, long alpha, int L, int R);
 void load_fvecs(Config* config, std::vector<DataNode>& allNodes);
 size_t findStart(Config* config, const Graph& g);
 template<typename T>
