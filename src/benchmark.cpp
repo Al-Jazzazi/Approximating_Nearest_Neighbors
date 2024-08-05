@@ -158,6 +158,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             hnsw->total_path_size = 0;
         }
 
+        int median_comps_layer0 = 0;
         int similar = 0;
         float total_ndcg = 0;
         vector<pair<int, int>> nn_calculations;
@@ -184,6 +185,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
             vector<Edge*> path;
+            vector<long long int> dist_comps_per_q_vec;
+
             for (int i = 0; i < config->num_queries; ++i) {
                 hnsw->cur_groundtruth = actual_neighbors[i];
                 hnsw->layer0_dist_comps_per_q = 0;
@@ -191,6 +194,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
                 if (config->export_calcs_per_query) {
                     ++counts_calcs[std::min(19, hnsw->layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
+                }
+                if (config->export_median_calcs) {
+                    dist_comps_per_q_vec.push_back(hnsw->layer0_dist_comps_per_q);
                 }
                 if (config->print_neighbor_percent) {
                     for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
@@ -209,6 +215,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             if (config->print_path_size) {
                 cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
                 hnsw->total_path_size = 0;
+            }
+            if (config->export_median_calcs) {
+                std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
+                median_comps_layer0 = dist_comps_per_q_vec[dist_comps_per_q_vec.size() / 2];
             }
             if (config->export_calcs_per_query) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
@@ -284,25 +294,25 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         double average_ndcg = (double) total_ndcg / config->num_queries;
         cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
 
-        if (config->export_benchmark ) {
-            std::string average_cc_string = config->export_clustering_coefficient ? std::to_string(hnsw->calculate_average_clustering_coefficient()) + ", " : "";
-            std::string global_cc_string = config->export_clustering_coefficient ? std::to_string(hnsw->calculate_global_clustering_coefficient()) + ", " : "";
+        if (config->export_benchmark) {
+            std::string dist_comp_layer0_string = config->export_median_calcs ? std::to_string(median_comps_layer0) : std::to_string(search_dist_comp / config->num_queries);
             std::string line = std::to_string(parameter) + ", " 
-                     + std::to_string(search_dist_comp / config->num_queries) + ", "
+                     + dist_comp_layer0_string + ", "
                      + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
-
                      + std::to_string(search_duration / config->num_queries) + ", "
                      + std::to_string(average_ndcg) + ", "
                      + std::to_string(candidates_popped / config->num_queries) + ", "
-                     //+ std::to_string(candidates_size)+ "---" + std::to_string(candidates_without_if) 
-                     + std::to_string(candidates_size/(float)candidates_without_if) + ", "
-                     + average_cc_string
-                     + global_cc_string;
+                     + std::to_string(candidates_size / static_cast<float>(candidates_without_if)) + ", ";
+            if (config->export_clustering_coefficient) {
+                line += std::to_string(hnsw->calculate_average_clustering_coefficient()) + ", ";
+                line += std::to_string(hnsw->calculate_global_clustering_coefficient()) + ", ";
+            }
             if (config->use_hybrid_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-                line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", " + std::to_string(termination_alpha);
+                line += std::to_string(hnsw->num_distance_termination ) + "---" + std::to_string(hnsw->num_original_termination) + ", ";
+                line += std::to_string(termination_alpha) + ", ";
             }
             lines.push_back(line);
         }

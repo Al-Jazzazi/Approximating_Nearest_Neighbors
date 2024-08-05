@@ -18,8 +18,8 @@ public:
     std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 10000;
-    int num_queries = 1000;
+    int num_nodes = 1000000;
+    int num_queries = 10000;
     int num_training = 100000;
     int num_training_generated = 1000000;  // Used in generate_training.cpp
 
@@ -60,9 +60,11 @@ public:
     const bool use_calculation_oracle = false;
     int calculations_per_query = 200;  // Only used if use_calculation_termination = true
     int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
-    float termination_alpha = 0.5;  // Only used if use_distance_termination = true
+    float termination_alpha = 0.4;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;
     float efs_break = 1.5;
+
+    // Beam-Width to Alpha Conversions
     const std::map<std::string, std::pair<float, float>> bw = {
         {"deep", {0.197, -300.85}},
         {"deep96", {0.225, -319.3}},
@@ -142,6 +144,7 @@ public:
 
     // Debugging Flags
     const bool export_benchmark = true;
+    const bool export_median_calcs = false;
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
