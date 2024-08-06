@@ -74,12 +74,9 @@ bool operator==(const DataNode& lhs, const DataNode& rhs) {
 }
 
 DataNode::DataNode() {}
-DataNode::DataNode(double* coord) {
+DataNode::DataNode(float* coord) {
     dimension = DIMENSION;
     coordinates = coord;
-}
-void DataNode::setWord(const string& theWord) {
-    word = theWord;
 }
 //void DataNode::sumArraysAVX(int* array1, int* array2, int* result, int size) const {
 ////        cout << "In sumArraysAVX" << endl;
@@ -107,13 +104,13 @@ void DataNode::setWord(const string& theWord) {
 //}
 
 
-double DataNode::findDistance(const DataNode& other) const {
+float DataNode::findDistance(const DataNode& other) const {
     distanceCalculationCount++;
-    double distance = 0;
+    float distance = 0;
 //    cout << "In findDistance ";
     if (dimension == other.dimension) {
         for (size_t i = 0; i < DIMENSION; i++) {
-            double result = coordinates[i] - other.coordinates[i];
+            float result = coordinates[i] - other.coordinates[i];
             result *= result;
             distance += result;
         }
@@ -121,17 +118,11 @@ double DataNode::findDistance(const DataNode& other) const {
     return sqrt(distance);
 }
 
-bool DataNode::compare(double* coord) const {
+bool DataNode::compare(float* coord) const {
     for (size_t i = 0; i < DIMENSION; i++) {
         if (coord[i] != coordinates[i]) return false;
     }
     return true;
-}
-
-void DataNode::addCoord(double* coord) const {
-    for (size_t i = 0; i < DIMENSION; i++) {
-        coord[i] += coordinates[i];
-    }
 }
 
 Graph::Graph(int total){
@@ -173,7 +164,7 @@ set<size_t> Graph::getNeighbors(const DataNode& i) {
 void Graph::clearNeighbors(size_t i) {
     allNodes[i].outEdge = {};
 }
-double Graph::findDistance(size_t i, const DataNode& query) const {
+float Graph::findDistance(size_t i, const DataNode& query) const {
     //return allNodes[i].val.findDistanceAVX(query);
     return allNodes[i].val.findDistance(query);
 }
@@ -183,7 +174,7 @@ Node Graph::getNode(size_t i) const {
 set<size_t> Graph::getNodeNeighbor(size_t i) const {
     return allNodes[i].outEdge;
 }
-void Graph::setEdge(size_t i, set<size_t> edges) {
+void Graph::setEdge(size_t i, set<size_t>& edges) {
     Node newNode = Node();
     newNode.val = allNodes[i].val;
     newNode.outEdge = edges;
@@ -199,7 +190,7 @@ void Graph::display() const {
     }
 }
 
-void Graph::sanityCheck(Config* config, vector<vector<size_t>> allResults) const {
+void Graph::sanityCheck(Config* config, vector<vector<size_t>>& allResults) const {
     // vector<set<size_t>> gives all NNs
     fstream groundTruth;
     groundTruth.open(config->groundtruth_file);
@@ -236,11 +227,11 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
     DataNode* queries = new DataNode[QUERY_TOTAL];
-    double each;
+    float each;
     for (size_t j = 0; j < QUERY_TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
-        double* coord = new double[DIMENSION];
+        float* coord = new float[DIMENSION];
         for (size_t i = 0; i < DIMENSION; i++) {
             f >> each;
             coord[i] = each;
@@ -282,9 +273,9 @@ void Graph::queryTest(size_t start) {
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
         // cout << "Duration of GreedySearch: "<< duration.count()/1000000 << " second(s)" << endl;
         size_t closestNode = 0;
-        double shortestDistance = findDistance(0, dataNode);
+        float shortestDistance = findDistance(0, dataNode);
         for (size_t i = 0; i < TOTAL; i++) {
-            double distance = findDistance(i, dataNode);
+            float distance = findDistance(i, dataNode);
             if (distance < shortestDistance) {
                 closestNode = i;
                 shortestDistance = distance;
@@ -303,11 +294,11 @@ void Graph::queryBruteForce(Config* config, size_t start){
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
     DataNode* queries = new DataNode[QUERY_TOTAL];
-    double each;
+    float each;
     for (size_t j = 0; j < QUERY_TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
-        double* coord = new double[DIMENSION];
+        float* coord = new float[DIMENSION];
         for (size_t i = 0; i < DIMENSION; i++) {
             f >> each;
             coord[i] = each;
@@ -329,9 +320,9 @@ void Graph::queryBruteForce(Config* config, size_t start){
         }
         DataNode query = queries[j];
         size_t closest = 0;
-        double closestDist = findDistance(closest, query);
+        float closestDist = findDistance(closest, query);
         for (size_t k = 0; k < TOTAL; k++) {
-            double newDist = findDistance(k, query);
+            float newDist = findDistance(k, query);
             if (newDist < closestDist) {
                 closest = k;
                 closestDist = newDist;
@@ -357,33 +348,6 @@ void constructGraph(vector<DataNode>& allNodes, Graph& graph) {
     }
 }
 
-void randomEdges(Graph& graph, int R) {
-    cout << "Randomizing edges" << endl;
-    graph.randomize(R);
-    cout << "Randomized edges" << endl;
-}
-
-template<typename T>
-bool findInSet(const set<T>& set, T target) {
-    for (T i : set) {
-        if (i == target) {
-            return true;
-        }
-    }
-    return false;
-}
-
-template<typename Y>
-set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo) {
-    set<Y> diff;
-    for (Y i : setOne) {
-        if (!findInSet(setTwo, i)) {
-            diff.insert(i);
-        }
-    }
-    return diff;
-}
-
 vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L) {
 
 /// L, V, diff between L and V
@@ -392,20 +356,20 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
 /// diff -> priority queue with distance and index -> 
     
     vector<size_t> result;
-    priority_queue<tuple<double, size_t>> List; // max priority queue
+    priority_queue<tuple<float, size_t>> List; // max priority queue
     set<size_t> ListSet = {};
-    double distance = graph.findDistance(start, query);
+    float distance = graph.findDistance(start, query);
     List.push({distance, start}); // L <- {s}
     ListSet.insert(start);
     vector<size_t> Visited = {};
-    priority_queue<tuple<double, size_t>> diff; // min priority queue
+    priority_queue<tuple<float, size_t>> diff; // min priority queue
     diff.push({-1 * distance, start});
     while (diff.size() != 0) {
-        tuple<double, size_t> top = diff.top(); // get the best candidate
+        tuple<float, size_t> top = diff.top(); // get the best candidate
         Visited.push_back(get<1>(top));
         for (size_t j : graph.getNodeNeighbor(get<1>(top))) {
-            double dist = graph.findDistance(j, query);
-            tuple<double, size_t> newNode = {dist, j};
+            float dist = graph.findDistance(j, query);
+            tuple<float, size_t> newNode = {dist, j};
             bool inserted = false;
             for (size_t i : ListSet) {
                 if (i == j) {inserted = true;}
@@ -414,10 +378,10 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
             ListSet.insert(j);
         }
         while (List.size() > L) List.pop();
-        priority_queue<tuple<double, size_t>> copy = List;
+        priority_queue<tuple<float, size_t>> copy = List;
         diff = {};
         while (copy.size() != 0) {
-            tuple<double, size_t> next = copy.top();
+            tuple<float, size_t> next = copy.top();
             copy.pop();
             bool exists = false;
             for (size_t k : Visited) {
@@ -480,9 +444,12 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
 }
 
 size_t findStart(const Graph& g) {
-    double* coord = new double[DIMENSION];
+    float* coord = new float[DIMENSION];
     for (size_t j = 0; j < TOTAL; j++) {
-        g.getNode(j).val.addCoord(coord);
+        float* coordinates = g.getNode(j).val.coordinates;
+        for (size_t i = 0; i < DIMENSION; i++) {
+            coord[i] += coordinates[i];
+        }
     }
     for (size_t i = 0; i < DIMENSION; i++) {
         coord[i] /= TOTAL;
@@ -504,7 +471,9 @@ Graph Vamana(vector<DataNode>& allNodes, long alpha, int L, int R) {
     Graph graph(TOTAL);
     cout << "Start of Vamana" << endl;
     constructGraph(allNodes, graph);
-    randomEdges(graph, R);
+    cout << "Randomizing edges" << endl;
+    graph.randomize(R);
+    cout << "Randomized edges" << endl;
     cout << "Random graph: " << endl;
 //    graph.display();
     size_t s = findStart(graph);
@@ -515,7 +484,7 @@ Graph Vamana(vector<DataNode>& allNodes, long alpha, int L, int R) {
     }
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
     shuffle(sigma.begin(), sigma.end(), default_random_engine(seed));
-    size_t count = 0;
+    size_t count = 1;
     for (int j = 0; j < 2; j++) {
         int actual_alpha = j == 0 ? 1 : alpha;
         for (size_t i : sigma) {
@@ -548,13 +517,13 @@ void getNodes(vector<DataNode>& allNodes, const string& fileName, size_t dimensi
     fstream f;
     f.open(fileName);
     if (!f) {cout << "Base file not open" << endl;}
-    double each;
+    float each;
 
     f.seekg(0, ios::beg);
     for (size_t j = 0; j < TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
-        double* coord = new double[DIMENSION];
+        float* coord = new float[DIMENSION];
         f.seekg(4, ios::cur);
         f.read(reinterpret_cast<char*>(coord), DIMENSION * 4);
         DataNode data = DataNode(coord);
@@ -568,19 +537,18 @@ void getNodesGlove(vector<DataNode>& allNodes, const string& fileName, size_t di
     fstream f;
     f.open(fileName);
     if (!f) {cout << "Base file not open" << endl;}
-    double each;
+    float each;
     for (size_t j = 0; j < TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
         string str;
         f >> str; 
-        double* coord = new double[DIMENSION];
+        float* coord = new float[DIMENSION];
         for (size_t i = 0; i < DIMENSION; i++) {
             f >> each;
             coord[i] = each;
         }
         DataNode data = DataNode(coord);
-        data.setWord(str);
         allNodes.push_back(data);
     }
     cout << "End of get nodes" << endl;
