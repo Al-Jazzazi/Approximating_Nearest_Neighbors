@@ -5,9 +5,7 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
-#include <thread>
 #include <queue>
-#include <immintrin.h>
 #include "vamana.h"
 
 using namespace std;
@@ -21,6 +19,8 @@ using namespace std;
 /// try different / larger dataset
 
 int distanceCalculationCount = 0;
+int TOTAL = 10000;
+int QUERY_TOTAL = 1000;
 int alpha = 1.2;
 int K = 30; // Num of NNs when building Vamana graph
 int K_QUERY = 100; // Num of NNs found for each query
@@ -29,32 +29,32 @@ int R = 50; // Max outedge
 int L = 100; // beam search width
 int L_QUERY = 100;
 size_t DIMENSION = 128;
+string FILENAME = "./exports/sift/sift_base.fvecs";
+string QUERY_FILE = "./exports/sift/sift_query.fvecs";
+string GROUND_TRUTH = "./exports/sift/sift_groundtruth.ivecs";
 
 int main() {
-    // Construct Vamana index
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
     vector<DataNode> allNodes = {};
-    load_fvecs(config, allNodes);
-    Graph G = Vamana(config, allNodes, alpha, K, R);
+//    getNodes(allNodes, FILENAME, DIMENSION);
+    getNodesGlove(allNodes, config->load_file, DIMENSION);
+    Graph G = Vamana(allNodes, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
-    // Search queries
-    size_t entry = findStart(config, G);
-    G.queryTest(entry);
+    // G.display();
+    size_t s = findStart(G);
+    G.queryTest(s);
     start = std::chrono::high_resolution_clock::now();
+    G.queryBruteForce(config, s);
     distanceCalculationCount = 0;
-    vector<vector<size_t>> allResults = G.query(config, entry);
+    vector<vector<size_t>> allResults = G.query(config, s);
     stop = std::chrono::high_resolution_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // G.sanityCheck(config->groundtruth_file, allResults);
-    cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
-    cout << "Duration of Each Query: "<< duration2.count()/1000/config->num_queries << " millisecond(s)"<< endl;
-    cout << "Number of distance calculation per query: " << distanceCalculationCount/config->num_queries << endl;
-
-    // Clean up
-    delete config;
+ //    G.sanityCheck(config, allResults);
+    cout << "Duration of Vamana: "<< duration.count()/1000000 << " second(s)" << endl;
+    cout << "Duration of Each Query: "<< duration2.count()/1000000/QUERY_TOTAL << " second(s)"<< endl;
+    cout << "Number of distance calculation per query: " << distanceCalculationCount/QUERY_TOTAL << endl;
 }
 
 ostream& operator<<(ostream& os, const DataNode& rhs) {
@@ -134,33 +134,16 @@ void DataNode::addCoord(double* coord) const {
     }
 }
 
-ostream& operator<<(ostream& os, const Graph& rhs) {
-    for (size_t i = 0; i < rhs.num_nodes; i++) {
-        cout << i << " : ";
-        for (size_t neighbor : rhs.allNodes[i].outEdge) {
-            cout << neighbor << " ";
-        }
-        cout << endl;
-    }
-    return os;
+Graph::Graph(int total){
+    allNodes = new Node[total];
 }
-
-Graph::Graph(Config* config) {
-    num_nodes = config->num_nodes;
-    allNodes = new Node[num_nodes];
-}
-
-Graph::~Graph() {
-    delete[] allNodes;
-}
-
 size_t Graph::findNode(const DataNode& val) {
-    for (size_t i = 0; i < num_nodes; i++) {
+    for (size_t i = 0; i < TOTAL; i++) {
         if (allNodes[i].val == val) {
             return i;
         }
     }
-    return num_nodes;
+    return TOTAL;
 }
 void Graph::addNode(const DataNode& val, set<size_t>& neighbors, size_t pos) {
     Node newNode = Node();
@@ -169,11 +152,11 @@ void Graph::addNode(const DataNode& val, set<size_t>& neighbors, size_t pos) {
     allNodes[pos] = newNode;
 }
 void Graph::randomize(int R) {
-    for (size_t i = 0; i < num_nodes; i++) {
+    for (size_t i = 0; i < TOTAL; i++) {
         set<size_t> neighbors = {};
         for (size_t j = 0; j < R; j++) {
-            size_t random = rand() % num_nodes; // find a random node
-            while (random == i) random = rand() % num_nodes;
+            size_t random = rand() % TOTAL; // find a random node
+            while (random == i) random = rand() % TOTAL;
             neighbors.insert(random);
         }
         setEdge(i, neighbors);
@@ -206,8 +189,17 @@ void Graph::setEdge(size_t i, set<size_t> edges) {
     newNode.outEdge = edges;
     allNodes[i] = newNode;
 }
+void Graph::display() const {
+    for (size_t i = 0; i < TOTAL; i++) {
+        cout << i << " : ";
+        for (size_t neighbor : allNodes[i].outEdge) {
+            cout << neighbor << ' ';
+        }
+        cout << endl;
+    }
+}
 
-void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults) const {
+void Graph::sanityCheck(Config* config, vector<vector<size_t>> allResults) const {
     // vector<set<size_t>> gives all NNs
     fstream groundTruth;
     groundTruth.open(config->groundtruth_file);
@@ -215,7 +207,7 @@ void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults
     int each;
     int totalCorrect = 0;
     float result;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    for (size_t j = 0; j < QUERY_TOTAL; j++) {
         int correct = 0;
         vector<size_t> allTruths = {};
 //        cout << "Ground truths: ";
@@ -235,7 +227,7 @@ void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults
         totalCorrect += result;
         cout << "Found " << result << "% among " << K_QUERY << " closest neighbors" << endl;
     }
-    result = totalCorrect / config->num_queries;
+    result = totalCorrect / QUERY_TOTAL;
     cout << "Average correctness: " << result << '%' << endl;
 }
 
@@ -243,9 +235,9 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
     fstream f;
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
-    DataNode* queries = new DataNode[config->num_queries];
+    DataNode* queries = new DataNode[QUERY_TOTAL];
     double each;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    for (size_t j = 0; j < QUERY_TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
         double* coord = new double[DIMENSION];
@@ -258,13 +250,14 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
     }
     cout << "All queries read" << endl;
     vector<vector<size_t>> allResults = {};
-    for (size_t k = 0; k < config->num_queries; k++) {
-        if (k % 1000 == 0) cout << "Processing " << k << endl;
+    for (size_t k = 0; k < QUERY_TOTAL; k++) {
+        // cout << "Processing " << k+1 << endl;
         DataNode thisQuery = queries[k];
         auto startTime = std::chrono::high_resolution_clock::now();
         vector<size_t> result = GreedySearch(*this, start, thisQuery, L_QUERY);
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        // cout << "Duration of GreedySearch: "<< duration.count()/1000000 << " second(s)" << endl;
         allResults.push_back(result);
     }
     cout << "All queries processed" << endl;
@@ -276,8 +269,8 @@ void Graph::queryTest(size_t start) {
     vector<Node*> queryNodes = {};
     int queryCount = 0;
     size_t correct = 0;
-    while(queryCount < 100) {
-        size_t random = rand() % num_nodes;
+    while(queryCount < 1000) {
+        size_t random = rand() % TOTAL;
         queryNodes.push_back(&allNodes[random]);
         queryCount++;
     }
@@ -287,9 +280,10 @@ void Graph::queryTest(size_t start) {
         vector<size_t> result = GreedySearch(*this, start, dataNode, L_QUERY);
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        // cout << "Duration of GreedySearch: "<< duration.count()/1000000 << " second(s)" << endl;
         size_t closestNode = 0;
         double shortestDistance = findDistance(0, dataNode);
-        for (size_t i = 0; i < num_nodes; i++) {
+        for (size_t i = 0; i < TOTAL; i++) {
             double distance = findDistance(i, dataNode);
             if (distance < shortestDistance) {
                 closestNode = i;
@@ -304,13 +298,13 @@ void Graph::queryTest(size_t start) {
     cout << "Total correct number: " << correct << endl;
 }
 
-void Graph::queryBruteForce(Config* config, size_t start) {
+void Graph::queryBruteForce(Config* config, size_t start){
     fstream f;
     f.open(config->query_file);
     if (!f) {cout << "Query file not open" << endl;}
-    DataNode* queries = new DataNode[config->num_queries];
+    DataNode* queries = new DataNode[QUERY_TOTAL];
     double each;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    for (size_t j = 0; j < QUERY_TOTAL; j++) {
         //void* ptr = aligned_alloc(32, DIMENSION*8);
         //float* coord = new(ptr) float[DIMENSION];
         double* coord = new double[DIMENSION];
@@ -327,7 +321,7 @@ void Graph::queryBruteForce(Config* config, size_t start) {
     if (!groundTruth) {cout << "Ground truth file not open" << endl;}
     int totalCorrect = 0;
     float result;
-    for (size_t j = 0; j < config->num_queries; j++) {
+    for (size_t j = 0; j < QUERY_TOTAL; j++) {
         vector<size_t> allTruths = {};
         for (size_t i = 0; i < K_TRUTH; i++) {
             groundTruth >> each;
@@ -336,7 +330,7 @@ void Graph::queryBruteForce(Config* config, size_t start) {
         DataNode query = queries[j];
         size_t closest = 0;
         double closestDist = findDistance(closest, query);
-        for (size_t k = 0; k < num_nodes; k++) {
+        for (size_t k = 0; k < TOTAL; k++) {
             double newDist = findDistance(k, query);
             if (newDist < closestDist) {
                 closest = k;
@@ -349,7 +343,7 @@ void Graph::queryBruteForce(Config* config, size_t start) {
             cout << allTruths[0] << ' ' << closest << endl;
         }
     }
-    result = totalCorrect;
+    result = totalCorrect * 100 / QUERY_TOTAL;
     cout << "Average correctness: " << result << '%' << endl;
 }
 
@@ -390,11 +384,13 @@ set<Y> setDiff(const set<Y>& setOne, const set<Y>& setTwo) {
     return diff;
 }
 
+vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L) {
+
 /// L, V, diff between L and V
 /// L -> priority queue with distance and index
 /// V -> vector with index
 /// diff -> priority queue with distance and index -> 
-vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, size_t L) {    
+    
     vector<size_t> result;
     priority_queue<tuple<double, size_t>> List; // max priority queue
     set<size_t> ListSet = {};
@@ -438,7 +434,6 @@ vector<size_t> GreedySearch(Graph& graph, size_t start, const DataNode& query, s
 }
 
 void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R) {
-//    cout << "In RobustPrune, point " << point << endl;
     set<size_t> neighbors = graph.getNodeNeighbor(point);
     for (size_t i : neighbors) {
         candidates.push_back(i);
@@ -484,18 +479,18 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
     }
 }
 
-size_t findStart(Config* config, const Graph& g) {
+size_t findStart(const Graph& g) {
     double* coord = new double[DIMENSION];
-    for (size_t j = 0; j < g.num_nodes; j++) {
+    for (size_t j = 0; j < TOTAL; j++) {
         g.getNode(j).val.addCoord(coord);
     }
     for (size_t i = 0; i < DIMENSION; i++) {
-        coord[i] /= g.num_nodes;
+        coord[i] /= TOTAL;
     }
     DataNode center = DataNode(coord);
     size_t closest = 0;
     float closest_dist = MAXFLOAT;
-    for (size_t m = 0; m < g.num_nodes; m++) {
+    for (size_t m = 0; m < TOTAL; m++) {
         float this_dist = g.findDistance(m, center);
         if (this_dist < closest_dist) {
             closest_dist = this_dist;
@@ -505,23 +500,24 @@ size_t findStart(Config* config, const Graph& g) {
     return closest;
 }
 
-Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int R) {
-    Graph graph(config);
+Graph Vamana(vector<DataNode>& allNodes, long alpha, int L, int R) {
+    Graph graph(TOTAL);
     cout << "Start of Vamana" << endl;
     constructGraph(allNodes, graph);
     randomEdges(graph, R);
     cout << "Random graph: " << endl;
-    size_t s = findStart(config, graph);
+//    graph.display();
+    size_t s = findStart(graph);
     cout << "The centroid is #" << s << endl;
-    for (int i = 0; i < 2; i++) {
-        long actual_alpha = (i == 0) ? 1 : alpha;
-        vector<size_t> sigma;
-        for (size_t i = 0; i < allNodes.size(); i++) {
-            sigma.push_back(i);
-        }
-        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-        shuffle(sigma.begin(), sigma.end(), default_random_engine(seed));
-        size_t count = 0;
+    vector<size_t> sigma;
+    for (size_t i = 0; i < allNodes.size(); i++) {
+        sigma.push_back(i);
+    }
+    unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+    shuffle(sigma.begin(), sigma.end(), default_random_engine(seed));
+    size_t count = 0;
+    for (int j = 0; j < 2; j++) {
+        int actual_alpha = j == 0 ? 1 : alpha;
         for (size_t i : sigma) {
             if (count % 1000 == 0) cout << "Num of node processed: " << count << endl;
             count++;
@@ -547,40 +543,45 @@ Graph Vamana(Config* config, vector<DataNode>& allNodes, long alpha, int L, int 
     return graph;
 }
 
-void load_fvecs(Config* config, vector<DataNode>& allNodes) {
-    ifstream f(config->load_file, ios::binary | ios::in);
-    if (!f) {
-        cout << "File " << config->load_file << " not found!" << endl;
-        exit(-1);
-    }
-
-    // Read dimension
-    int read_dim;
-    f.read(reinterpret_cast<char*>(&read_dim), 4);
-    if (DIMENSION != read_dim) {
-        cout << "Mismatch between expected and actual dimension: " << DIMENSION << " != " << read_dim << endl;
-        exit(-1);
-    }
-
-    // Check size
-    f.seekg(0, ios::end);
-    if (config->num_nodes > f.tellg() / (DIMENSION * 4 + 4)) {
-        cout << "Requested number of nodes is greater than number in file: "
-            << config->num_nodes << " > " << f.tellg() / (DIMENSION * 4 + 4) << endl;
-        exit(-1);
-    }
+void getNodes(vector<DataNode>& allNodes, const string& fileName, size_t dimension) {
+    cout << "Getting nodes" << endl;
+    fstream f;
+    f.open(fileName);
+    if (!f) {cout << "Base file not open" << endl;}
+    double each;
 
     f.seekg(0, ios::beg);
-    for (int i = 0; i < config->num_nodes; i++) {
-        // Skip dimension size
-        f.seekg(4, ios::cur);
-
-        // Read point
+    for (size_t j = 0; j < TOTAL; j++) {
+        //void* ptr = aligned_alloc(32, DIMENSION*8);
+        //float* coord = new(ptr) float[DIMENSION];
         double* coord = new double[DIMENSION];
+        f.seekg(4, ios::cur);
         f.read(reinterpret_cast<char*>(coord), DIMENSION * 4);
         DataNode data = DataNode(coord);
         allNodes.push_back(data);
     }
-    f.close();
+    cout << "End of get nodes" << endl;
 }
 
+void getNodesGlove(vector<DataNode>& allNodes, const string& fileName, size_t dimension) {
+    cout << "Getting nodes" << endl;
+    fstream f;
+    f.open(fileName);
+    if (!f) {cout << "Base file not open" << endl;}
+    double each;
+    for (size_t j = 0; j < TOTAL; j++) {
+        //void* ptr = aligned_alloc(32, DIMENSION*8);
+        //float* coord = new(ptr) float[DIMENSION];
+        string str;
+        f >> str; 
+        double* coord = new double[DIMENSION];
+        for (size_t i = 0; i < DIMENSION; i++) {
+            f >> each;
+            coord[i] = each;
+        }
+        DataNode data = DataNode(coord);
+        data.setWord(str);
+        allNodes.push_back(data);
+    }
+    cout << "End of get nodes" << endl;
+}
