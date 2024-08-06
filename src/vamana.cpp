@@ -35,7 +35,6 @@ int main() {
     // Construct Vamana index
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
-    float** nodes; 
     Graph G = Vamana(config, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -46,13 +45,14 @@ int main() {
     start = std::chrono::high_resolution_clock::now();
     distanceCalculationCount = 0;
     vector<vector<size_t>> allResults = G.query(config, entry);
+    cout << "sizeall: " << allResults.size() << ", size 0 " << allResults[0].size() <<endl; 
     stop = std::chrono::high_resolution_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     // G.sanityCheck(config->groundtruth_file, allResults);
     std::cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/config->num_queries << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/config->num_queries << endl;
-
+   // print_100_nodes(G, config);
     // Clean up
     delete config;
 }
@@ -199,6 +199,7 @@ void Graph::from_files(Config* config, bool is_benchmarking) {
     }
 }
 
+
 void Graph::randomize(int R) {
     for (size_t i = 0; i < num_nodes; i++) {
         set<size_t> neighbors = {};
@@ -289,7 +290,7 @@ void Graph::queryTest(size_t start) {
     size_t correct = 0;
     while(queryCount < 100) {
         size_t random = rand() % num_nodes;
-        queryNodes.push_back(nodes[random]);
+        queryNodes.push_back(nodes[random]); //queryNodes.push_back(&allNodes[random]);
         queryCount++;
     }
     for (float* each : queryNodes) {
@@ -377,6 +378,7 @@ vector<size_t> GreedySearch(Graph& graph, size_t start,  float* query, size_t L)
     vector<size_t> Visited = {};
     priority_queue<tuple<float, size_t>> diff; // min priority queue
     diff.push({-1 * distance, start});
+
     while (diff.size() != 0) {
         tuple<float, size_t> top = diff.top(); // get the best candidate
         Visited.push_back(get<1>(top));
@@ -384,13 +386,15 @@ vector<size_t> GreedySearch(Graph& graph, size_t start,  float* query, size_t L)
             float dist = graph.findDistance(j, query);
             tuple<float, size_t> newNode = {dist, j};
             bool inserted = false;
-            for (size_t i : ListSet) {
-                if (i == j) {inserted = true;}
-            }
+           
+            if (ListSet.find(j) != ListSet.end()) {inserted = true;}
+            
             if (!inserted) List.push(newNode);
             ListSet.insert(j);
         }
+
         while (List.size() > L) List.pop();
+
         priority_queue<tuple<float, size_t>> copy = List;
         diff = {};
         while (copy.size() != 0) {
@@ -459,6 +463,9 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
 
 size_t findStart(Config* config, const Graph& g) {
     float* center = new float[g.DIMENSION];
+    for(size_t k = 0; k < g.DIMENSION; k++){
+        center[k] = 0; 
+    }
     for (size_t j = 0; j < g.num_nodes; j++) {
         for (size_t k = 0; k < g.DIMENSION; k++) {
             center[k] += g.nodes[j][k];
@@ -476,6 +483,7 @@ size_t findStart(Config* config, const Graph& g) {
             closest = m;
         }
     }
+   // closest = 4076;
     return closest;
 }
 
@@ -522,3 +530,14 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
     return graph;
 }
 
+void print_100_nodes(const Graph& g, Config* config){
+    
+    for(int i=0; i<config->num_nodes; i++){
+        if(i ==100 ) break;
+        cout << "i: " << i << endl;
+        for(int j =0; j< g.DIMENSION; j++){
+            cout << ", " << g.nodes[i][j]; 
+        }
+        cout <<endl;
+    }
+}

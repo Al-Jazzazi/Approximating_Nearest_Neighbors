@@ -51,6 +51,7 @@ public:
     void queryBruteForce(Config* config, size_t start);
     void sanityCheck(Config* config, const std::vector<std::vector<size_t>>& allResults) const;
     void queryTest(size_t start);
+   
 };
 
 void randomEdges(Graph& graph, int R);
@@ -58,5 +59,6 @@ std::vector<size_t> GreedySearch(Graph& graph, size_t start, float* query, size_
 void RobustPrune(Graph& graph, size_t point, std::vector<size_t>& candidates, long threshold, int R);
 Graph Vamana(Config* config, long alpha, int L, int R);
 size_t findStart(Config* config, const Graph& g);
+void print_100_nodes(const Graph& g, Config* config);
 
 #endif
