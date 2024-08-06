@@ -37,8 +37,8 @@ int main() {
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
     vector<DataNode> allNodes = {};
-//    getNodes(allNodes, FILENAME, DIMENSION);
-    getNodesGlove(allNodes, config->load_file, DIMENSION);
+   getNodes(allNodes, FILENAME, DIMENSION);
+    // getNodesGlove(allNodes, config->load_file, DIMENSION);
     Graph G = Vamana(allNodes, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -46,7 +46,7 @@ int main() {
     size_t s = findStart(G);
     G.queryTest(s);
     start = std::chrono::high_resolution_clock::now();
-    G.queryBruteForce(config, s);
+    //G.queryBruteForce(config, s);
     distanceCalculationCount = 0;
     vector<vector<size_t>> allResults = G.query(config, s);
     stop = std::chrono::high_resolution_clock::now();
@@ -55,6 +55,7 @@ int main() {
     cout << "Duration of Vamana: "<< duration.count()/1000000 << " second(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000000/QUERY_TOTAL << " second(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/QUERY_TOTAL << endl;
+    //print_100_nodes(G, config);
 }
 
 ostream& operator<<(ostream& os, const DataNode& rhs) {
@@ -552,4 +553,16 @@ void getNodesGlove(vector<DataNode>& allNodes, const string& fileName, size_t di
         allNodes.push_back(data);
     }
     cout << "End of get nodes" << endl;
+}
+
+void print_100_nodes(const Graph& g, Config* config){
+    
+    for(int i=0; i<config->num_nodes; i++){
+        if(i ==100 ) break;
+        cout << "i: " << i << endl;
+        for(int j =0; j< DIMENSION; j++){
+            cout << ", " << g.getNode(i).val.coordinates[j]; 
+        }
+        cout <<endl;
+    }
 }

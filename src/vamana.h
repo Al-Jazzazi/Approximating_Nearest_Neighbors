@@ -56,5 +56,6 @@ Graph Vamana(std::vector<DataNode>& allNodes, long alpha, int L, int R);
 void getNodes(std::vector<DataNode>& allNodes, const std::string& fileName, size_t dimension);
 void getNodesGlove(std::vector<DataNode>& allNodes, const std::string& fileName, size_t dimension);
 size_t findStart(const Graph& g);
+void print_100_nodes(const Graph& g, Config* config);
 
 #endif
