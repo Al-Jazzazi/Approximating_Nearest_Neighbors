@@ -13,22 +13,24 @@
 
 using namespace std;
 
+/* Scores each edge using cost-benefit points and prunes the 'config->final_keep_ratio'
+ * edges with the lowest scores
+ **/
 void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, int num_keep) {
-    // Check how costly and beneficial each edge is
+    // Check how beneficial each edge is
     int total_benefit = 0;
     int total_cost = 0;
     int* total_cost_pointer = &total_cost;
     for (int i = 0; i < config->num_training; i++) {
         pair<int, float*> query = make_pair(i, training[i]);
         vector<Edge*> path;
+        // Search for the query while counting the cost of each edge
         vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, false, true, false, total_cost_pointer);
         for (int j = 0; j < path.size(); j++) {
             path[j]->benefit += 1;
             total_benefit += 1;
         }
     }
-    float average_benefit = static_cast<float>(total_benefit) / edges.size();
-    float average_cost = static_cast<float>(total_cost) / edges.size();
     
     // Initialize exports
     vector<long long> counts_cost;
@@ -41,12 +43,16 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
     if (config->export_cost_benefit_pruned) {
         pruned_file = new ofstream(config->runs_prefix + "cost_benefit_pruned.txt");
     }
-    cout << "Average Benefit: " << average_benefit << " Average Cost: " << average_cost << endl;
 
-    // Mark edges for deletion
+    // Compute average cost and benefit to use as a baseline for score comparisons
+    float average_benefit = static_cast<float>(total_benefit) / edges.size();
+    float average_cost = static_cast<float>(total_cost) / edges.size();
     auto compare = [average_benefit, average_cost](Edge* lhs, Edge* rhs) {
         return (average_benefit + lhs->benefit) / (average_cost + lhs->cost) > (average_benefit + rhs->benefit) / (average_cost + rhs->cost);
     };
+    cout << "Average Benefit: " << average_benefit << " Average Cost: " << average_cost << endl;
+
+    // Mark edges for deletion
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> remaining_edges(compare);
     for (int i = 0; i < edges.size(); i++) {
         counts_cost[std::min(19, edges[i]->cost / config->interval_for_cost_histogram)]++;
@@ -99,13 +105,14 @@ void learn_cost_benefit(Config* config, HNSW* hnsw, vector<Edge*>& edges, float*
  * Note: This will shuffle the training set.
  */
 void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, float** training, ofstream* results_file) {
+    // Initialize parameters
     float temperature = config->initial_temperature;
     float lambda = 0;
     mt19937 gen(config->shuffle_seed);
-
     if (results_file != nullptr) {
         *results_file << "iteration\t# of Weights updated\t# of Edges updated\n"; 
     }
+
     // Run the training loop
     for (int k = 0; k < config->grasp_loops; k++) {
         for (int j = 0; j < config->grasp_subloops; j++) {
@@ -124,10 +131,9 @@ void learn_edge_importance(Config* config, HNSW* hnsw, vector<Edge*>& edges, flo
             temperature = config->initial_temperature * pow(config->decay_factor, k);
             std::shuffle(training, training + config->num_training, gen);
         }
-        //Each loop, generate a new set training sets
+        // Generate a new set of training sets each iteration
         if(config->generate_our_training && config->regenerate_each_iteration){
             load_training(config, hnsw->nodes, training, config->num_training);
-            //cout << "training" << training[10][10] << endl;
         }
     }
 }
@@ -145,8 +151,8 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
     float search_range_min = avg_w - max_min.first;
     float search_range_max = avg_w - max_min.second;
     float mu = binary_search(config, edges, search_range_min, search_range_max, target, temperature);
-    // cout << "Mu: " << mu << " Min: " << max_min.second << " Max: " << max_min.first << " Avg: " << avg_w << endl;
     
+    // Initialize edge distribution vectors
     int* counts_prob = new int[20];
     int* counts_w = new int [20];
     std::fill(counts_prob, counts_prob + 20, 0);
@@ -160,7 +166,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
             edge.weight += mu;
             edge.probability_edge = 1 / (1 + exp(-edge.weight / temperature));
             counts_prob[count_position]++;
-
+            // Update edge distributions
             if(edge.weight < 0) {
                 counts_w[0]++;
             } else {
@@ -194,7 +200,7 @@ void normalize_weights(Config* config, HNSW* hnsw, vector<Edge*>& edges, float l
  * edges and remove the rest of its edges.
  */
 void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep) {
-    // Update probs 
+    // Lower edge probabilities by stinky points
     if(config->use_stinky_points){
         for (auto e: edges){
             e->probability_edge -= config->stinky_value * e->stinky;
@@ -232,7 +238,6 @@ void prune_edges(Config* config, HNSW* hnsw, vector<Edge*>& edges, int num_keep)
 void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighbors, ofstream* results_file) {
     int num_updates = 0;
     int num_of_edges_updated = 0;
- 
     for (int i = 0; i < config->num_training; i++) {
         int similar_nodes = 0;
 
@@ -245,17 +250,18 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         unordered_set<Edge*> sample_path_set(sample_path.begin(), sample_path.end());
         double weight_change = calculate_weight_change(config, original_nearest, sample_nearest, results_file);
 
-        if(config->use_stinky_points){
+        // Add stinky points to each path edge
+        if(config->use_stinky_points) {
             for (int j = 0; j < sample_path.size(); j++) 
                 sample_path[j]->stinky += config->stinky_value;
             for (int j = 0; j < original_path.size(); j++)
                 original_path[j]->stinky += config->stinky_value;
         }
 
-        //Based on what we select to be the value of weight_selection_methon in config, the edges selected to be updated 
-        //will differ 
+        // Update edge weights if the change is non-zero
         if(weight_change != 0) {
             for (int j = 0; j < original_path.size(); j++) {
+                // Select edges according to config->weight_selection_method
                 if ((config->weight_selection_method == 0) ||
                     (config->weight_selection_method == 1 && original_path[j]->ignore) ||
                     (config->weight_selection_method == 2 && sample_path_set.find(original_path[j]) == sample_path_set.end())
@@ -269,21 +275,21 @@ void update_weights(Config* config, HNSW* hnsw, float** training, int num_neighb
         }
     }
 
-    //Creating a histogram the accumlative change in the frequency in which the edges are being updated 
-     if(config->export_histograms){
+    // Create a histogram of the frequency of edge updates
+    if(config->export_histograms){
         int* count_updates = new int [20];
         std::fill(count_updates, count_updates + 20, 0);
-        for(int j = 0; j < config->num_nodes ; j++){
-                for(int k = 0; k < hnsw->mappings[j][0].size(); k++){
+        for (int j = 0; j < config->num_nodes ; j++){
+            for (int k = 0; k < hnsw->mappings[j][0].size(); k++){
                 Edge& edge = hnsw->mappings[j][0][k];
-                if(edge.num_of_updates == 0 ) count_updates[0]++;
-                else {
+                if (edge.num_of_updates == 0 ) {
+                    count_updates[0]++;
+                } else {
                     int count_position = edge.num_of_updates > 18*config->interval_for_num_of_updates_histogram ? 19 : edge.num_of_updates/config->interval_for_num_of_updates_histogram+1;
                     count_updates[count_position]++;
-                }   
-
                 }
             }
+        }
 
         ofstream histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
         for (int i = 0; i < 20; i++) {
@@ -368,8 +374,6 @@ void sample_subgraph(Config* config, vector<Edge*>& edges, float lambda) {
         }
         
     }
-
-   // cout << "Number of edges ignored: " << count << endl;
 }
 
 // Calculate lambda according to a formula
@@ -391,13 +395,6 @@ pair<float,float> find_max_min(Config* config, HNSW* hnsw) {
             
             if(min_w > hnsw->mappings[i][0][k].weight)
                 min_w = hnsw->mappings[i][0][k].weight;
-
-            // Used to check edge probability behaviour at each iteration
-            // if (lowest_percentage > hnsw->mappings[i][0][k].probability_edge)
-            //     lowest_percentage = hnsw->mappings[i][0][k].probability_edge;
-
-            // if(max_probability < hnsw->mappings[i][0][k].probability_edge)
-            //     max_probability = hnsw->mappings[i][0][k].probability_edge;
         }
     }
     if (config->print_weight_updates) {
@@ -429,9 +426,6 @@ float binary_search(Config* config, vector<Edge*>& edges, float left, float righ
          else 
             right = mid; 
         sum_of_probabilities = 0;
-
-        // std::cout << std::setprecision(11);
-        // cout << "left: " << left << " Right " << right << " MID" << mid << endl;
     }
 
     return left + (right - left) / 2;
@@ -512,7 +506,6 @@ void load_training(Config* config, float** nodes, float** training, int num_trai
         for (int j = 0; j < config->dimensions; j++) {
             training[i][j] = round(dis_array[j](gen) * pow(10, config->gen_decimals)) / pow(10, config->gen_decimals);
         }
-
     }
 
     delete[] lower_bound;

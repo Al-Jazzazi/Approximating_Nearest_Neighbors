@@ -2,6 +2,8 @@
 #include <vector>
 #include "hnsw.h"
 
+using namespace std;
+
 int main() {
     // Load config
     Config* config = new Config();
@@ -12,6 +14,7 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, nodes, queries);
 
+    // Find and save actual nearest neighbors
     vector<vector<int>> actual_neighbors;
     knn_search(config, actual_neighbors, nodes, queries);
     save_ivecs(config->groundtruth_file, actual_neighbors);

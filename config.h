@@ -61,8 +61,8 @@ public:
     int calculations_per_query = 200;  // Only used if use_calculation_termination = true
     int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
-    float alpha_break = 1.5;
-    float efs_break = 1.5;
+    float alpha_break = 1.5;  // Only used if use_break = true
+    float efs_break = 1.5;  // Only used if use_break = true
 
     // Beam-Width to Alpha Conversions
     const std::map<std::string, std::pair<float, float>> bw = {
@@ -89,11 +89,11 @@ public:
         {"10 deep96", {0.0199, 0.2438}},
         {"1 deep96", {0.0184, 0.2759}}
     };
-    std::string nm = std::to_string(num_return) + " " + dataset;
+    std::string alpha_key = std::to_string(num_return) + " " + dataset;
     float bw_slope = use_hybrid_termination ? bw.at(dataset).first : 0; 
     float bw_intercept = use_hybrid_termination ? bw.at(dataset).second : 0;
-    float alpha_coefficient = use_hybrid_termination ? alpha.at(nm).first : 0;
-    float alpha_intercept = use_hybrid_termination ? alpha.at(nm).second : 0;
+    float alpha_coefficient = use_hybrid_termination ? alpha.at(alpha_key).first : 0;
+    float alpha_intercept = use_hybrid_termination ? alpha.at(alpha_key).second : 0;
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -127,9 +127,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     std::vector<int> benchmark_ef_search = {};
-    // std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
-    // std::vector<float> benchmark_termination_alpha = {0.35,0.355,0.36,0.365,0.37,0.375,0.38,0.385,0.39,0.4,0.41,0.42,0.425,0.43,0.44,0.45};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
@@ -138,20 +136,19 @@ public:
     std::vector<float> benchmark_stinky_points = {};
     std::vector<int> benchmark_grasp_loops = {};
     std::vector<int> benchmark_grasp_subloops = {};
-    // std::vector<int> benchmark_calculations_per_query = {2000, 5000,7500, 10000,12500,15000,17500, 20000,22500,25000,27500, 30000,32500,35000};
     std::vector<int> benchmark_calculations_per_query = {};
     std::vector<int> benchmark_oracle_termination_total = {};
 
     // Debugging Flags
     const bool export_benchmark = true;
-    const bool export_median_calcs = false;
+    const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;
     const bool export_oracle = false;  // Log distance calcs needed to find exact nearest neighbors
     const bool export_clustering_coefficient = false;
-    const bool export_cost_benefit_pruned = false;
-    const bool export_calcs_per_query = false;  // Log distance calcs used during search
+    const bool export_cost_benefit_pruned = false;  // Log edges pruned by cost-benefit training
+    const bool export_calcs_per_query = false;  // Log distance calcs performed during search
     const bool export_training_queries = false; 
     const bool export_negative_values = false; 
     const bool print_weight_updates = true;
@@ -193,7 +190,7 @@ public:
     const bool benchmark_print_missing = false;
     int debug_query_search_index = -1;
 
-    // Dataset Metrics Parameters
+    // Parameters For dataset_metrics.cpp
     std::string metrics_file = "./runs/dataset_metrics.txt";
     std::string metrics_dataset1_prefix = "./exports/deep/deep_base";
     std::string metrics_dataset2_prefix = "./exports/deep/deep_query";

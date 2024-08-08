@@ -52,7 +52,7 @@ int main() {
     std::cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/config->num_queries << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/config->num_queries << endl;
-   // print_100_nodes(G, config);
+    // print_100_nodes(G, config);
     // Clean up
     delete config;
 }
@@ -232,13 +232,10 @@ void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults
     for (size_t j = 0; j < config->num_queries; j++) {
         int correct = 0;
         vector<size_t> allTruths = {};
-//        cout << "Ground truths: ";
         for (size_t i = 0; i < K_TRUTH; i++) {
             groundTruth >> each;
             allTruths.push_back(each);
-//            cout << each << ' ';
         }
-//        cout << endl;
         vector<size_t> eachResult = {};
         for (int count = 0; count < K_QUERY; count++) {
             for (size_t ea : allResults[j]) {
@@ -260,8 +257,6 @@ vector<vector<size_t>> Graph::query(Config* config, size_t start) {
     float** queries = new float*[config->num_queries];
     double each;
     for (size_t i = 0; i < config->num_queries; i++) {
-        //void* ptr = aligned_alloc(32, DIMENSION*8);
-        //float* coord = new(ptr) float[DIMENSION];
         queries[i] = new float[DIMENSION];
         for (size_t j = 0; j < DIMENSION; j++) {
             f >> each;
@@ -290,7 +285,7 @@ void Graph::queryTest(size_t start) {
     size_t correct = 0;
     while(queryCount < 100) {
         size_t random = rand() % num_nodes;
-        queryNodes.push_back(nodes[random]); //queryNodes.push_back(&allNodes[random]);
+        queryNodes.push_back(nodes[random]);
         queryCount++;
     }
     for (float* each : queryNodes) {
@@ -308,7 +303,6 @@ void Graph::queryTest(size_t start) {
                 shortestDistance = distance;
             }
         }
-        // cout << closestNode << ' ' << result[0] << endl;
         for (auto i : result) {
             if (i == closestNode) correct++;
         }
@@ -323,8 +317,6 @@ void Graph::queryBruteForce(Config* config, size_t start) {
     float** queries = new float*[config->num_queries];
     float each;
     for (size_t i = 0; i < config->num_queries; i++) {
-        //void* ptr = aligned_alloc(32, DIMENSION*8);
-        //float* coord = new(ptr) float[DIMENSION];
         queries[i] = new float[DIMENSION];
         for (size_t j = 0; j < DIMENSION; j++) {
             f >> each;
@@ -415,7 +407,6 @@ vector<size_t> GreedySearch(Graph& graph, size_t start,  float* query, size_t L)
 }
 
 void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long threshold, int R) {
-//    cout << "In RobustPrune, point " << point << endl;
     set<size_t> neighbors = graph.mappings[point];
     for (size_t i : neighbors) {
         candidates.push_back(i);
@@ -483,7 +474,6 @@ size_t findStart(Config* config, const Graph& g) {
             closest = m;
         }
     }
-   // closest = 4076;
     return closest;
 }
 
@@ -531,7 +521,6 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
 }
 
 void print_100_nodes(const Graph& g, Config* config){
-    
     for(int i=0; i<config->num_nodes; i++){
         if(i ==100 ) break;
         cout << "i: " << i << endl;

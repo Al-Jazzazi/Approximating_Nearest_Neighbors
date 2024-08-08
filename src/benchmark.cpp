@@ -9,6 +9,7 @@
 
 using namespace std;
 
+// Obtain the actual nearest neighbors either using groundtruth file or exact KNN search 
 void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
@@ -42,17 +43,19 @@ template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
         float** nodes, float** queries, float** training, ofstream* results_file) {
 
+    // Stop if parameter vector is empty
     if (parameter_values.empty()) {
         return;
     }
+
     T default_parameter = parameter;
     if (config->export_benchmark) {
         *results_file << "\nVarying " << parameter_name << ":" << endl;
     }
     vector<std::string> lines;
+    // Set config to each parameter value
     for (int i = 0; i < parameter_values.size(); i++) {
         parameter = parameter_values[i];
-        // Sanity checks
         if(!config->sanity_checks()) {
             cout << "Config error!" << endl;
             break;
@@ -70,13 +73,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         vector<vector<int>> actual_neighbors;
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
 
+        // Construct HNSW graph
         if (config->load_graph_file) {
             hnsw = new HNSW(config, nodes);
             hnsw->from_files(config, true);
         } else {
-            // Insert nodes into HNSW
             auto start = chrono::high_resolution_clock::now();
-
             cout << "Size " << config->num_nodes << "\nBenchmarking with Parameters: opt_con = "
                  << config->optimal_connections << ", max_con = " << config->max_connections << ", max_con_0 = " << config->max_connections_0
                  << ", ef_con = " << config->ef_construction << ", scaling_factor = " << config->scaling_factor
@@ -89,13 +91,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                  << ", Single search point = " << config->single_ep_construction  << ", current Pruning method = " << config->weight_selection_method  
                  << "\nUse_distance_termination = " << config->use_distance_termination << ", use_cost_benefit = " << config->use_cost_benefit 
                  << ", use_direct_path = " << config->use_direct_path << endl;
-
-
-
-
-                
-
-
             hnsw = new HNSW(config, nodes);
             for (int i = 1; i < config->num_nodes; ++i) {
                 hnsw->insert(config, i);
@@ -120,6 +115,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
             }
 
+            // Run cost-benefit pruning
             if (config->use_cost_benefit) {
                 vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
                 learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
@@ -133,6 +129,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
             }
 
+            // Log construction statistics
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
             cout << "Construction time: " << duration / 1000.0 << " seconds, ";
@@ -141,6 +138,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             construction_duration = duration / 1000.0;
         }
 
+        // Re-initialize statistics for query search
         if (config->ef_search < config->num_return) {
             cout << "Warning: Skipping ef_search = " << config->ef_search << " which is less than num_return" << endl;
             search_duration = 0;
@@ -151,17 +149,16 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_without_if = 0;
             break;
         }
-
-        // Run query search
         hnsw->reset_statistics();
         if (config->print_path_size) {
             hnsw->total_path_size = 0;
         }
-
         int median_comps_layer0 = 0;
         int similar = 0;
         float total_ndcg = 0;
         vector<pair<int, int>> nn_calculations;
+
+        // Conditionally use oracle to fake search
         if (config->use_calculation_oracle) {
             load_oracle(config, nn_calculations);
             int distance_left = config->oracle_termination_total;
@@ -177,6 +174,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_popped = 0;
             candidates_size = 0 ;
             candidates_without_if = 0;
+        // Run query search
         } else {
             vector<int> counts_calcs;
             for (int i = 0; i < 20; i++) {
@@ -207,6 +205,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
             }
 
+            // Log search statistics
             auto end = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
             cout << "Query time: " << duration / 1000.0 << " seconds, ";
@@ -287,13 +286,13 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
             }
         }
+
+        // Update benchmark file statistics
         double recall = (double) similar / (config->num_queries * config->num_return);
         cout << "Correctly found neighbors: " << similar << " ("
-            << recall * 100 << "%)" << endl;
-
+             << recall * 100 << "%)" << endl;
         double average_ndcg = (double) total_ndcg / config->num_queries;
         cout << "Average NDCG@" << config->num_return << ": " << average_ndcg << endl;
-
         if (config->export_benchmark) {
             std::string dist_comp_layer0_string = config->export_median_calcs ? std::to_string(median_comps_layer0) : std::to_string(search_dist_comp / config->num_queries);
             std::string line = std::to_string(parameter) + ", " 
@@ -317,12 +316,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             lines.push_back(line);
         }
         
+        // Conditionally save graph
         if (config->export_graph && !config->load_graph_file) {
             hnsw->to_files(config, parameter_name + "_" + to_string(parameter_values[i]), construction_duration);
         }
 
         delete hnsw;
     }
+    // Write to benchmark file
     if (config->export_benchmark) {
         *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
         for(auto& line: lines)
@@ -424,10 +425,8 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
 string get_cpu_brand() {
     char CPUBrand[0x40];
     unsigned int CPUInfo[4] = {0,0,0,0};
-
     __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
     unsigned int nExIds = CPUInfo[0];
-
     memset(CPUBrand, 0, sizeof(CPUBrand));
 
     for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
@@ -448,9 +447,7 @@ string get_cpu_brand() {
  * versus ideal for each set of parameters.
 */
 int main() {
-
     // string CPUBrand = get_cpu_brand();
-
     time_t now = time(0);
     cout << "Benchmark run started at " << ctime(&now);
     Config* config = new Config();
@@ -467,6 +464,7 @@ int main() {
         remove_duplicates(config, training, queries, config->num_queries);
     }
 
+    // Run benchmarks for each set of grid parameters
     int grid_size = min({config->grid_num_return.size(), config->grid_runs_prefix.size(), config->grid_graph_file.size()});
     if (grid_size == 0) {
         run_benchmarks(config, nodes, queries, training);

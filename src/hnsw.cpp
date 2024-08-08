@@ -69,7 +69,7 @@ void HNSW::insert(Config* config, int query) {
     if (config->debug_insert)
         cout << "Inserting node " << query << " at layer " << node_layer << " with entry point " << entry_points[0].second << endl;
 
-    // Get closest element by using search_layer to find the closest point at each layer
+    // Find the closest point in each layer using search_layer
     for (int layer = top; layer >= node_layer + 1; layer--) {
         search_layer(config, nodes[query], path, entry_points, 1, layer);
 
@@ -86,10 +86,12 @@ void HNSW::insert(Config* config, int query) {
         search_layer(config, nodes[query], path, entry_points, config->ef_construction, layer);
         // Choose opt_con number of neighbors out of candidates
         int num_neighbors = min(config->optimal_connections, static_cast<int>(entry_points.size()));
-        // Initialize mapping vector
+        // Initialize vector for node neighbors
         vector<Edge>& neighbors = mappings[query][layer];
         neighbors.reserve(max_connections + 1);
         neighbors.resize(num_neighbors);
+        
+        // Connect node to neighbors
         if (config->use_heuristic) {
             vector<Edge> candidates(entry_points.size());
             for (int i = 0; i < entry_points.size(); i++) {
@@ -105,6 +107,7 @@ void HNSW::insert(Config* config, int query) {
             }
         }
 
+        // Print node neighbors
         if (config->debug_insert) {
             cout << "Neighbors at layer " << layer << " are ";
             for (auto n_pair : neighbors)
@@ -112,11 +115,10 @@ void HNSW::insert(Config* config, int query) {
             cout << endl;
         }
 
-        // Connect neighbors to this node
+        // Connect neighbors to node
         for (auto n_pair : neighbors) {
             vector<Edge>& neighbor_mapping = mappings[n_pair.target][layer];
-
-            // Place query in correct position in neighbor_mapping
+            // Place query in the correct position in neighbor_mapping
             float new_dist = calculate_distance(nodes[query], nodes[n_pair.target], num_dimensions, layer);
             auto new_edge = Edge(query, new_dist, config->initial_cost, config->initial_benefit);
             auto pos = lower_bound(neighbor_mapping.begin(), neighbor_mapping.end(), new_edge,
@@ -136,8 +138,8 @@ void HNSW::insert(Config* config, int query) {
             }
         }
 
+        // Resize entry_points to 1
         if (config->single_ep_construction)
-            // Resize entry_points to 1
             entry_points.resize(1);
     }
 
@@ -158,23 +160,17 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
     unordered_set<int> visited;
     // The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
-    // This way when we explore node x's neighbors and want to add parent edge to those newly exlpored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
+    // This way when we explore node x's neighbors and want to add parent edge to those newly explored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
-    //priority_queue<pair<float, int>> found_extension;
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
 
-    // Initialize statistics
+    // Initialize search_layer statistics
     vector<int> when_neigh_found(config->num_return, -1);
     int nn_found = 0;
-    float ef_search2 = 0;
-    if (config->use_latest && config->use_break) {
-        // Convert efs to distance calcs, multiply, then convert distance calcs to efs
-        ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
-    }
     if (is_querying && layer_num == 0 && (config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination)){
         num_to_return = 100000;
     }
@@ -183,6 +179,12 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         total_neighbors = 0;
     }
     path.clear();
+
+    // Calculate beam-width break point
+    float ef_search2 = 0;
+    if (config->use_latest && config->use_break) {
+        ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
+    }
 
     // Add entry points to search structures
     for (const auto& entry : entry_points) {
@@ -200,24 +202,23 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             top_k.emplace(entry);
             top_1 = entry;
         }
+        // Check if entry point is in groundtruth and update statistics accordingly
         if ((config->use_groundtruth_termination || config->export_oracle) && is_querying && layer_num == 0) {
             auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), entry.second);
             if (loc != cur_groundtruth.end()) {
-                // Get neighbor index (xth closest) and log distance comp
                 int index = distance(cur_groundtruth.begin(), loc);
                 if(index >= 0 && index < when_neigh_found.capacity())
                     when_neigh_found[index] = layer0_dist_comps_per_q;
                 ++nn_found;
                 ++correct_nn_found;
+                // Break early if all actual nearest neighbors are found
                 if (config->use_groundtruth_termination && nn_found == config->num_return)
-                    // End search
                     candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                     break;
             }
         }
     }
     
-
     int candidates_popped_per_q = 0;
     int iteration = 0;
     while (!candidates.empty()) {
@@ -255,14 +256,16 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
+
         if (layer_num == 0) {
             ++candidates_popped;
             ++candidates_popped_per_q;
         }
+
         // If terminating, log statistics and break
         if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num, candidates_popped_per_q)) {
-            if(is_querying && layer_num == 0 && config->use_hybrid_termination){
-                if(candidates_popped_per_q > config->ef_search)
+            if (is_querying && layer_num == 0 && config->use_hybrid_termination){
+                if (candidates_popped_per_q > config->ef_search)
                     num_original_termination++;
                 else 
                     num_distance_termination++;
@@ -270,7 +273,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             break;
         }
 
-        // Explore neighbors of closest discovered element in HNSW layer
+        // Explore neighbors of closest discovered element in the layer
         vector<Edge>& neighbors = mappings[closest][layer_num];
         for (auto& neighbor_edge : neighbors) {
             int neighbor = neighbor_edge.target;
@@ -324,16 +327,17 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         neighbor_edge.prev_edge = closest_edge;
                         candidates_edges.emplace(&neighbor_edge);
                     }
+
+                    // Check if entry point is in groundtruth and update statistics accordingly
                     if ((config->use_groundtruth_termination || config->export_oracle) && is_querying && layer_num == 0) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
                         if (loc != cur_groundtruth.end()) {
-                            // Get neighbor index (xth closest) and log distance comp
                             int index = distance(cur_groundtruth.begin(), loc);
                             when_neigh_found[index] = layer0_dist_comps_per_q;
                             ++nn_found;
                             ++correct_nn_found;
+                            // Break early if all actual nearest neighbors are found
                             if (config->use_groundtruth_termination && nn_found == config->num_return)
-                                // End search
                                 candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                                 break;
                         }
@@ -348,8 +352,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
     }
    
-
-    // Place found elements into entry_points
+    // Copy found into entry_points
     size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : min(config->k_upper, static_cast<int>(found.size()));
     entry_points.clear();
     entry_points.resize(idx);
@@ -427,6 +430,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
         }
         considered.pop();
     }
+
     // Add discarded elements until output is large enough
     if (keep_pruned) {
         while (!discarded.empty() && output.size() < num_to_return) {
@@ -434,6 +438,7 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
             discarded.pop();
         }
     }
+
     // Set candidates to output
     candidates.clear();
     candidates.resize(output.size());
@@ -448,16 +453,16 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
  * This also stores the traversed bottom-layer edges in the path vector
 */
 vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_querying, bool is_training, bool is_ignoring, int* total_cost) {
+    // Begin search at the top layer entry point
     vector<pair<float, int>> entry_points;
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
     float dist = calculate_distance(query.second, nodes[entry_point], num_dimensions, top);
     entry_points.push_back(make_pair(dist, entry_point));
-
     if (config->debug_search)
         cout << "Searching for " << num_to_return << " nearest neighbors of node " << query.first << endl;
 
-    // Get closest element by using search_layer to find the closest point at each layer
+    // Find the closest point to the query at each upper layer
     for (int layer = top; layer >= 1; layer--) {
          if ((config->single_ep_query && !is_training) || (config->single_ep_training && is_training)) {
             search_layer(config, query.second, path, entry_points, 1, layer, is_querying);
@@ -468,10 +473,10 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
             cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
     }
 
+    // Search the bottom layer and conditionally enable loggers
     if (config->debug_query_search_index == query.first) {
         debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
-    
     search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring, total_cost);
     if (config->print_path_size) {
         total_path_size += path.size();
@@ -482,14 +487,14 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         debug_file = NULL;
         cout << "Exported query search data to " << config->runs_prefix << "query_search.txt for query " << query.first << endl;
     }
-
     if (config->debug_search) {
         cout << "All closest points at layer 0 are ";
         for (auto n_pair : entry_points)
             cout << n_pair.second << " (" << n_pair.first << ") ";
         cout << endl;
     }
-    // Select closest elements
+
+    // Return the closest num_return elements from entry_points
     entry_points.resize(min(entry_points.size(), (size_t)num_to_return));
     return entry_points;
 }
@@ -502,11 +507,11 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
 void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry_points) {
     set<Edge*> direct_path;
     for (int i = 0; i < entry_points.size(); i++) {
+        // Find the edge point to approximate nearest neighbor
         Edge* current = nullptr;
         for (auto edge : path) {
             if (edge->target == entry_points[i].second) {
                 current = edge;
-                //cout << "Current edge found for entry point " << i << " with target " << edge->target << endl;  // Debug print
                 break;
             }
         }
@@ -521,46 +526,48 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
                 direct_path.insert(current);
                 current = current->prev_edge;
                 ++size;
-                // cout << "Traversing back to previous edge, size: " << size << ", current target: " << current->target << endl;  // Debug print
             }
         }
     }
+    // Copy direct_path into path parameter
     vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
     path = direct_path_vector;
 }
 
+// Returns whether or not to terminate from search_layer
 bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared,  bool is_querying, int layer_num,int candidates_popped_per_q) {
-    // Compare closest distance to thresholds
+    // Evaluate beam-width-based criteria
     bool beam_width_original = close_squared > far_squared;
+    // Use candidates_popped as a proxy for beam-width
     bool beam_width_1 = candidates_popped_per_q > config->ef_search;
     bool beam_width_2 =  false;
     bool alpha_distance_1 = false;
     bool alpha_distance_2 = false;
     bool num_of_dist_1 = false;
+
+    // Evaluate distance-based criteria
     if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
-  	float threshold;
-  	if(config->always_top_1)
-		threshold = 2 * sqrt(top_1.first) + sqrt(top_1.first);
-	else
-		threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+        float threshold;
+        if(config->always_top_1)
+            threshold = 2 * sqrt(top_1.first) + sqrt(top_1.first);
+        else
+            threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-        
         alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
         
+        // Evaluate break points
         if (config->use_latest && config->use_break) {
             float termination_alpha2 = config->alpha_coefficient * log(config->alpha_break * estimated_distance_calcs) + config->alpha_intercept;
             alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
-            int ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
+            // int ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
             // if(far_extension_sqaured > 0 ) 
             //     beam_width_2 = candidates_popped_per_q > ef_search2;
         }
-
-      
     }
 
-    // Return whether closest is too far
+    // Return whether to terminate using config flags
     if (!is_querying || layer_num > 0) {
         return beam_width_original;
     } else if (config->use_hybrid_termination && config->use_latest) {
@@ -570,31 +577,30 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     } else if (config->use_distance_termination) {
         return alpha_distance_1;
     } else if(config->use_calculation_termination) {
-        //cout << "check check " << layer0_dist_comps_per_q << endl;
         return  config->calculations_per_query < layer0_dist_comps_per_q;
-    }else {
+    } else {
         return beam_width_original;
     }
 }
 
+// Searches for each query using the HNSW graph
 void HNSW::search_queries(Config* config, float** queries) {
+    // Initialize log files
     ofstream* export_file = NULL;
     if (config->export_queries)
         export_file = new ofstream(config->runs_prefix + "queries.txt");
-    
     ofstream* indiv_file = NULL;
     if (config->export_indiv)
         indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
-
     if (config->export_oracle)
         when_neigh_found_file = new ofstream(config->oracle_file);
 
+    // Load actual nearest neighbors
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
         use_groundtruth = false;
     }
-
     vector<vector<int>> actual_neighbors;
     if (use_groundtruth) {
         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
@@ -602,20 +608,21 @@ void HNSW::search_queries(Config* config, float** queries) {
         knn_search(config, actual_neighbors, nodes, queries);
     }
 
+    // Initialize calculations per query and oracle calculations
     vector<int> counts_calcs;
     for (int i = 0; i < 20; i++) {
         counts_calcs.push_back(0);
     }
-    
     vector<pair<int, int>> nn_calculations;
     if (config->use_calculation_oracle) {
         load_oracle(config, nn_calculations);
     }
+    int oracle_distance_calcs = 0;
 
     int total_found = 0;
-    int oracle_distance_calcs = 0;
     reset_statistics();
     for (int i = 0; i < config->num_queries; ++i) {
+        // Obtain the query and optionally check if it's too expensive according to the oracle
         float* query = config->use_calculation_oracle ? queries[nn_calculations[i].second] : queries[i];
         if (config->use_calculation_oracle) {
             oracle_distance_calcs += nn_calculations[i].first;
@@ -624,16 +631,18 @@ void HNSW::search_queries(Config* config, float** queries) {
             break;
         }
         pair<int, float*> query_pair = make_pair(i, query);
+
         cur_groundtruth = actual_neighbors[i];
         layer0_dist_comps_per_q = 0;
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
+
+        // Update log files
         if (config->export_calcs_per_query) {
             ++counts_calcs[std::min(19, layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
         }
         if (config->export_oracle)
             *when_neigh_found_file << endl;
-        
         if (config->print_results) {
             // Print out found
             cout << "Found " << found.size() << " nearest neighbors of [" << query_pair.second[0];
@@ -650,7 +659,6 @@ void HNSW::search_queries(Config* config, float** queries) {
             }
             cout << endl;
         }
-
         if (config->print_actual) {
             // Print out actual
             cout << "Actual " << config->num_return << " nearest neighbors of [" << query_pair.second[0];
@@ -662,6 +670,7 @@ void HNSW::search_queries(Config* config, float** queries) {
             cout << endl;
         }
 
+        // Print accuracy thus far
         if (config->print_indiv_found || config->print_total_found || config->export_indiv) {
             unordered_set<int> actual_set(actual_neighbors[i].begin(), actual_neighbors[i].end());
             int matching = 0;
@@ -669,7 +678,6 @@ void HNSW::search_queries(Config* config, float** queries) {
                 if (actual_set.find(n_pair.second) != actual_set.end())
                     ++matching;
             }
-
             if (config->print_indiv_found)
                 cout << "Found " << matching << " (" << matching /  (double)config->num_return * 100 << "%) for query " << i << endl;
             if (config->print_total_found)
@@ -678,22 +686,19 @@ void HNSW::search_queries(Config* config, float** queries) {
                 *indiv_file << matching / (double)config->num_return << " " << layer0_dist_comps << " " << upper_dist_comps << endl;
         }
 
+        // Export the query used
         if (config->export_queries) {
-            *export_file << "Query " << i+1<< endl << query_pair.second[0] << endl;
-            if(config->num_return == 1 )
-            {
-                for(int j =0; j< found.size(); j++){
+            *export_file << "Query " << i+1 << endl << query_pair.second[0] << endl;
+            if (config->num_return == 1) {
+                for (int j =0; j< found.size(); j++) {
                     *export_file << found[j].second << "," << found[j].first << endl;
-                    *export_file << cur_groundtruth[j] ;
-                if(found[j].second != cur_groundtruth[j]){ 
-                    *export_file << "," << calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
+                    *export_file << cur_groundtruth[j];
+                    if(found[j].second != cur_groundtruth[j]){ 
+                        *export_file << "," << calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
+                    }
+                    *export_file<< endl;
                 }
-                 *export_file<< endl;
-                }
-            }
-            else
-            {
-
+            } else {
                 for (int dim = 1; dim < num_dimensions; ++dim)
                     *export_file << "," << query_pair.second[dim];
                 *export_file << endl;
@@ -708,12 +713,11 @@ void HNSW::search_queries(Config* config, float** queries) {
                     *export_file << edge->target << ",";
                 }
             }
-           
             *export_file << endl;
         }
-      
     }
 
+    // Finalize log files
     if (config->export_calcs_per_query) {
         ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
         for (int i = 0; i < 20; ++i) {
@@ -722,14 +726,12 @@ void HNSW::search_queries(Config* config, float** queries) {
         histogram << endl;
         histogram.close();
     }
-
     if (config->export_oracle) {
         cout << "Total neighbors found (groundtruth comparison): " << correct_nn_found << " (" << correct_nn_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
     }
     if (config->print_total_found) {
         cout << "Total neighbors found: " << total_found << " (" << total_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
     }
-
     cout << "Finished search" << endl;
     if (export_file != NULL) {
         export_file->close();
@@ -741,7 +743,6 @@ void HNSW::search_queries(Config* config, float** queries) {
         delete indiv_file;
         cout << "Exported individual query results to " << config->runs_prefix << "indiv.txt" << endl;
     }
-
     if (config->export_oracle) {
         when_neigh_found_file->close();
         delete when_neigh_found_file;
@@ -751,10 +752,11 @@ void HNSW::search_queries(Config* config, float** queries) {
   
 }
 
+// Gets all edges in a specific layer
 vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
     vector<Edge*> edges;
     for (int i = 0; i < config->num_nodes; i++) {
-        // Check if node in adjacency list has at least 'layer' layers
+        // If node in adjacency list has at least 'layer' layers, add its edges to the output
         if (mappings[i].size() - 1 >= layer) {
             for (int j = 0; j < mappings[i][layer].size(); j++) {
                 edges.push_back(&mappings[i][layer][j]);
@@ -824,6 +826,7 @@ float HNSW::calculate_average_clustering_coefficient() {
     return coefficient / mappings.size();
 }
 
+// Computes the distance between a and b and update dist_comps accordingly
 float HNSW::calculate_distance(float* a, float* b, int size, int layer) {
     if (layer == 0){
         ++layer0_dist_comps;
