@@ -14,9 +14,9 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs/testing/_earliast_updated_";
-    std::string loaded_graph_file = "/ex_ssd/ya2225/grphs/"+dataset+"/hnsw_"+dataset+".bin";
-    bool load_graph_file = true;
+    std::string runs_prefix ="./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_latest_without_median_";
+    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    bool load_graph_file = false;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
@@ -27,7 +27,7 @@ public:
     std::string dataset_prefix = "./exports/" + dataset + "/" + dataset;
     std::string load_file = dataset_prefix + "_base.fvecs";
     std::string query_file =  dataset == "deep" || dataset == "gist" ? dataset_prefix + "_learn.fvecs" : dataset_prefix + "_query.fvecs";
-    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "deep" || dataset == "gist" ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
+    std::string groundtruth_file = num_nodes < 1000000 ? "" : dataset == "deep" || dataset == "gist" || dataset == "glove" || dataset == "sift"  ? dataset_prefix + "_groundtruth_10000.ivecs" : dataset_prefix + "_groundtruth.ivecs";
     std::string training_file = dataset_prefix + "_learn.fvecs";
     std::string generated_training_file = dataset_prefix + "_learn_1M.fvecs";
     std::string loaded_info_file = std::regex_replace(std::regex_replace(loaded_graph_file, std::regex("graph"), "info"), std::regex("bin"), "txt");
@@ -126,7 +126,7 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search = {};
+    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
     std::vector<float> benchmark_termination_alpha = {};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};

@@ -9,27 +9,6 @@
 #include "../config.h"
 
 
-// class DataNode {
-//     friend std::ostream& operator<<(std::ostream& os, const DataNode& rhs);
-//     friend bool operator==(const DataNode& lhs, const DataNode& rhs);
-// public:
-//     size_t dimension;
-//     double* coordinates;
-//     std::string word;
-
-//     DataNode();
-//     DataNode(double* coord);
-//     long long int findDistanceAVX(const DataNode& other) const;
-//     double findDistance(const DataNode& other) const;
-//     bool compare(double* coord) const;
-//     void addCoord(double* coord) const;
-//     void setWord(const std::string& theWord);
-// };
-
-// struct Node {
-//     DataNode val;
-//     std::set<size_t> outEdge;
-// };
 
 class Graph {
     friend std::ostream& operator<<(std::ostream& os, const Graph& rhs);

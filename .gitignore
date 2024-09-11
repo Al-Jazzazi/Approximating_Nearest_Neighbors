@@ -1,7 +1,9 @@
 build
 exports
 runs
+runs_fall_2024
 slurm
+sbatch
 venv
 *.out
 graphs
