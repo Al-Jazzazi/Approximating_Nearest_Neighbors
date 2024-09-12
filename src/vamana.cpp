@@ -38,6 +38,8 @@ int main() {
     Graph G = Vamana(config, alpha, K, R);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    if(config->export_graph)
+        G.to_files(config,"vamana_1M");
 
     // Search queries
     size_t entry = findStart(config, G);
@@ -48,11 +50,12 @@ int main() {
     cout << "sizeall: " << allResults.size() << ", size 0 " << allResults[0].size() <<endl; 
     stop = std::chrono::high_resolution_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    // G.sanityCheck(config->groundtruth_file, allResults);
+    G.sanityCheck(config, allResults);
     std::cout << "Duration of Vamana: "<< duration.count()/1000 << " millisecond(s)" << endl;
     cout << "Duration of Each Query: "<< duration2.count()/1000/config->num_queries << " millisecond(s)"<< endl;
     cout << "Number of distance calculation per query: " << distanceCalculationCount/config->num_queries << endl;
     // print_100_nodes(G, config);
+    
     // Clean up
     delete config;
 }
@@ -409,6 +412,10 @@ size_t findStart(Config* config, const Graph& g) {
 
 Graph Vamana(Config* config, long alpha, int L, int R) {
     Graph graph(config);
+    if(config->load_graph_file){
+        graph.from_files(config, config->export_benchmark);
+    }
+
     cout << "Start of Vamana" << endl;
     cout << "Randomizing edges" << endl;
     graph.randomize(R);

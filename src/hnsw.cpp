@@ -186,7 +186,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
     }
 
-    // Add entry points to search structures
+
+    // Add entry points to search structures 
     for (const auto& entry : entry_points) {
         visited.insert(entry.second);
         candidates.emplace(entry);
@@ -219,6 +220,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
     }
     
+
     int candidates_popped_per_q = 0;
     int iteration = 0;
     while (!candidates.empty()) {
@@ -285,6 +287,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             bool should_ignore = config->use_dynamic_sampling ? (dis(gen) < (1 -neighbor_edge.probability_edge)) : neighbor_edge.ignore;
             if (!(is_training && is_ignoring && should_ignore) && visited.find(neighbor) == visited.end()) {
                 visited.insert(neighbor);
+
+                //Debugging
                 if (config->print_neighbor_percent && layer_num == 0) {
                     ++processed_neighbors;
                     if (total_neighbors == config->interval_for_neighbor_percent) {
@@ -293,6 +297,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         total_neighbors = 0;
                     }
                 }
+
 
                 // Add cost point to neighbor's edge if we are training
                 if (is_training && config->use_stinky_points)
@@ -322,6 +327,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     if (layer_num == 0) {
                         path.push_back(&neighbor_edge);
                     }
+
+                    //For Grasp training with Direct Path
                     if (layer_num == 0 && is_training && config->use_direct_path) {
                         neighbor_edge.distance = neighbor_dist;
                         neighbor_edge.prev_edge = closest_edge;
@@ -329,6 +336,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     }
 
                     // Check if entry point is in groundtruth and update statistics accordingly
+                    //Used for oracle terminations (explicitly for oracle_1 and helps gather information for oracle_2)
                     if ((config->use_groundtruth_termination || config->export_oracle) && is_querying && layer_num == 0) {
                         auto loc = find(cur_groundtruth.begin(), cur_groundtruth.end(), neighbor);
                         if (loc != cur_groundtruth.end()) {
@@ -353,13 +361,22 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
    
     // Copy found into entry_points
-    size_t idx = layer_num == 0 || config->single_ep_query ? found.size() : min(config->k_upper, static_cast<int>(found.size()));
+   
+    size_t idx =  layer_num == 0 || config->single_ep_query ? is_querying && layer_num == 0 &&(config->use_hybrid_termination || config->use_distance_termination) ?  top_k.size() : found.size() : min(config->k_upper, static_cast<int>(found.size()));
     entry_points.clear();
     entry_points.resize(idx);
     while (idx > 0) {
         --idx;
-        entry_points[idx] = make_pair(found.top().first, found.top().second);
-        found.pop();
+
+        if( (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) ){
+            entry_points[idx] = make_pair(top_k.top().first, top_k.top().second);
+            top_k.pop();
+                
+        }
+        else{
+            entry_points[idx] = make_pair(found.top().first, found.top().second);
+            found.pop();
+        }
     }
     // Calculate direct path
     if (config->use_direct_path && layer_num == 0 && is_training) {
@@ -478,6 +495,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
     search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring, total_cost);
+    cout << "entry points size is " << entry_points.size();
     if (config->print_path_size) {
         total_path_size += path.size();
     }
@@ -496,6 +514,7 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
 
     // Return the closest num_return elements from entry_points
     entry_points.resize(min(entry_points.size(), (size_t)num_to_return));
+    cout << "entry points size is^2: " << entry_points.size() <<endl; 
     return entry_points;
 }
 

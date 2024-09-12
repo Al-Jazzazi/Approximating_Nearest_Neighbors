@@ -325,6 +325,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
     }
     // Write to benchmark file
     if (config->export_benchmark) {
+        if( config->export_median_calcs)
+            *results_file << "note that distance at layer 0 here is median" << endl;
         *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;

@@ -14,9 +14,9 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix ="./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_latest_without_median_";
+    std::string runs_prefix = "./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_latest_entry_point_modification_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
@@ -52,8 +52,8 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool always_top_1 = false;  // Only used if use_distance_termination = true
-    const bool use_hybrid_termination = false; 
-    const bool use_latest = false;  // Only used if use_hybrid_termination = true
+    const bool use_hybrid_termination = true; 
+    const bool use_latest = true;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
@@ -64,7 +64,7 @@ public:
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
 
-    // Beam-Width to Alpha Conversions
+    // Beam-Width to Alpha Conversions using average distance
     const std::map<std::string, std::pair<float, float>> bw = {
         {"deep", {0.197, -300.85}},
         {"deep96", {0.225, -319.3}},
