@@ -166,6 +166,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
     priority_queue<pair<float, int>> top_k;
+    bool using_top_k = is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination);
     pair<float, int> top_1;
 
     // Initialize search_layer statistics
@@ -199,7 +200,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
             entry_point_edges.push_back(new_Edge);
             path.push_back(new_Edge);
         }
-        if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
+        if (using_top_k) {
             top_k.emplace(entry);
             top_1 = entry;
         }
@@ -221,8 +222,10 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
     
 
+
     int candidates_popped_per_q = 0;
     int iteration = 0;
+    float far_dist = found.top().first;
     while (!candidates.empty()) {
         if (debug_file != NULL) {
             // Export search data
@@ -248,17 +251,21 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         ++iteration;
 
         // Get the furthest element in found and closest element in candidates
-        int furthest = found.top().second;
-        float far_dist = found.top().first;
+        
+        //int furthest = found.top().second;
+        far_dist =  using_top_k ? far_dist: found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         candidates.pop();
         Edge* closest_edge;
+
+        //for dirrect path
         if (layer_num == 0 && is_training && config->use_direct_path) {
             closest_edge = candidates_edges.top();
             candidates_edges.pop();
         }
 
+        //for alternative beam width termination 
         if (layer_num == 0) {
             ++candidates_popped;
             ++candidates_popped_per_q;
@@ -310,20 +317,29 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 }
                 
                 // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
-                float far_inner_dist = found.top().first;
+                float far_inner_dist = using_top_k ? far_dist : found.top().first;
                 float neighbor_dist = calculate_distance(query, nodes[neighbor], num_dimensions, layer_num);
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(neighbor_dist, neighbor);
-                    found.emplace(neighbor_dist, neighbor);
+                    
                     candidates_size++;
-                    if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
+                    if (using_top_k) {
                         top_k.emplace(neighbor_dist, neighbor);
+                        if(neighbor_dist > far_dist)
+                            far_dist = neighbor_dist;
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
                         }
                         if (top_k.size() > config->num_return)
                             top_k.pop();
                     }
+                    else{
+                        found.emplace(neighbor_dist, neighbor);
+                        if (found.size() > num_to_return){
+                            found.pop();
+                        }
+                    }
+
                     if (layer_num == 0) {
                         path.push_back(&neighbor_edge);
                     }
@@ -352,9 +368,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     }
 
                     // If priority queues are too large, remove the furthest
-                    if (found.size() > num_to_return){
-                        found.pop();
-                    }
+                    
                 }
             }
         }
@@ -362,7 +376,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
    
     // Copy found into entry_points
    
-    size_t idx =  layer_num == 0 || config->single_ep_query ? is_querying && layer_num == 0 &&(config->use_hybrid_termination || config->use_distance_termination) ?  top_k.size() : found.size() : min(config->k_upper, static_cast<int>(found.size()));
+    size_t idx = using_top_k ? top_k.size() :  config->single_ep_query || layer_num == 0 ? found.size() : min(config->k_upper, static_cast<int>(found.size()));
     entry_points.clear();
     entry_points.resize(idx);
     while (idx > 0) {
@@ -495,7 +509,6 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
         debug_file = new ofstream(config->runs_prefix + "query_search.txt");
     }
     search_layer(config, query.second, path, entry_points, config->ef_search, 0, is_querying, is_training, is_ignoring, total_cost);
-    cout << "entry points size is " << entry_points.size();
     if (config->print_path_size) {
         total_path_size += path.size();
     }
@@ -514,7 +527,6 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
 
     // Return the closest num_return elements from entry_points
     entry_points.resize(min(entry_points.size(), (size_t)num_to_return));
-    cout << "entry points size is^2: " << entry_points.size() <<endl; 
     return entry_points;
 }
 

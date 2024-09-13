@@ -14,7 +14,7 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_latest_entry_point_modification_";
+    std::string runs_prefix = "./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_normal_entry_updating_found_usage_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -52,8 +52,8 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool always_top_1 = false;  // Only used if use_distance_termination = true
-    const bool use_hybrid_termination = true; 
-    const bool use_latest = true;  // Only used if use_hybrid_termination = true
+    const bool use_hybrid_termination = false; 
+    const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
