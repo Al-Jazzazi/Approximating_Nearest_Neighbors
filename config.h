@@ -12,9 +12,9 @@
 class Config {
 public:
     // File Setup
-    std::string dataset = "sift";
+    std::string dataset = "gist";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/reproduce_results/"+ dataset+"/k="+std::to_string(num_return)+"/_normal_entry_updating_found_usage_";
+    std::string runs_prefix = "./runs_fall_2024/median_distances/"+ dataset+"/k="+std::to_string(num_return)+"_beam_search_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -141,7 +141,7 @@ public:
 
     // Debugging Flags
     const bool export_benchmark = true;
-    const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
+    const bool export_median_calcs = true;  // Replaces mean with median in benchmark file
     const bool export_graph = true;
     const bool export_histograms = true;
     const bool export_weight_updates = true;

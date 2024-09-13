@@ -384,7 +384,7 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
         candidates = copy;
     }
 }
-
+//this returns point closest to centroid 
 size_t findStart(Config* config, const Graph& g) {
     float* center = new float[g.DIMENSION];
     for(size_t k = 0; k < g.DIMENSION; k++){
