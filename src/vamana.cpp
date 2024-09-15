@@ -31,6 +31,7 @@ int R = 50; // Max outedge
 int L = 100; // beam search width
 int L_QUERY = 100;
 
+
 int main() {
     // Construct Vamana index
     Config* config = new Config();
@@ -152,6 +153,11 @@ float Graph::findDistance(size_t i, float* query) const {
     return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
+
+float Graph::findDistance(size_t i, size_t j) const {
+    distanceCalculationCount++;
+    return calculate_l2_sq(nodes[i], nodes[j], DIMENSION);
+}
 
 
 void Graph::sanityCheck(Config* config, const vector<vector<size_t>>& allResults) const {
@@ -386,28 +392,27 @@ void RobustPrune(Graph& graph, size_t point, vector<size_t>& candidates, long th
 }
 //this returns point closest to centroid 
 size_t findStart(Config* config, const Graph& g) {
-    float* center = new float[g.DIMENSION];
-    for(size_t k = 0; k < g.DIMENSION; k++){
-        center[k] = 0; 
-    }
-    for (size_t j = 0; j < g.num_nodes; j++) {
-        for (size_t k = 0; k < g.DIMENSION; k++) {
-            center[k] += g.nodes[j][k];
+    double min_total_distance = numeric_limits<float>::max();
+    size_t medoid = 0;
+
+
+    for (size_t i = 0; i < g.num_nodes; ++i) {
+        float total_distance = 0;
+        for (size_t j = 0; j < g.num_nodes; ++j) {
+            if (i != j) { // No need to calculate distance to itself
+                total_distance += g.findDistance(i, j);
+            }
         }
-    }
-    for (size_t i = 0; i < g.DIMENSION; i++) {
-        center[i] /= g.num_nodes;
-    }
-    size_t closest = 0;
-    float closest_dist = MAXFLOAT;
-    for (size_t m = 0; m < g.num_nodes; m++) {
-        float this_dist = g.findDistance(m, center);
-        if (this_dist < closest_dist) {
-            closest_dist = this_dist;
-            closest = m;
+
+        if (total_distance < min_total_distance) {
+            min_total_distance = total_distance;
+            medoid = i;
         }
+    
     }
-    return closest;
+
+    return medoid;
+
 }
 
 Graph Vamana(Config* config, long alpha, int L, int R) {

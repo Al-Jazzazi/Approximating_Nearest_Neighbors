@@ -25,6 +25,7 @@ public:
     void from_files(Config* config, bool is_benchmarking = false);
     void randomize(int R);
     float findDistance(size_t i, float* query) const;
+    float findDistance(size_t i, size_t j) const; 
     void setEdge(size_t i, std::set<size_t> edges);
     std::vector<std::vector<size_t>> query(Config* config, size_t start);
     void queryBruteForce(Config* config, size_t start);
