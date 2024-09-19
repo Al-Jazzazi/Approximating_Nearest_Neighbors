@@ -32,6 +32,33 @@ public:
     int benefit;
     int cost;
 
+    //Overload Operators
+    bool operator==(const Edge& other) const {
+        return this->distance == other.distance;
+    }
+
+    bool operator!=(const Edge& other) const {
+        return !(*this == other);
+    }
+
+    bool operator<(const Edge& other) const {
+        return this->distance < other.distance;
+    }
+
+    bool operator>(const Edge& other) const {
+        return this->distance > other.distance;
+    }
+
+    bool operator<=(const Edge& other) const {
+        return !(*this > other);
+    }
+
+    bool operator>=(const Edge& other) const {
+        return !(*this < other);
+    }
+
+
+
     Edge();
     Edge(int target, float distance, int initial_cost = 0, int initial_benefit = 0);
 };

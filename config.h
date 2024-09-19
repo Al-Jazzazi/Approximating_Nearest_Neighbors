@@ -12,9 +12,9 @@
 class Config {
 public:
     // File Setup
-    std::string dataset = "deep96";
+    std::string dataset = "gist";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_latest_with_median_";
+    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_real_new_data_beam_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -64,6 +64,9 @@ public:
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
+
+    //Data Structure Opt
+    const bool use_pairing = false; 
 
     // Beam-Width to Alpha Conversions using average distance
     const std::map<std::string, std::pair<float, float>> bw = !use_median ? 
@@ -150,7 +153,7 @@ public:
     
     // Grid parameters: repeat all benchmarks for each set of grid values
     std::vector<int> grid_num_return = {1, 10, 50}; 
-    std::vector<std::string> grid_runs_prefix = { "./runs_fall_2024/run/"+ dataset+"/k=1"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=10"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=50"+"_latest_with_median_",};
+    std::vector<std::string> grid_runs_prefix = { "./runs_fall_2024/run/"+ dataset+"/k=1"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=10"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=50"+"_latest_with_median_"};
     std::vector<std::string> grid_graph_file = {loaded_graph_file,loaded_graph_file,loaded_graph_file};
     
     // Benchmark parameters
