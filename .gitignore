@@ -9,3 +9,5 @@ venv
 graphs
 grphs 
 *.sbatch
+
+cash.txt

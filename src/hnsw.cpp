@@ -7,6 +7,7 @@
 #include <set>
 #include <limits>
 #include "hnsw.h"
+#include "pairingHeap.h"
 
 using namespace std;
 
@@ -161,8 +162,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     unordered_set<int> visited;
     // The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
     // This way when we explore node x's neighbors and want to add parent edge to those newly explored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
-    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
-
+    // priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
+    PairingHeap<pair<float, int>> candidates;
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
@@ -216,7 +217,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 ++correct_nn_found;
                 // Break early if all actual nearest neighbors are found
                 if (config->use_groundtruth_termination && nn_found == config->num_return)
-                    candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                    candidates = PairingHeap<pair<float, int>>();
+                    // candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                     break;
             }
         }
@@ -235,12 +237,12 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 *debug_file << index << ",";
             *debug_file << endl;
 
-            priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
-            while (!temp_candidates.empty()) {
-                *debug_file << temp_candidates.top().second << ",";
-                temp_candidates.pop();
-            }
-            *debug_file << endl;
+            // priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
+            // while (!temp_candidates.empty()) {
+            //     *debug_file << temp_candidates.top().second << ",";
+            //     temp_candidates.pop();
+            // }
+            // *debug_file << endl;
 
             priority_queue<pair<float, int>> temp_found(found);
             while (!temp_found.empty()) {
@@ -321,7 +323,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 float far_inner_dist = using_top_k ? far_dist : found.top().first;
                 float neighbor_dist = calculate_distance(query, nodes[neighbor], num_dimensions, layer_num);
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
-                    candidates.emplace(neighbor_dist, neighbor);
+                    candidates.emplace(make_pair(neighbor_dist, neighbor));
                     
                     candidates_size++;
                     if (using_top_k) {
@@ -363,7 +365,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                             ++correct_nn_found;
                             // Break early if all actual nearest neighbors are found
                             if (config->use_groundtruth_termination && nn_found == config->num_return)
-                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                                candidates = PairingHeap<pair<float, int>>();
+                                // candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                                 break;
                         }
                     }

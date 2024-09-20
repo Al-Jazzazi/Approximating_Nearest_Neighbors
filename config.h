@@ -12,9 +12,9 @@
 class Config {
 public:
     // File Setup
-    std::string dataset = "gist";
+    std::string dataset = "deep96";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_real_new_data_beam_";
+    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_pairing_heap_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -52,10 +52,10 @@ public:
     // Termination Parameters
     const bool use_distance_termination = false;
     const bool always_top_1 = false;  // Only used if use_distance_termination = true
-    const bool use_hybrid_termination = true; 
-    const bool use_latest = true;  // Only used if use_hybrid_termination = true
+    const bool use_hybrid_termination = false; 
+    const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
-    const bool use_median = true; //Only used if use_hybrid_termination = true
+    const bool use_median = false; //Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
     const bool use_calculation_oracle = false;
@@ -91,7 +91,7 @@ public:
     const std::map<std::string, std::pair<float, float>> alpha = !use_median ? 
     std::map<std::string, std::pair<float, float>>{ //avg values 
         {"50 deep", {0.0185, 0.2273}}, 
-        {"10 deep", {0.0169, 0.2548}},
+        {"10 deep", {0.0169, 0.2548}},  
         {"1 deep", {0.0151, 0.2857}},
         {"50 sift", {0.0269f, 0.1754}},
         {"10 sift", {0.0244, 0.2155}},
@@ -109,7 +109,7 @@ public:
     std::map<std::string, std::pair<float, float>> //median values 
     {
         {"50 deep", {0.0215, 0.2096}}, 
-        {"10 deep", {0.0196, 0.2417}},  
+        {"10 deep", {0.0196, 0.2417}},   
         {"1 deep", {0.0176, 0.2811}}, 
         {"50 sift", {0.029, 0.166}},   
         {"10 sift", {0.0266, 0.2077}}, 
@@ -152,9 +152,9 @@ public:
     int initial_benefit = 0;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
-    std::vector<int> grid_num_return = {1, 10, 50}; 
-    std::vector<std::string> grid_runs_prefix = { "./runs_fall_2024/run/"+ dataset+"/k=1"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=10"+"_latest_with_median_","./runs_fall_2024/run/"+ dataset+"/k=50"+"_latest_with_median_"};
-    std::vector<std::string> grid_graph_file = {loaded_graph_file,loaded_graph_file,loaded_graph_file};
+    std::vector<int> grid_num_return = {}; 
+    std::vector<std::string> grid_runs_prefix = {};
+    std::vector<std::string> grid_graph_file = {};
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {};
