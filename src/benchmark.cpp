@@ -92,8 +92,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                  << "\nUse_distance_termination = " << config->use_distance_termination << ", use_cost_benefit = " << config->use_cost_benefit 
                  << ", use_direct_path = " << config->use_direct_path << endl;
             hnsw = new HNSW(config, nodes);
-            for (int i = 1; i < config->num_nodes; ++i) {
-                hnsw->insert(config, i);
+            for (int j = 1; j < config->num_nodes; ++j) {
+                hnsw->insert(config, j);
             }
 
             // Run GraSP
@@ -177,7 +177,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         // Run query search
         } else {
             vector<int> counts_calcs;
-            for (int i = 0; i < 20; i++) {
+            for (int j = 0; j < 20; j++) {
                 counts_calcs.push_back(0);
             }
             auto start = chrono::high_resolution_clock::now();
@@ -185,20 +185,20 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             vector<Edge*> path;
             vector<long long int> dist_comps_per_q_vec;
 
-            for (int i = 0; i < config->num_queries; ++i) {
-                hnsw->cur_groundtruth = actual_neighbors[i];
+            for (int j = 0; j < config->num_queries; ++j) {
+                hnsw->cur_groundtruth = actual_neighbors[j];
                 hnsw->layer0_dist_comps_per_q = 0;
-                pair<int, float*> query_pair = make_pair(i, queries[i]);
+                pair<int, float*> query_pair = make_pair(j, queries[j]);
                 neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
                 if (config->export_calcs_per_query) {
                     ++counts_calcs[std::min(19, hnsw->layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
                 }
-                if (config->export_median_calcs) {
+                if (config->export_median_calcs || config->export_median_precentiles) {
                     dist_comps_per_q_vec.push_back(hnsw->layer0_dist_comps_per_q);
                 }
                 if (config->print_neighbor_percent) {
-                    for (int i = 0; i < hnsw->percent_neighbors.size(); ++i) {
-                        cout << hnsw->percent_neighbors[i] << " ";
+                    for (int k = 0; k < hnsw->percent_neighbors.size(); ++k) {
+                        cout << hnsw->percent_neighbors[k] << " ";
                     }
                     cout << endl;
                     hnsw->percent_neighbors.clear();
@@ -219,14 +219,31 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 median_comps_layer0 = dist_comps_per_q_vec[dist_comps_per_q_vec.size() / 2];
             }
+            if(config->export_median_precentiles){
+                std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
+                ofstream histogram = ofstream(config->metric_prefix + "_median_percentiles.txt", std::ios::app);
+                histogram << config->ef_search << ", ";
+                 for (int j = 0; j < config->benchmark_median_percentiles.size(); ++j) {
+                    
+                    int k = static_cast<int>(dist_comps_per_q_vec.size()* config->benchmark_median_percentiles[j]);
+                    // cout << "k is " << k << endl;
+                    if(k < dist_comps_per_q_vec.size())
+                        histogram << dist_comps_per_q_vec[k] << ", ";
+                }
+                histogram << endl;
+
+            }
             if (config->export_calcs_per_query) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
-                for (int i = 0; i < 20; ++i) {
-                    histogram << counts_calcs[i] << ",";
+                for (int j = 0; j < 20; ++j) {
+                    histogram << counts_calcs[j] << ",";
                 }
                 histogram << endl;
                 histogram.close();
             }
+
+         
+            
             search_duration = duration;
             search_dist_comp = hnsw->layer0_dist_comps;
             total_dist_comp = hnsw->layer0_dist_comps + hnsw->upper_dist_comps;
@@ -338,6 +355,27 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         delete results_file;
         cout << "Results exported to " << config->runs_prefix << "benchmark.txt" << endl;
     }
+
+    if(config->export_candidate_popping_times){
+        HNSW* hnsw = new HNSW(config, nodes);
+        ofstream histogram = ofstream(config->metric_prefix + "_histogram_popping_times.txt");
+        histogram <<  hnsw->candidate_popping_times.size() <<endl ;
+        
+        int count = 0;
+        for (auto& l:  hnsw->candidate_popping_times) {
+            histogram << count*config->cand_out_step << ": ";
+            for(int j = 0; j < l.second.size(); j++){
+                histogram << l.second[j]<< ",";
+            }
+             histogram << "\n";
+            count++;
+        }
+        delete hnsw;
+
+
+    }
+
+
 }
 
 void run_benchmarks(Config* config, float** nodes, float** queries, float** training) {
@@ -383,6 +421,15 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         }
         if (config->export_calcs_per_query) {
             ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt");
+            histogram.close();
+        }
+        if(config->export_candidate_popping_times){
+            ofstream histogram = ofstream(config->metric_prefix + "_histogram_popping_times.txt");
+            histogram.close();
+
+        }
+        if(config->export_median_precentiles){
+            ofstream histogram = ofstream(config->metric_prefix + "_median_percentiles.txt");
             histogram.close();
         }
     }

@@ -93,6 +93,9 @@ public:
     std::vector<float> percent_neighbors;
     std::vector<int> cur_groundtruth;
 
+    static std::map<int,std::vector<int>> candidate_popping_times;
+
+
     HNSW(Config* config, float** nodes);
     void to_files(Config* config, const std::string& graph_name, long int construction_duration = 0);
     void from_files(Config* config, bool is_benchmarking = false);
@@ -111,5 +114,7 @@ public:
     std::vector<std::pair<float, int>> nn_search(Config* config, std::vector<Edge*>& path, std::pair<int, float*>& query, int num_to_return, bool is_querying = true, bool is_training = false, bool is_ignoring = false, int* total_cost = nullptr);
     void search_queries(Config* config, float** queries);
 };
+
+
 
 #endif

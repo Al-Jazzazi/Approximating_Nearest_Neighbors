@@ -16,6 +16,7 @@ ofstream* debug_file = NULL;
 int correct_nn_found = 0;
 ofstream* when_neigh_found_file;
 
+
 Edge::Edge() : target(-1), distance(-1), weight(50), ignore(false), probability_edge(0.5), num_of_updates(0), stinky(0), benefit(0), cost(0), prev_edge(nullptr){}
 
 Edge::Edge(int target, float distance, int initial_cost, int initial_benefit) : target(target), distance(distance),
@@ -28,6 +29,10 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(1), num_nod
     mappings.resize(num_nodes);
     mappings[0].resize(1);
 }
+
+//static 
+std::map<int,std::vector<int>> HNSW::candidate_popping_times;  
+
 
 void HNSW::reset_statistics() {
     layer0_dist_comps = 0;
@@ -162,14 +167,19 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     unordered_set<int> visited;
     // The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
     // This way when we explore node x's neighbors and want to add parent edge to those newly explored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
-    // priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
-    PairingHeap<pair<float, int>> candidates;
+    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
+    // PairingHeap<pair<float, int>> candidates;
+
     priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
     vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
     priority_queue<pair<float, int>> top_k;
     bool using_top_k = is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination);
     pair<float, int> top_1;
+
+    //checking time popping of elements in candidates queue
+    int candidate_insertion_times[1000000];
+    int current_popping_time = 0; 
 
     // Initialize search_layer statistics
     vector<int> when_neigh_found(config->num_return, -1);
@@ -195,6 +205,11 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         visited.insert(entry.second);
         candidates.emplace(entry);
         found.emplace(entry);
+
+        if(config->export_candidate_popping_times){
+            candidate_insertion_times[entry.second] = current_popping_time;
+     }
+
         // Create an new edge pointing at entry point
         if (layer_num == 0 && is_training && config->use_direct_path){
             Edge* new_Edge = new Edge(entry.second, entry.first, config->initial_cost, config->initial_benefit);
@@ -217,8 +232,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 ++correct_nn_found;
                 // Break early if all actual nearest neighbors are found
                 if (config->use_groundtruth_termination && nn_found == config->num_return)
-                    candidates = PairingHeap<pair<float, int>>();
-                    // candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                    // candidates = PairingHeap<pair<float, int>>();
+                    candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                     break;
             }
         }
@@ -259,6 +274,17 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         far_dist =  using_top_k ? far_dist: found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
+        
+        
+        if(config->export_candidate_popping_times && is_querying && layer_num == 0){
+            if(current_popping_time%config->cand_out_step == 0)
+                candidate_popping_times[current_popping_time].push_back(candidate_insertion_times[closest]);
+            
+            current_popping_time++;
+
+        }
+
+
         candidates.pop();
         Edge* closest_edge;
 
@@ -325,6 +351,11 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
                     
+                    if(config->export_candidate_popping_times){
+                        candidate_insertion_times[neighbor] = current_popping_time;
+                    }
+
+
                     candidates_size++;
                     if (using_top_k) {
                         top_k.emplace(neighbor_dist, neighbor);
@@ -365,8 +396,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                             ++correct_nn_found;
                             // Break early if all actual nearest neighbors are found
                             if (config->use_groundtruth_termination && nn_found == config->num_return)
-                                candidates = PairingHeap<pair<float, int>>();
-                                // candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
+                                // candidates = PairingHeap<pair<float, int>>();
+                                candidates = priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>>();
                                 break;
                         }
                     }

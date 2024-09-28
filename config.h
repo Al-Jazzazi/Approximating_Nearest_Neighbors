@@ -11,10 +11,13 @@
 
 class Config {
 public:
+
     // File Setup
-    std::string dataset = "deep96";
+    std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_pairing_heap_";
+    std::string runs_prefix = "./runs_fall_2024/randos/_";
+    //"./runs_fall_2024/d/"+ dataset+"/k="+std::to_string(num_return)+"_latest_extended_";
+    std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1_100k_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -56,17 +59,17 @@ public:
     const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_median = false; //Only used if use_hybrid_termination = true
-    const bool use_calculation_termination = false;
+    const bool use_calculation_termination = true;
     const bool use_groundtruth_termination = false;
     const bool use_calculation_oracle = false;
-    int calculations_per_query = 200;  // Only used if use_calculation_termination = true
+    int calculations_per_query = 100000;  // Only used if use_calculation_termination = true
     int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
 
-    //Data Structure Opt
-    const bool use_pairing = false; 
+    //Metric Parameters 
+    const int cand_out_step = 1000; 
 
     // Beam-Width to Alpha Conversions using average distance
     const std::map<std::string, std::pair<float, float>> bw = !use_median ? 
@@ -163,7 +166,7 @@ public:
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
     // std::vector<int> benchmark_ef_search  = {};
-    std::vector<int> benchmark_ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000};
+    std::vector<int> benchmark_ef_search = {200};
     std::vector<float> benchmark_termination_alpha = {};
     //{0.35, 0.355, 0.36 ,0.365, 0.37, 0.375 ,0.38, 0.385, 0.39, 0.395, 0.4};
     std::vector<float> benchmark_learning_rate = {};
@@ -177,12 +180,17 @@ public:
     std::vector<int> benchmark_calculations_per_query = {};
     std::vector<int> benchmark_oracle_termination_total = {};
 
+    //The precentiles that will stored in median percentiles file
+    std::vector<float> benchmark_median_percentiles = {0.5,0.75,0.8,0.85,0.9,0.95,0.99};
+
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
-    const bool export_graph = true;
-    const bool export_histograms = true;
-    const bool export_weight_updates = true;
+    const bool export_median_precentiles = false;
+    const bool export_graph = false;
+    const bool export_histograms = false;
+    const bool export_candidate_popping_times = true;
+    const bool export_weight_updates = false;
     const bool export_oracle = false;  // Log distance calcs needed to find exact nearest neighbors
     const bool export_clustering_coefficient = false;
     const bool export_cost_benefit_pruned = false;  // Log edges pruned by cost-benefit training
