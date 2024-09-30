@@ -193,12 +193,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
     }
     path.clear();
 
-    // Calculate beam-width break point
-    float ef_search2 = 0;
-    if (config->use_latest && config->use_break) {
-        ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
-    }
-
 
     // Add entry points to search structures 
     for (const auto& entry : entry_points) {
@@ -625,19 +619,40 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         
         // Evaluate break points
         if (config->use_latest && config->use_break) {
-            float termination_alpha2 = config->alpha_coefficient * log(config->alpha_break * estimated_distance_calcs) + config->alpha_intercept;
+            estimated_distance_calcs *=config->alpha_break;
+            float termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
             alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
-            // int ef_search2 = config->efs_break * (config->ef_search - config->bw_intercept) + config->bw_intercept;
-            // if(far_extension_sqaured > 0 ) 
-            //     beam_width_2 = candidates_popped_per_q > ef_search2;
+            
+            ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+
+            if(!histogram.fail()){
+                string info;
+                int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
+                int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
+                int distance_termination = 0;
+                while(line != 0 && getline(histogram,info)){
+                    line--;
+                }
+
+                while(histogram >> info && index!= 0) {
+                    index--;
+            
+                }
+                estimated_distance_calcs = stoi(info);
+                // beam_width_2 = candidates_popped_per_q > config->ef_search;
+            } 
+            int bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
+            beam_width_2 = candidates_popped_per_q > bw_break;
+
         }
+
     }
 
     // Return whether to terminate using config flags
     if (!is_querying || layer_num > 0) {
         return beam_width_original;
     } else if (config->use_hybrid_termination && config->use_latest) {
-        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 || beam_width_2;
+        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 || (beam_width_1 && beam_width_2);
     } else if (config->use_hybrid_termination) {
         return alpha_distance_1 || beam_width_1;
     } else if (config->use_distance_termination) {

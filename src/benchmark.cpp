@@ -363,7 +363,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         
         int count = 0;
         for (auto& l:  hnsw->candidate_popping_times) {
-            histogram << count*config->cand_out_step << ": ";
             for(int j = 0; j < l.second.size(); j++){
                 histogram << l.second[j]<< ",";
             }
