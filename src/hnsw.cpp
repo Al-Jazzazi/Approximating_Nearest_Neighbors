@@ -33,6 +33,10 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(1), num_nod
 //static 
 std::map<int,std::vector<int>> HNSW::candidate_popping_times;  
 
+float termination_alpha = 0;
+float termination_alpha2 = 0 ;
+float bw_break = 0;
+
 
 void HNSW::reset_statistics() {
     layer0_dist_comps = 0;
@@ -613,19 +617,72 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
             threshold = 2 * sqrt(top_1.first) + sqrt(top_1.first);
         else
             threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
-        float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
-        float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+        // float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
+        // float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
         alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
         
         // Evaluate break points
         if (config->use_latest && config->use_break) {
-            estimated_distance_calcs *=config->alpha_break;
-            float termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+            // estimated_distance_calcs *=config->alpha_break;
+            // float termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
             alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
             
-            ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+            // ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
 
-            if(!histogram.fail()){
+            // if(!histogram.fail()){
+            //     string info;
+            //     int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
+            //     int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
+            //     int distance_termination = 0;
+            //     while(line != 0 && getline(histogram,info)){
+            //         line--;
+            //     }
+
+            //     while(histogram >> info && index!= 0) {
+            //         index--;
+            
+            //     }
+            //     estimated_distance_calcs = stoi(info);
+            //     // beam_width_2 = candidates_popped_per_q > config->ef_search;
+            // } 
+            // int bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
+            beam_width_2 = candidates_popped_per_q > bw_break;
+
+        }
+
+    }
+
+
+   
+
+    // Return whether to terminate using config flags
+    if (!is_querying || layer_num > 0) {
+        return beam_width_original;
+    } else if (config->use_hybrid_termination && config->use_latest) {
+        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 ||  beam_width_2;
+    } else if (config->use_hybrid_termination) {
+        return alpha_distance_1 || beam_width_1;
+    } else if (config->use_distance_termination) {
+        return alpha_distance_1;
+    } else if(config->use_calculation_termination) {
+        return  config->calculations_per_query < layer0_dist_comps_per_q;
+    } else {
+        return beam_width_original;
+    }
+}
+
+
+ void HNSW::calculate_termination(Config *config){
+        float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
+        termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+
+        estimated_distance_calcs *=config->alpha_break;
+        termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+
+
+         ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+
+            if(!histogram.fail() && config->use_median_break){
                 string info;
                 int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
                 int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
@@ -639,30 +696,12 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
             
                 }
                 estimated_distance_calcs = stoi(info);
-                // beam_width_2 = candidates_popped_per_q > config->ef_search;
             } 
-            int bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
-            beam_width_2 = candidates_popped_per_q > bw_break;
 
-        }
+        bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
 
     }
 
-    // Return whether to terminate using config flags
-    if (!is_querying || layer_num > 0) {
-        return beam_width_original;
-    } else if (config->use_hybrid_termination && config->use_latest) {
-        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 || (beam_width_1 && beam_width_2);
-    } else if (config->use_hybrid_termination) {
-        return alpha_distance_1 || beam_width_1;
-    } else if (config->use_distance_termination) {
-        return alpha_distance_1;
-    } else if(config->use_calculation_termination) {
-        return  config->calculations_per_query < layer0_dist_comps_per_q;
-    } else {
-        return beam_width_original;
-    }
-}
 
 // Searches for each query using the HNSW graph
 void HNSW::search_queries(Config* config, float** queries) {

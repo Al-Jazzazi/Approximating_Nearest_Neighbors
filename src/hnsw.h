@@ -106,6 +106,7 @@ public:
     float calculate_average_clustering_coefficient();
     float calculate_global_clustering_coefficient();
     float calculate_distance(float* a, float* b, int size, int layer);
+    void  calculate_termination(Config* config);
 
     // Main algorithms
     void insert(Config* config, int query);

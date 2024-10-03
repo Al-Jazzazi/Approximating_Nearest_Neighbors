@@ -184,7 +184,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             neighbors.reserve(config->num_queries);
             vector<Edge*> path;
             vector<long long int> dist_comps_per_q_vec;
-
+            hnsw->calculate_termination(config);
             for (int j = 0; j < config->num_queries; ++j) {
                 hnsw->cur_groundtruth = actual_neighbors[j];
                 hnsw->layer0_dist_comps_per_q = 0;
@@ -396,8 +396,8 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", use_direct_path = " << config->use_direct_path << ", Single construction point = " << config->single_ep_construction  << ", Single Search Point =  " << config->single_ep_query  << ", ef_search_upper = " << config->ef_search_upper << ", k_upper = " << config->k_upper
                 << ", current Pruning method = " << config->weight_selection_method 
                 << "\nCurrent Termination Method : "
-                << "\nUse_distance_termination = " << config->use_distance_termination  << ", use_hybrid_termination " << config->use_hybrid_termination <<  ", use_latest: " << config->use_latest  << ", use_median: " << config->use_median
-                << ", Use Break = " << config->use_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
+                << "\nUse_distance_termination = " << config->use_distance_termination  << ", use_hybrid_termination " << config->use_hybrid_termination <<  ", use_latest: " << config->use_latest  << ", use_median: " << config->use_median_equations
+                << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", Median Break value = " << config->breakMedian << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
                 << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  << endl;
 
