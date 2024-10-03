@@ -54,7 +54,6 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool always_top_1 = false;  // Only used if use_distance_termination = true
     const bool use_hybrid_termination = true; 
     const bool use_latest = true;  // Only used if use_hybrid_termination = true
     const bool use_break = true;  // Only used if use_hybrid_termination = true
@@ -68,6 +67,10 @@ public:
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
+    int alpha_termination_selection = 0 ; 
+        // alpha * (2 * d_k + d_1)  --> 0 
+        // alpha * 2 * d_k + d_1  --> 1 
+        // alpha * (d_k + d_1)  + d_k --> 2 
 
     std::vector<float> benchmark_median_percentiles = {0.5,0.75,0.8,0.85,0.9,0.95,0.99};
     const float breakMedian = 0.9;     //only used if use_median_break = true

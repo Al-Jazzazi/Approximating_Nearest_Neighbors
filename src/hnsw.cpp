@@ -250,12 +250,12 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 *debug_file << index << ",";
             *debug_file << endl;
 
-            // priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
-            // while (!temp_candidates.empty()) {
-            //     *debug_file << temp_candidates.top().second << ",";
-            //     temp_candidates.pop();
-            // }
-            // *debug_file << endl;
+            priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> temp_candidates(candidates);
+            while (!temp_candidates.empty()) {
+                *debug_file << temp_candidates.top().second << ",";
+                temp_candidates.pop();
+            }
+            *debug_file << endl;
 
             priority_queue<pair<float, int>> temp_found(found);
             while (!temp_found.empty()) {
@@ -266,9 +266,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
         ++iteration;
 
-        // Get the furthest element in found and closest element in candidates
-        
-        //int furthest = found.top().second;
+        // Get the furthest distance element in found and closest element in candidates
         far_dist =  using_top_k ? far_dist: found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
@@ -276,8 +274,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         
         if(config->export_candidate_popping_times && is_querying && layer_num == 0){
             if(current_popping_time%config->cand_out_step == 0)
-                candidate_popping_times[current_popping_time].push_back(candidate_insertion_times[closest]);
-            
+                candidate_popping_times[current_popping_time].push_back(candidate_insertion_times[closest]); //maybe replace with current time - insertion time 
             current_popping_time++;
 
         }
@@ -400,7 +397,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         }
                     }
 
-                    // If priority queues are too large, remove the furthest
                     
                 }
             }
@@ -613,48 +609,20 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
         float threshold;
-        if(config->always_top_1)
-            threshold = 2 * sqrt(top_1.first) + sqrt(top_1.first);
-        else
-            threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
-        // float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
-        // float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+        threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+        
+        
         alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
         
+      
         // Evaluate break points
         if (config->use_latest && config->use_break) {
-            // estimated_distance_calcs *=config->alpha_break;
-            // float termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
             alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
-            
-            // ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
-
-            // if(!histogram.fail()){
-            //     string info;
-            //     int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
-            //     int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
-            //     int distance_termination = 0;
-            //     while(line != 0 && getline(histogram,info)){
-            //         line--;
-            //     }
-
-            //     while(histogram >> info && index!= 0) {
-            //         index--;
-            
-            //     }
-            //     estimated_distance_calcs = stoi(info);
-            //     // beam_width_2 = candidates_popped_per_q > config->ef_search;
-            // } 
-            // int bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
             beam_width_2 = candidates_popped_per_q > bw_break;
 
         }
 
     }
-
-
-   
-
     // Return whether to terminate using config flags
     if (!is_querying || layer_num > 0) {
         return beam_width_original;
@@ -699,7 +667,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
             } 
 
         bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
-
+        // cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
     }
 
 
