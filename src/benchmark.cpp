@@ -184,7 +184,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             neighbors.reserve(config->num_queries);
             vector<Edge*> path;
             vector<long long int> dist_comps_per_q_vec;
-            hnsw->calculate_termination(config);
+            if(config->use_break || config->use_distance_termination) 
+                hnsw->calculate_termination(config);
             for (int j = 0; j < config->num_queries; ++j) {
                 hnsw->cur_groundtruth = actual_neighbors[j];
                 hnsw->layer0_dist_comps_per_q = 0;
@@ -397,9 +398,9 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", current Pruning method = " << config->weight_selection_method 
                 << "\nCurrent Termination Method : "
                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", use_hybrid_termination " << config->use_hybrid_termination <<  ", use_latest: " << config->use_latest  << ", use_median: " << config->use_median_equations
-                << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", Median Break value = " << config->breakMedian << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
+                << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
-                << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  << endl;
+                << "Distance Termination alpha = " << config->alpha_termination_selection  << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  <<  ", Median Break value = " << config->breakMedian  << endl;
 
 
         if (config->export_histograms && !config->load_graph_file) {

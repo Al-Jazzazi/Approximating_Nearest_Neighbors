@@ -15,8 +15,13 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    std::string runs_prefix = "./runs_fall_2024/randos/_2";
-//"./runs_fall_2024/run/"+ dataset+"/k="+std::to_string(num_return)+"_latest_0.9_median_";
+    int alpha_termination_selection = 0 ; 
+    // alpha * (2 * d_k + d_1)  --> 0 
+    // alpha * 2 * d_k + d_1  --> 1 
+    // alpha * (d_k + d_1)  + d_k --> 2 
+    std::string runs_prefix = "./runs_fall_2024/randos/";
+    
+    //"./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = true;
@@ -56,9 +61,9 @@ public:
     const bool use_distance_termination = false;
     const bool use_hybrid_termination = true; 
     const bool use_latest = true;  // Only used if use_hybrid_termination = true
-    const bool use_break = true;  // Only used if use_hybrid_termination = true
-    const bool use_median_break = true; // Only used if use_break = true
-    const bool use_median_equations = true; //Only used if use_hybrid_termination = true
+    const bool use_break = false;  // Only used if use_hybrid_termination = true
+    const bool use_median_break = false; // Only used if use_break = true
+    const bool use_median_equations = false; //Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
     const bool use_calculation_oracle = false;
@@ -67,10 +72,7 @@ public:
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
-    int alpha_termination_selection = 0 ; 
-        // alpha * (2 * d_k + d_1)  --> 0 
-        // alpha * 2 * d_k + d_1  --> 1 
-        // alpha * (d_k + d_1)  + d_k --> 2 
+
 
     std::vector<float> benchmark_median_percentiles = {0.5,0.75,0.8,0.85,0.9,0.95,0.99};
     const float breakMedian = 0.9;     //only used if use_median_break = true
@@ -163,11 +165,12 @@ public:
     
     // Grid parameters: repeat all benchmarks for each set of grid values
     std::vector<int> grid_num_return = {};
-    //{1, 10, 50}; 
+    // {1 ,10 , 50 };
     std::vector<std::string> grid_runs_prefix = {};
-    //{"./runs_fall_2024/run/"+ dataset+"/k=1_latest_with_break_update_", "./runs_fall_2024/run/"+ dataset+"/k=10_latest_with_break_update_", "./runs_fall_2024/run/"+ dataset+"/k=50_latest_with_0.9_median_"};
+    //{ "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=1_distance_termination_1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=10_distance_termination_1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=50_distance_termination_1" };
     std::vector<std::string> grid_graph_file = {};
     //{loaded_graph_file,loaded_graph_file,loaded_graph_file};
+
     
     // Benchmark parameters
     std::vector<int> benchmark_num_return = {};
@@ -175,10 +178,13 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    // std::vector<int> benchmark_ef_search  = {};
-    std::vector<int> benchmark_ef_search = {200, 400 , 600 };
-    //{200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000};
-    std::vector<float> benchmark_termination_alpha = {};
+    std::vector<int> benchmark_ef_search  = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000}; 
+    // std::vector<int> benchmark_ef_search = {200, 400 , 600 };
+    std::vector<float> benchmark_termination_alpha =  {};
+    //{0.005, 0.01, 0.015,0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.11};
+    // {0.1, 0.12,0.13,0.14, 0.15, 0.16, 0.17, 0.18, 0.2,0.21, 0.22, 0.23, 0.25};
+    //{0.1, 0.125, 0.15, 0.175, 0.2,0.225, 0.25, 0.3, 0.325};
+    //{0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5};
     //{0.35, 0.355, 0.36 ,0.365, 0.37, 0.375 ,0.38, 0.385, 0.39, 0.395, 0.4};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};

@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O2 -mavx -g
+CXXFLAGS := -O2 -mavx -g  
 
 MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 EPOCH_TIME := $(shell date +%s)
@@ -36,7 +36,7 @@ generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp.c
 benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm: src/benchmark.cpp src/pairingHeap.h src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 

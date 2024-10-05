@@ -7,7 +7,7 @@
 #include <set>
 #include <limits>
 #include "hnsw.h"
-#include "pairingHeap.h"
+// #include "pairingHeap.h"
 
 using namespace std;
 
@@ -608,11 +608,14 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     // Evaluate distance-based criteria
     if (is_querying && layer_num == 0 && (config->use_hybrid_termination || config->use_distance_termination)) {
         float close = sqrt(close_squared);
-        float threshold;
-        threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
-        
-        
-        alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
+        float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+        // alpha * (2 * d_k + d_1)  --> 0 
+        // alpha * 2 * d_k + d_1  --> 1 
+        // alpha * (d_k + d_1)  + d_k --> 2 
+        if(top_k.size() >= config->num_return)
+            alpha_distance_1 =  config->alpha_termination_selection == 0 ? close > termination_alpha * (2 * sqrt(top_k.top().first) + sqrt(top_1.first)): 
+                                config->alpha_termination_selection == 1 ? close > termination_alpha * 2 * sqrt(top_k.top().first) + sqrt(top_1.first): 
+                                                                            close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first);
         
       
         // Evaluate break points
@@ -667,6 +670,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
             } 
 
         bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
+        histogram.close();
         // cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
     }
 

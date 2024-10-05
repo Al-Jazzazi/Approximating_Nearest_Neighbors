@@ -11,3 +11,6 @@ grphs
 *.sbatch
 myenv
 cash.txt
+analysis.txt
+diagrams
+
