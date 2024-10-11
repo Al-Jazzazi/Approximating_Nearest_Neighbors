@@ -15,16 +15,16 @@ public:
     // File Setup
     std::string dataset = "sift";
     int num_return = 1;
-    int alpha_termination_selection = 0 ; 
+    int alpha_termination_selection = 2 ; 
     // alpha * (2 * d_k + d_1)  --> 0 
     // alpha * 2 * d_k + d_1  --> 1 
     // alpha * (d_k + d_1)  + d_k --> 2 
-    std::string runs_prefix = "./runs_fall_2024/randos/";
-    
-    //"./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
+    std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
+
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
-    bool load_graph_file = true;
+    std::string loaded_graph_file = "./runs_fall_2024/vamana/_graph_vamana_1M.bin";
+    // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    bool load_graph_file = false;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
@@ -58,9 +58,9 @@ public:
     int k_upper = 1;
 
     // Termination Parameters
-    const bool use_distance_termination = false;
-    const bool use_hybrid_termination = true; 
-    const bool use_latest = true;  // Only used if use_hybrid_termination = true
+    const bool use_distance_termination = true;
+    const bool use_hybrid_termination = false; 
+    const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_median_break = false; // Only used if use_break = true
     const bool use_median_equations = false; //Only used if use_hybrid_termination = true
@@ -164,12 +164,9 @@ public:
     int initial_benefit = 0;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
-    std::vector<int> grid_num_return = {};
-    // {1 ,10 , 50 };
-    std::vector<std::string> grid_runs_prefix = {};
-    //{ "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=1_distance_termination_1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=10_distance_termination_1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=50_distance_termination_1" };
-    std::vector<std::string> grid_graph_file = {};
-    //{loaded_graph_file,loaded_graph_file,loaded_graph_file};
+    std::vector<int> grid_num_return = {1 ,10 , 50 };
+    std::vector<std::string> grid_runs_prefix = { "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=1_distance_termination_2", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=10_distance_termination_2", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=50_distance_termination_2" };
+    std::vector<std::string> grid_graph_file = {loaded_graph_file,loaded_graph_file,loaded_graph_file};
 
     
     // Benchmark parameters
@@ -178,14 +175,9 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    std::vector<int> benchmark_ef_search  = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000}; 
-    // std::vector<int> benchmark_ef_search = {200, 400 , 600 };
-    std::vector<float> benchmark_termination_alpha =  {};
-    //{0.005, 0.01, 0.015,0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.11};
-    // {0.1, 0.12,0.13,0.14, 0.15, 0.16, 0.17, 0.18, 0.2,0.21, 0.22, 0.23, 0.25};
-    //{0.1, 0.125, 0.15, 0.175, 0.2,0.225, 0.25, 0.3, 0.325};
-    //{0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5};
-    //{0.35, 0.355, 0.36 ,0.365, 0.37, 0.375 ,0.38, 0.385, 0.39, 0.395, 0.4};
+    // std::vector<int> benchmark_ef_search  = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000}; 
+    std::vector<int> benchmark_ef_search = { };
+    std::vector<float> benchmark_termination_alpha =  {0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};

@@ -267,7 +267,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         ++iteration;
 
         // Get the furthest distance element in found and closest element in candidates
-        far_dist =  using_top_k ? far_dist: found.top().first;
+        far_dist =  found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         
@@ -341,7 +341,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 }
                 
                 // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
-                float far_inner_dist = using_top_k ? far_dist : found.top().first;
+                float far_inner_dist = found.top().first;
                 float neighbor_dist = calculate_distance(query, nodes[neighbor], num_dimensions, layer_num);
                 if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
@@ -354,8 +354,6 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                     candidates_size++;
                     if (using_top_k) {
                         top_k.emplace(neighbor_dist, neighbor);
-                        if(neighbor_dist > far_dist)
-                            far_dist = neighbor_dist;
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
                         }
@@ -612,11 +610,14 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         // alpha * (2 * d_k + d_1)  --> 0 
         // alpha * 2 * d_k + d_1  --> 1 
         // alpha * (d_k + d_1)  + d_k --> 2 
-        if(top_k.size() >= config->num_return)
+        if(top_k.size() >= config->num_return && config->use_distance_termination)
             alpha_distance_1 =  config->alpha_termination_selection == 0 ? close > termination_alpha * (2 * sqrt(top_k.top().first) + sqrt(top_1.first)): 
                                 config->alpha_termination_selection == 1 ? close > termination_alpha * 2 * sqrt(top_k.top().first) + sqrt(top_1.first): 
                                                                             close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first);
-        
+        else{
+            alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
+
+        }
       
         // Evaluate break points
         if (config->use_latest && config->use_break) {
@@ -845,18 +846,19 @@ void HNSW::search_queries(Config* config, float** queries) {
 }
 
 // Gets all edges in a specific layer
-vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
-    vector<Edge*> edges;
-    for (int i = 0; i < config->num_nodes; i++) {
-        // If node in adjacency list has at least 'layer' layers, add its edges to the output
-        if (mappings[i].size() - 1 >= layer) {
-            for (int j = 0; j < mappings[i][layer].size(); j++) {
-                edges.push_back(&mappings[i][layer][j]);
-            }
-        }
-    }
-    return edges;
-}
+// vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
+//     vector<Edge*> edges;
+//     cout << "AM RUNNING, yyyyy " << endl;
+//     for (int i = 0; i < config->num_nodes; i++) {
+//         // If node in adjacency list has at least 'layer' layers, add its edges to the output
+//         if (mappings[i].size() - 1 >= layer) {
+//             for (int j = 0; j < mappings[i][layer].size(); j++) {
+//                 edges.push_back(&mappings[i][layer][j]);
+//             }
+//         }
+//     }
+//     return edges;
+// }
 
 // Computes the average ratio of closed triplets to total triplets
 float HNSW::calculate_global_clustering_coefficient() {
