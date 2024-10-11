@@ -22,11 +22,11 @@ public:
     std::string runs_prefix = "./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
 
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file = "./runs_fall_2024/vamana/_graph_vamana_1M.bin";
+    std::string loaded_graph_file = "./runs_fall_2024/vamana/_graph_vamana_1M_2.bin";
     // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
     bool load_graph_file = false;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 1000000;
+    int num_nodes = 10000;
     int num_queries = 10000;
     int num_training = 100000;
     int num_training_generated = 1000000;  // Used in generate_training.cpp
@@ -52,7 +52,8 @@ public:
     const bool single_ep_construction = true;
     const bool single_ep_query = true;
     const bool single_ep_training = true;
-    int ef_construction = 500;
+    // int ef_construction = 500;
+    int ef_construction = 100;
     int ef_search = 400;
     int ef_search_upper = 1;
     int k_upper = 1;

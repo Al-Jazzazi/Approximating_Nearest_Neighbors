@@ -41,7 +41,7 @@ void RobustPrune(Graph& graph, int point, std::vector<int>& candidates, long thr
 Graph Vamana(Config* config, long alpha, int L, int R);
 int findStart(Config* config, const Graph& g);
 void print_100_nodes(const Graph& g, Config* config);
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int L, std::vector<int> closest);
+void BeamSearch(Graph& graph, Config* config,int start,  float* query, int L, std::vector<int>& closest);
 void get_actual_neighbors(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
 void runQueries(Config* config, Graph& graph, float** queries);
 void print_100_mappings(const Graph& graph, Config* config);

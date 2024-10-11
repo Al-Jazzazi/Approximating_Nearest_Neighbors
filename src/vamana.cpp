@@ -36,9 +36,10 @@ int main() {
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
     Graph G = Vamana(config, alpha, K, R);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    print_100_mappings(G, config);
+    auto end = chrono::high_resolution_clock::now();;
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    cout << "Load time: " << duration / 1000.0 << " seconds, ";
+    // print_100_mappings(G, config);
     
     float** queries = new float*[config->num_queries];
     load_queries(config, G.nodes, queries);
@@ -93,7 +94,7 @@ Graph::~Graph() {
 
 void Graph::to_files(Config* config, const string& graph_name) {
     // Export graph to file
-    ofstream graph_file(config->runs_prefix + "graph_" + graph_name + ".bin");
+    ofstream graph_file(config->loaded_graph_file);
 
     // Export edges
     for (int i = 0; i < num_nodes; ++i) {
@@ -200,7 +201,7 @@ float Graph::findDistance(int i, int j) const {
     for (int k = 0; k < config->num_queries; k++) {
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
-
+        // cout << "flag 1" << endl;
         // auto startTime = std::chrono::high_resolution_clock::now();
         // vector<int> result = GreedySearch(*this, start, thisQuery, L_QUERY);
         // auto endTime = std::chrono::high_resolution_clock::now();
@@ -296,13 +297,18 @@ void runQueries(Config* config, Graph& graph, float** queries){
     vector<vector<int>> actualResults;
     get_actual_neighbors(config, actualResults, graph.nodes, queries);
     int similar =0 ;
+    cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
+    cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
+    cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
+    cout << "results[0] " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
+
     for (int j = 0; j < config->num_queries; ++j) {
                 // Find similar neighbors
                 unordered_set<int> actual_set(actualResults[j].begin(), actualResults[j].end());
                 unordered_set<int> intersection;
                 // float actual_gain = 0;
                 // float ideal_gain = 0;
-
+                
               
                 for (int k = 0; k < results[j].size(); ++k) {
                     auto n_pair = results[j][k];
@@ -316,6 +322,7 @@ void runQueries(Config* config, Graph& graph, float** queries){
                 similar += intersection.size();
     
         }
+    cout << "similar" << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
     cout << "Recall of Vamana is " << recall;
 }
@@ -392,11 +399,11 @@ vector<int> GreedySearch(Graph& graph, int start,  float* query, int L) {
 
 
 
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, vector<int> closest){
+void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, vector<int>& closest){
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     unordered_set<int> visited;
     priority_queue<pair<float, int>> found;
-
+    // cout << "flag 2 " << endl;
     //priority_queue<pair<float, int>> top_k;
     float distance = graph.findDistance(start, query);
     candidates.emplace(make_pair(distance,start));
@@ -408,7 +415,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
     int iteration = 0;
     // float far_dist = found.top().first;
     while (!candidates.empty()) {
-
+        // cout << "flag 3 " << endl;
         float far_dist = found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
@@ -421,7 +428,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         for (int neighbor : neighbors) {
             if(visited.find(neighbor) == visited.end())
                 visited.insert(neighbor);
-        
+            // cout << "flag 4 " << endl;
             float far_inner_dist = found.top().first;
             float neighbor_dist = graph.findDistance(neighbor,query);
             if (neighbor_dist < far_inner_dist || found.size() < bw) {
@@ -435,8 +442,10 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         }
 
     }
-    
+    // cout << "flag 5" << endl;
     int idx =found.size(); 
+    closest.clear();
+    closest.resize(idx);
     while (idx > 0) {
         --idx;
         closest[idx] = found.top().second;
@@ -446,7 +455,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
 
 
     closest.resize(min(closest.size(), (size_t)config->num_return));
-
+    // cout << "flag 6 " << endl;
 
 }
 
@@ -463,6 +472,7 @@ void RobustPrune(Graph& graph, int point, vector<int>& candidates, long threshol
         }
     }
     graph.mappings[point] = {};
+
     while (candidates.size() != 0) {
         // find p* <- closest neighbor to p
         int bestCandidate = *candidates.begin();
@@ -535,6 +545,7 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
     cout << "Randomizing edges" << endl;
     graph.randomize(R);
     cout << "Randomized edges" << endl;
+    // print_100_mappings(graph, config);
     cout << "Random graph: " << endl;
     int s = findStart(config, graph);
     cout << "The centroid is #" << s << endl;
@@ -588,7 +599,7 @@ void print_100_nodes(const Graph& graph, Config* config){
 void print_100_mappings(const Graph& graph, Config* config){
     for(int i = 0; i<graph.mappings.size(); i++){
         if(i ==100 ) break;
-        cout << "i: " << i << graph.mappings[i].size() <<endl;
+        cout << "i: " <<graph.mappings[i].size() <<endl;
        
         
         
