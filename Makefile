@@ -47,6 +47,9 @@ benchmark_slurm_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp s
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
+benchmark_slurm_vamana: src/benchmark_vamana.cpp src/vamana.cpp src/vamana.h  $(COMMON_SRCS)
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 clean:
 	rm -f $(OBJS) $(TARGETS)
