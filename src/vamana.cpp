@@ -23,19 +23,29 @@
 using namespace std;
 
 
-int distanceCalculationCount = 0;
-int alpha = 2;
-int K = 30; // Num of NNs when building Vamana graph
+// int K = 30; // Num of NNs when building Vamana graph
 // int K_QUERY = 100; // Num of NNs found for each query
 // int K_TRUTH = 100; // Num of NNs provided by ground truth for each query
-int R = 70; // Max outedge
+ // Max outedge
 
+
+float termination_alpha = 0;
+float termination_alpha2 = 0 ;
+float bw_break = 0;
+
+// void RunSearch();
 
 int main() {
+    
+    RunSearch();
+    
+}
+
+void RunSearch(){
     // Construct Vamana index
     Config* config = new Config();
     auto start = std::chrono::high_resolution_clock::now();
-    Graph G = Vamana(config, alpha, K, R);
+    Vamana G = VamanaIndexing(config, config->alpha_vamana, config->R);
     auto end = chrono::high_resolution_clock::now();;
     auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     cout << "Load time: " << duration / 1000.0 << " seconds, ";
@@ -44,8 +54,8 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, G.nodes, queries);
    
-    // if(config->export_graph)
-    //     G.to_files(config,"vamana_1M_sift");
+    if(config->export_graph)
+        G.toFiles(config,"vamana_1M_sift");
 
     // Search queries
     runQueries(config, G, queries);
@@ -61,8 +71,7 @@ int main() {
 }
 
 
-
-ostream& operator<<(ostream& os, const Graph& rhs) {
+ostream& operator<<(ostream& os, const Vamana& rhs) {
     for (int i = 0; i < rhs.num_nodes; i++) {
         cout << i << " : ";
         for (int neighbor : rhs.mappings[i]) {
@@ -73,7 +82,7 @@ ostream& operator<<(ostream& os, const Graph& rhs) {
     return os;
 }
 
-Graph::Graph(Config* config) {
+Vamana::Vamana(Config* config) {
     num_nodes = config->num_nodes;
     DIMENSION = config->dimensions;
     nodes = new float*[config->num_nodes];
@@ -83,16 +92,19 @@ Graph::Graph(Config* config) {
         mappings[i] = {};
     }
     int start = -1;
+    distanceCalculationCount = 0;
+    num_original_termination = 0; 
+    num_distance_termination = 0;
 }
 
-Graph::~Graph() {
+Vamana::~Vamana() {
     for (int i = 0; i < num_nodes; i++) {
         delete[] nodes[i];
     }
     delete[] nodes;
 }
 
-void Graph::to_files(Config* config, const string& graph_name) {
+void Vamana::toFiles(Config* config, const string& graph_name) {
     // Export graph to file
     ofstream graph_file(config->loaded_graph_file);
 
@@ -113,7 +125,7 @@ void Graph::to_files(Config* config, const string& graph_name) {
 
 }
 
-void Graph::from_files(Config* config, bool is_benchmarking) {
+void Vamana::fromFiles(Config* config, bool is_benchmarking) {
     // Open files
     ifstream graph_file(config->loaded_graph_file);
     cout << "Loading saved graph from " << config->loaded_graph_file << endl;
@@ -144,7 +156,7 @@ void Graph::from_files(Config* config, bool is_benchmarking) {
 }
 
 
-void Graph::randomize(int R) {
+void Vamana::randomize(int R) {
     for (int i = 0; i < num_nodes; i++) {
         set<int> neighbors = {};
         for (int j = 0; j < R; j++) {
@@ -158,19 +170,19 @@ void Graph::randomize(int R) {
 
 
 
-float Graph::findDistance(int i, float* query) const {
-    distanceCalculationCount++;
+float Vamana::findDistance(int i, float* query)  {
+    ++distanceCalculationCount;
     return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
 
-float Graph::findDistance(int i, int j) const {
-    distanceCalculationCount++;
+float Vamana::findDistance(int i, int j) {
+    ++distanceCalculationCount;
     return calculate_l2_sq(nodes[i], nodes[j], DIMENSION);
 }
 
 
-// void Graph::sanityCheck(Config* config, const vector<vector<int>>& allResults) const {
+// void Vamana::sanityCheck(Config* config, const vector<vector<int>>& allResults) const {
 //     // vector<set<int>> gives all NNs
 //     fstream groundTruth;
 //     groundTruth.open(config->groundtruth_file);
@@ -199,7 +211,7 @@ float Graph::findDistance(int i, int j) const {
 //     cout << "Average correctness: " << result << '%' << endl;
 // }
 
-void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
+void Vamana:: query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
    
     for (int k = 0; k < config->num_queries; k++) {
         if (k % 1000 == 0) cout << "Processing " << k << endl;
@@ -217,7 +229,7 @@ void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, f
 }
 
 
-// void Graph::queryTest(int start) {
+// void Vamana::queryTest(int start) {
 //     vector<float*> queryNodes = {};
 //     int queryCount = 0;
 //     int correct = 0;
@@ -247,7 +259,7 @@ void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, f
 //     cout << "Total correct number: " << correct << endl;
 // }
 
-// void Graph::queryBruteForce(Config* config, int start) {
+// void Vamana::queryBruteForce(Config* config, int start) {
 //     fstream f;
 //     f.open(config->query_file);
 //     if (!f) {cout << "Query file not open" << endl;}
@@ -293,17 +305,17 @@ void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, f
 // }
 
 
-void runQueries(Config* config, Graph& graph, float** queries){
+void runQueries(Config* config, Vamana& graph, float** queries){
     int start= findStart(config, graph);
     vector<vector<int>> results;
     graph.query(config, start, results, queries);
     vector<vector<int>> actualResults;
     get_actual_neighbors(config, actualResults, graph.nodes, queries);
     int similar =0 ;
-    // cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
-    // cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
-    // cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
-    // cout << "results[0] " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
+    cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
+    cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
+    cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
+    cout << "results[0] distance " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] distance " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
 
     for (int j = 0; j < config->num_queries; ++j) {
                 // Find similar neighbors
@@ -325,7 +337,7 @@ void runQueries(Config* config, Graph& graph, float** queries){
                 similar += intersection.size();
     
         }
-    // cout << "similar = " << similar << endl; 
+    cout << "similar = " << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
     cout << "Recall of Vamana is " << recall;
 }
@@ -354,7 +366,7 @@ void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors,
 /// L -> priority queue with distance and index
 /// V -> vector with inde
 /// diff -> priority queue with distance and index -> 
-vector<int> GreedySearch(Graph& graph, int start,  float* query, int L) {    
+vector<int> GreedySearch(Vamana& graph, int start,  float* query, int L) {    
     vector<int> result;
     priority_queue<tuple<float, int>> List; // max priority queue
     set<int> ListSet = {};
@@ -402,33 +414,55 @@ vector<int> GreedySearch(Graph& graph, int start,  float* query, int L) {
 
 
 
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, vector<int>& closest){
+void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, vector<int>& closest){
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     unordered_set<int> visited;
     priority_queue<pair<float, int>> found;
-    // cout << "flag 2 " << endl;
-    //priority_queue<pair<float, int>> top_k;
+    priority_queue<pair<float, int>> top_k;
+    pair<float, int> top_1;
+
+    bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination);
+
+    if (config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination){
+        bw = 100000;
+    }
+
     float distance = graph.findDistance(start, query);
     candidates.emplace(make_pair(distance,start));
     visited.emplace(start);
     found.emplace(make_pair(distance,start));
-
+    if (using_top_k) {
+        top_k.emplace(make_pair(distance,start));
+        top_1 = make_pair(distance,start);
+    }
 
     int candidates_popped_per_q = 0;
     int iteration = 0;
-    // float far_dist = found.top().first;
+    float far_dist = found.top().first;
     while (!candidates.empty()) {
         // cout << "flag 3 " << endl;
-        float far_dist = found.top().first;
+        far_dist = found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         candidates.pop();
+        ++candidates_popped_per_q;
 
-         if (close_dist > far_dist && found.size() >= config->num_return) {
+        // if (close_dist > far_dist && found.size() >= config->num_return) {
+        //     break;
+        // }
+        if (graph.should_terminate(config, top_k, top_1, close_dist, far_dist, candidates_popped_per_q)) {
+            if (config->use_hybrid_termination){
+                if (candidates_popped_per_q > config->ef_search)
+                    graph.num_original_termination++;
+                else 
+                    graph.num_distance_termination++;
+            }
             break;
         }
+
         set<int>& neighbors = graph.mappings[closest];
         for (int neighbor : neighbors) {
+
             if(visited.find(neighbor) == visited.end()){
                 visited.insert(neighbor);
                 // cout << "flag 4 " << endl;
@@ -436,9 +470,20 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                 float neighbor_dist = graph.findDistance(neighbor,query);
                 if (neighbor_dist < far_inner_dist || found.size() < bw) {
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
-                    found.emplace(neighbor_dist, neighbor);
-                    if (found.size() > bw){
-                        found.pop();
+    
+                    if (using_top_k) {
+                        top_k.emplace(neighbor_dist, neighbor);
+                        if (neighbor_dist < top_1.first) {
+                            top_1 = make_pair(neighbor_dist, neighbor);
+                        }
+                        if (top_k.size() > config->num_return)
+                            top_k.pop();
+                    }
+                    else{
+                        found.emplace(neighbor_dist, neighbor);
+                        if (found.size() > bw){
+                            found.pop();
+                        }
                     }
                 }
             }
@@ -447,14 +492,19 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
 
     }
     // cout << "flag 5" << endl;
-    int idx =found.size(); 
+    int idx =using_top_k ? top_k.size() : found.size(); 
     closest.clear();
     closest.resize(idx);
     while (idx > 0) {
         --idx;
+        if(using_top_k){
+            closest[idx] = top_k.top().second;
+            top_k.pop();
+        }
+        else{
         closest[idx] = found.top().second;
         found.pop();
-
+        }
     }
 
 
@@ -463,7 +513,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
 
 }
 
-void RobustPrune(Graph& graph, int point, vector<int>& candidates, long threshold, int R) {
+void RobustPrune(Vamana& graph, int point, vector<int>& candidates, long threshold, int R) {
     set<int> neighbors = graph.mappings[point];
     for (int i : neighbors) {
         candidates.push_back(i);
@@ -512,7 +562,7 @@ void RobustPrune(Graph& graph, int point, vector<int>& candidates, long threshol
 //this returns point closest to centroid 
 
 //return find start
-int findStart(Config* config, const Graph& g) {
+int findStart(Config* config, Vamana& g) {
     float* center = new float[g.DIMENSION];
     for(int k = 0; k < g.DIMENSION; k++){
         center[k] = 0; 
@@ -537,10 +587,10 @@ int findStart(Config* config, const Graph& g) {
     return closest;
 }
 
-Graph Vamana(Config* config, long alpha, int L, int R) {
-    Graph graph(config);
+Vamana VamanaIndexing(Config* config, long alpha, int R) {
+    Vamana graph(config);
     if(config->load_graph_file){
-        graph.from_files(config, config->export_benchmark);
+        graph.fromFiles(config, config->export_benchmark);
         // print_100_nodes(graph, config );
         return graph;
     }
@@ -589,7 +639,7 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
     return graph;
 }
 
-void print_100_nodes(const Graph& graph, Config* config){
+void print_100_nodes(const Vamana& graph, Config* config){
     for(int i=0; i<config->num_nodes; i++){
         if(i ==100 ) break;
         cout << "i: " << i << endl;
@@ -600,7 +650,7 @@ void print_100_nodes(const Graph& graph, Config* config){
     }
 }
 
-void print_100_mappings(const Graph& graph, Config* config){
+void print_100_mappings(const Vamana& graph, Config* config){
     for(int i = 0; i<graph.mappings.size(); i++){
         if(i ==100 ) break;
         cout << "i: " <<graph.mappings[i].size() <<endl;
@@ -610,3 +660,100 @@ void print_100_mappings(const Graph& graph, Config* config){
     }
 }
 
+void Vamana::reset_statistics(){
+    distanceCalculationCount = 0;
+    num_original_termination = 0; 
+    num_distance_termination = 0;
+ }
+
+
+
+// Returns whether or not to terminate from search_layer
+bool Vamana::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared,  int candidates_popped_per_q) {
+    // Evaluate beam-width-based criteria
+    bool beam_width_original = close_squared > far_squared;
+    // Use candidates_popped as a proxy for beam-width
+    bool beam_width_1 = candidates_popped_per_q > config->ef_search;
+    bool beam_width_2 =  false;
+    bool alpha_distance_1 = false;
+    bool alpha_distance_2 = false;
+    bool num_of_dist_1 = false;
+
+    // Evaluate distance-based criteria
+    if (config->use_hybrid_termination || config->use_distance_termination) {
+        float close = sqrt(close_squared);
+        float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
+        // alpha * (2 * d_k + d_1)  --> 0 
+        // alpha * 2 * d_k + d_1  --> 1 
+        // alpha * (d_k + d_1)  + d_k --> 2 
+        // alpha * d_1   + d_k   --> 3 
+        // alpha * d_k   + d_k  --> 4 
+        if(top_k.size() >= config->num_return && config->use_distance_termination)
+            alpha_distance_1 =  config->alpha_termination_selection == 0 ? close > termination_alpha * (2 * sqrt(top_k.top().first) + sqrt(top_1.first)): 
+                                config->alpha_termination_selection == 1 ? close > termination_alpha * 2 * sqrt(top_k.top().first) + sqrt(top_1.first): 
+                                config->alpha_termination_selection == 2 ? close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first) : 
+                                config->alpha_termination_selection == 3 ? close > termination_alpha * sqrt(top_1.first) +  sqrt(top_k.top().first): 
+                                                                           close > termination_alpha * sqrt(top_k.top().first) + sqrt(top_k.top().first);
+        else{
+            alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
+
+        }
+      
+        // Evaluate break points
+        if (config->use_latest && config->use_break) {
+            alpha_distance_2 = top_k.size() >= config->num_return && close > termination_alpha2 * threshold;
+            beam_width_2 = candidates_popped_per_q > bw_break;
+
+        }
+
+    }
+    // Return whether to terminate using config flags
+    
+    if (config->use_hybrid_termination && config->use_latest) {
+        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 ||  beam_width_2;
+    } else if (config->use_hybrid_termination) {
+        return alpha_distance_1 || beam_width_1;
+    } else if (config->use_distance_termination) {
+        return alpha_distance_1;
+    } else if(config->use_calculation_termination) {
+        return  config->calculations_per_query < distanceCalculationCount;
+    } else {
+        return beam_width_original;
+    }
+}
+
+
+
+ void Vamana::calculate_termination(Config *config){
+        float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
+        termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+
+        estimated_distance_calcs *=config->alpha_break;
+        termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+
+
+         ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+
+            if(!histogram.fail() && config->use_median_break){
+                string info;
+                int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
+                int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
+                int distance_termination = 0;
+                while(line != 0 && getline(histogram,info)){
+                    line--;
+                }
+
+                while(histogram >> info && index!= 0) {
+                    index--;
+            
+                }
+                estimated_distance_calcs = stoi(info);
+            } 
+
+        bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
+        histogram.close();
+        // cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
+    }
+
+
+// void benchmark()

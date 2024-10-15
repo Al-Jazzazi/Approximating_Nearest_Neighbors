@@ -6,12 +6,13 @@
 #include <set>
 #include <string>
 #include "utils.h"
+#include <queue>
 #include "../config.h"
 
 
 
-class Graph {
-    friend std::ostream& operator<<(std::ostream& os, const Graph& rhs);
+class Vamana {
+    friend std::ostream& operator<<(std::ostream& os, const Vamana& rhs);
 public:
     // Node* allNodes;
     float** nodes;
@@ -20,29 +21,41 @@ public:
     int DIMENSION;
     int start;
 
-    Graph(Config* config);
-    ~Graph();
-    void to_files(Config* config, const std::string& graph_name);
-    void from_files(Config* config, bool is_benchmarking = false);
+    // Statistics
+    long long int distanceCalculationCount;
+    long long int num_original_termination;
+    long long int num_distance_termination;
+
+    std::vector<int> cur_groundtruth;
+
+    Vamana(Config* config);
+    ~Vamana();
+    void toFiles(Config* config, const std::string& graph_name);
+    void fromFiles(Config* config, bool is_benchmarking = false);
     void randomize(int R);
-    float findDistance(int i, float* query) const;
-    float findDistance(int i, int j) const; 
+    float findDistance(int i, float* query) ;
+    float findDistance(int i, int j) ; 
     void setEdge(int i, std::set<int> edges);
     void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
     void queryBruteForce(Config* config, int start);
     void sanityCheck(Config* config, const std::vector<std::vector<int>>& allResults) const;
     void queryTest(int start);
+    void reset_statistics();
+    bool should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared,  int candidates_popped_per_q);
+    void calculate_termination(Config *config);
+    
+
    
 };
-
-void randomEdges(Graph& graph, int R);
-std::vector<int> GreedySearch(Graph& graph, int start, float* query, int L);
-void RobustPrune(Graph& graph, int point, std::vector<int>& candidates, long threshold, int R);
-Graph Vamana(Config* config, long alpha, int L, int R);
-int findStart(Config* config, const Graph& g);
-void print_100_nodes(const Graph& g, Config* config);
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int L, std::vector<int>& closest);
+void RunSearch();
+void randomEdges(Vamana& graph, int R);
+std::vector<int> GreedySearch(Vamana& graph, int start, float* query, int L);
+void RobustPrune(Vamana& graph, int point, std::vector<int>& candidates, long threshold, int R);
+Vamana VamanaIndexing(Config* config, long alpha, int R);
+int findStart(Config* config,  Vamana& g);
+void print_100_nodes( Vamana& g, Config* config);
+void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int L, std::vector<int>& closest);
 void get_actual_neighbors(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
-void runQueries(Config* config, Graph& graph, float** queries);
-void print_100_mappings(const Graph& graph, Config* config);
+void runQueries(Config* config, Vamana& graph, float** queries);
+void print_100_mappings(Vamana& graph, Config* config);
 #endif

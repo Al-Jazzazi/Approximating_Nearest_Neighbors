@@ -25,14 +25,12 @@ public:
     // "./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
 
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file =  "./runs_fall_2024/vamana/_graph_vamana_1M_sift.bin";
+    std::string loaded_graph_file =  "./grphs/vamana/_graph_vamana_1M_sift.bin";
     // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
  
       
 
     //  "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
-  
-
 
     bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
@@ -90,6 +88,12 @@ public:
 
     //Metric Parameters 
     const int cand_out_step = 1000; 
+
+
+
+    //Vamana Values 
+    int R = 70;
+    float alpha_vamana = 2;
 
     // Beam-Width to Alpha Conversions using average distance
     const std::map<std::string, std::pair<float, float>> bw = !use_median_equations ? 
@@ -204,13 +208,14 @@ public:
     std::vector<int> benchmark_grasp_subloops = {};
     std::vector<int> benchmark_calculations_per_query = {};
     std::vector<int> benchmark_oracle_termination_total = {};
+    std::vector<float> benchmark_alpha_vamana = {};
 
    
     // Debugging Flags
     const bool export_benchmark = true;
     const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
     const bool export_median_precentiles = false;
-    const bool export_graph = true;
+    const bool export_graph = false;
     const bool export_histograms = false;
     const bool export_candidate_popping_times = false;
     const bool export_weight_updates = false;
