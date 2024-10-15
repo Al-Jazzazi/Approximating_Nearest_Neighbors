@@ -24,11 +24,11 @@ using namespace std;
 
 
 int distanceCalculationCount = 0;
-int alpha = 1.2;
+int alpha = 2;
 int K = 30; // Num of NNs when building Vamana graph
 // int K_QUERY = 100; // Num of NNs found for each query
 // int K_TRUTH = 100; // Num of NNs provided by ground truth for each query
-int R = 50; // Max outedge
+int R = 70; // Max outedge
 
 
 int main() {
@@ -45,7 +45,7 @@ int main() {
     load_queries(config, G.nodes, queries);
    
     // if(config->export_graph)
-    //     G.to_files(config,"vamana_1M");
+    //     G.to_files(config,"vamana_1M_sift");
 
     // Search queries
     runQueries(config, G, queries);
@@ -108,7 +108,8 @@ void Graph::to_files(Config* config, const string& graph_name) {
         }
     }
     graph_file.close();
-    cout << "Exported graph to " << config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
+    cout << "Exported graph to " << config->loaded_graph_file; 
+    // config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
 
 }
 
@@ -125,6 +126,7 @@ void Graph::from_files(Config* config, bool is_benchmarking) {
     for (int i = 0; i < num_nodes; ++i) {
         int num_neighbors;
         graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
+        // mappings[i].resize()
         // Load each neighbor
         
         for (int j = 0; j < num_neighbors; ++j) {
@@ -132,9 +134,10 @@ void Graph::from_files(Config* config, bool is_benchmarking) {
             graph_file.read(reinterpret_cast<char*>(&neighbor), sizeof(neighbor));
             mappings[i].emplace(neighbor);
         }
-        if(i%10000 == 0)
-            cout << i << endl;
-            cout << "num n" << num_neighbors <<endl;
+        // if(i%10000 == 0){
+        //     cout << i << endl;
+        //     cout << "num n = " << num_neighbors <<endl;
+        // }
     }
 
     cout << "done with loading"  <<endl;
@@ -196,7 +199,7 @@ float Graph::findDistance(int i, int j) const {
 //     cout << "Average correctness: " << result << '%' << endl;
 // }
 
- void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
+void Graph:: query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
    
     for (int k = 0; k < config->num_queries; k++) {
         if (k % 1000 == 0) cout << "Processing " << k << endl;
@@ -297,10 +300,10 @@ void runQueries(Config* config, Graph& graph, float** queries){
     vector<vector<int>> actualResults;
     get_actual_neighbors(config, actualResults, graph.nodes, queries);
     int similar =0 ;
-    cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
-    cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
-    cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
-    cout << "results[0] " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
+    // cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
+    // cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
+    // cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
+    // cout << "results[0] " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
 
     for (int j = 0; j < config->num_queries; ++j) {
                 // Find similar neighbors
@@ -322,7 +325,7 @@ void runQueries(Config* config, Graph& graph, float** queries){
                 similar += intersection.size();
     
         }
-    cout << "similar" << similar << endl; 
+    // cout << "similar = " << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
     cout << "Recall of Vamana is " << recall;
 }
@@ -421,21 +424,22 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         float close_dist = candidates.top().first;
         candidates.pop();
 
-         if (close_dist > far_dist) {
+         if (close_dist > far_dist && found.size() >= config->num_return) {
             break;
         }
-        set<int>& neighbors = graph.mappings[start];
+        set<int>& neighbors = graph.mappings[closest];
         for (int neighbor : neighbors) {
-            if(visited.find(neighbor) == visited.end())
+            if(visited.find(neighbor) == visited.end()){
                 visited.insert(neighbor);
-            // cout << "flag 4 " << endl;
-            float far_inner_dist = found.top().first;
-            float neighbor_dist = graph.findDistance(neighbor,query);
-            if (neighbor_dist < far_inner_dist || found.size() < bw) {
-                candidates.emplace(make_pair(neighbor_dist, neighbor));
-                found.emplace(neighbor_dist, neighbor);
-                if (found.size() > bw){
-                    found.pop();
+                // cout << "flag 4 " << endl;
+                float far_inner_dist = found.top().first;
+                float neighbor_dist = graph.findDistance(neighbor,query);
+                if (neighbor_dist < far_inner_dist || found.size() < bw) {
+                    candidates.emplace(make_pair(neighbor_dist, neighbor));
+                    found.emplace(neighbor_dist, neighbor);
+                    if (found.size() > bw){
+                        found.pop();
+                    }
                 }
             }
 
@@ -537,7 +541,7 @@ Graph Vamana(Config* config, long alpha, int L, int R) {
     Graph graph(config);
     if(config->load_graph_file){
         graph.from_files(config, config->export_benchmark);
-        print_100_nodes(graph, config );
+        // print_100_nodes(graph, config );
         return graph;
     }
 

@@ -610,10 +610,14 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         // alpha * (2 * d_k + d_1)  --> 0 
         // alpha * 2 * d_k + d_1  --> 1 
         // alpha * (d_k + d_1)  + d_k --> 2 
+        // alpha * d_1   + d_k   --> 3 
+        // alpha * d_k   + d_k  --> 4 
         if(top_k.size() >= config->num_return && config->use_distance_termination)
             alpha_distance_1 =  config->alpha_termination_selection == 0 ? close > termination_alpha * (2 * sqrt(top_k.top().first) + sqrt(top_1.first)): 
                                 config->alpha_termination_selection == 1 ? close > termination_alpha * 2 * sqrt(top_k.top().first) + sqrt(top_1.first): 
-                                                                            close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first);
+                                config->alpha_termination_selection == 2 ? close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first) : 
+                                config->alpha_termination_selection == 3 ? close > termination_alpha * sqrt(top_1.first) +  sqrt(top_k.top().first): 
+                                                                           close > termination_alpha * sqrt(top_k.top().first) + sqrt(top_k.top().first);
         else{
             alpha_distance_1 = top_k.size() >= config->num_return && close > termination_alpha * threshold;
 
