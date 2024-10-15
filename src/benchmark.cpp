@@ -96,38 +96,38 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 hnsw->insert(config, j);
             }
 
-            // // Run GraSP
-            // if (config->use_grasp) {
-            //     vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            //     learn_edge_importance(config, hnsw, edges, training, results_file);
-            //     prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
-            //     edges = hnsw->get_layer_edges(config, 0);
-            //     if (config->export_histograms) {
-            //         ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
-            //         histogram << endl;
-            //         histogram.close();
-            //         histogram = ofstream(config->runs_prefix + "histogram_weights.txt", std::ios::app);
-            //         histogram << endl;
-            //         histogram.close();
-            //         histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
-            //         histogram << endl;
-            //         histogram.close();
-            //     }
-            // }
+            // Run GraSP
+            if (config->use_grasp) {
+                vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
+                learn_edge_importance(config, hnsw, edges, training, results_file);
+                prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
+                edges = hnsw->get_layer_edges(config, 0);
+                if (config->export_histograms) {
+                    ofstream histogram = ofstream(config->runs_prefix + "histogram_prob.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                    histogram = ofstream(config->runs_prefix + "histogram_weights.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                    histogram = ofstream(config->runs_prefix + "histogram_edge_updates.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                }
+            }
 
-            // // Run cost-benefit pruning
-            // if (config->use_cost_benefit) {
-            //     vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            //     learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
-            //     if (config->export_histograms) {
-            //         ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
-            //         histogram << endl;
-            //         histogram.close();
-            //         histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
-            //         histogram << endl;
-            //         histogram.close();
-            //     }
-            // }
+            // Run cost-benefit pruning
+            if (config->use_cost_benefit) {
+                vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
+                learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
+                if (config->export_histograms) {
+                    ofstream histogram = ofstream(config->runs_prefix + "histogram_cost.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                    histogram = ofstream(config->runs_prefix + "histogram_benefit.txt", std::ios::app);
+                    histogram << endl;
+                    histogram.close();
+                }
+            }
 
             // Log construction statistics
             auto end = chrono::high_resolution_clock::now();

@@ -850,19 +850,19 @@ void HNSW::search_queries(Config* config, float** queries) {
 }
 
 // Gets all edges in a specific layer
-// vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
-//     vector<Edge*> edges;
-//     cout << "AM RUNNING, yyyyy " << endl;
-//     for (int i = 0; i < config->num_nodes; i++) {
-//         // If node in adjacency list has at least 'layer' layers, add its edges to the output
-//         if (mappings[i].size() - 1 >= layer) {
-//             for (int j = 0; j < mappings[i][layer].size(); j++) {
-//                 edges.push_back(&mappings[i][layer][j]);
-//             }
-//         }
-//     }
-//     return edges;
-// }
+vector<Edge*> HNSW::get_layer_edges(Config* config, int layer) {
+    vector<Edge*> edges;
+    cout << "AM RUNNING, yyyyy " << endl;
+    for (int i = 0; i < config->num_nodes; i++) {
+        // If node in adjacency list has at least 'layer' layers, add its edges to the output
+        if (mappings[i].size() - 1 >= layer) {
+            for (int j = 0; j < mappings[i][layer].size(); j++) {
+                edges.push_back(&mappings[i][layer][j]);
+            }
+        }
+    }
+    return edges;
+}
 
 // Computes the average ratio of closed triplets to total triplets
 float HNSW::calculate_global_clustering_coefficient() {
