@@ -75,6 +75,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
         // Construct HNSW graph
         if (config->load_graph_file) {
+         
             hnsw = new HNSW(config, nodes);
             hnsw->from_files(config, true);
         } else {

@@ -33,10 +33,10 @@ generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp.c
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
+benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h $(COMMON_SRCS)
+benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
