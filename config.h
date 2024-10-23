@@ -13,24 +13,23 @@ class Config {
 public:
 
     // File Setup
-    std::string dataset = "sift";
+    std::string dataset = "deep";
     int num_return = 1;
-    int alpha_termination_selection = 3; 
+    int alpha_termination_selection = 4; 
     // alpha * (2 * d_k + d_1)  --> 0 
     // alpha * 2 * d_k + d_1  --> 1 
     // alpha * (d_k + d_1)  + d_k --> 2 
     // alpha * d_1   + d_k   --> 3 
     // alpha * d_k   + d_k  --> 4 
-    std::string runs_prefix =  "./runs_fall_2024/run/"+ dataset+"/distance_termination/k="+std::to_string(num_return)+"_distance_termination_" + std::to_string(alpha_termination_selection);
-
-    //  "./runs_fall_2024/vamana/"+ dataset + "/k=" +std::to_string(num_return) + "_" ;
+    std::string runs_prefix =   "./runs_fall_2024/vamana/"+ dataset + "/k=" +std::to_string(num_return) + "_" ;
 
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
+    std::string loaded_graph_file = "./grphs/"+ dataset+"/_graph_vamana.bin";
+    // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
 
     //  "./grphs/vamana/_graph_vamana_1M_sift.bin";
  
-    bool load_graph_file = true;
+    bool load_graph_file = false;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
@@ -58,16 +57,16 @@ public:
     const bool single_ep_construction = true;
     const bool single_ep_query = true;
     const bool single_ep_training = true;
-    int ef_construction = 500;
-    // int ef_construction = 125;
+    // int ef_construction = 500;
+    int ef_construction = 125;
     int ef_search = 400;
     int ef_search_upper = 1;
     int k_upper = 1;
 
     // Termination Parameters
-    const bool use_distance_termination = true;
-    const bool use_hybrid_termination = false; 
-    const bool use_latest = false;  // Only used if use_hybrid_termination = true
+    const bool use_distance_termination = false;
+    const bool use_hybrid_termination = true; 
+    const bool use_latest = true;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_median_break = false; // Only used if use_break = true
     const bool use_median_equations = false; //Only used if use_hybrid_termination = true
@@ -105,51 +104,77 @@ public:
     //double check 
     std::map<std::string, std::pair<float, float>> { //median values 
         {"deep", { 0.1991,  - 319.01}}, 
-        {"deep96", {0.1991, - 319.01}},
+        {"deep96", {0.2277, - 339.41}}, //deep96 and gist repeat
         {"sift", { 0.2068,  - 357.74}},
-        {"gist", {0.1991, - 319.01}},
+        {"gist", {0.1076, - 419.74}},  //
         {"glove", {0.3687, - 6.2159}}
 
     };
 
 
-    const std::map<std::string, std::pair<float, float>> alpha = !use_median_equations ? 
-    std::map<std::string, std::pair<float, float>>{ //avg values 
-        {"50 deep", {0.0185, 0.2273}}, 
-        {"10 deep", {0.0169, 0.2548}},  
-        {"1 deep", {0.0151, 0.2857}},
-        {"50 sift", {0.0269f, 0.1754}},
-        {"10 sift", {0.0244, 0.2155}},
-        {"1 sift", {0.0222, 0.2558}},
-        {"50 gist", {0.013f, 0.2454}}, 
-        {"10 gist", {0.0111f, 0.2707}},
-        {"1 gist", {0.0093, 0.2964}},
-        {"50 glove", {0.0191, 0.2111}}, 
-        {"10 glove", {0.0188, 0.216}},
-        {"1 glove", {0.0184, 0.222}},
-        {"50 deep96", {0.0215, 0.2152}}, 
-        {"10 deep96", {0.0199, 0.2438}},
-        {"1 deep96", {0.0184, 0.2759}}
-    }: 
-    std::map<std::string, std::pair<float, float>> //median values 
-    {
-        {"50 deep", {0.0215, 0.2096}}, 
-        {"10 deep", {0.0196, 0.2417}},   
-        {"1 deep", {0.0176, 0.2811}}, 
-        {"50 sift", {0.029, 0.166}},   
-        {"10 sift", {0.0266, 0.2077}}, 
-        {"1 sift", {0.0253,  0.2517}}, 
-        {"50 gist", {0.0133, 0.2445}}, 
-        {"10 gist", { 0.0115, 0.2706}},  
-        {"1 gist", {0.0176, 0.2454}},  
-        {"50 glove", {0.0186, 0.2238}}, 
-        {"10 glove", {0.0185, 0.2263}},  
-        {"1 glove", {0.0184, 0.2287}},  
-        {"50 deep96", {0.0296, 0.1602}},  
-        {"10 deep96", {0.0273, 0.2013}},  
-        {"1 deep96", {0.0176, 0.2811}}  
+    const std::map<std::string, std::pair<float, float>> alpha = use_median_equations ? 
+        std::map<std::string, std::pair<float, float>> //median values 
+        {
+            {"50 deep", {0.0215, 0.2096}}, 
+            {"10 deep", {0.0196, 0.2417}},   
+            {"1 deep", {0.0176, 0.2811}}, 
+            {"50 sift", {0.029, 0.166}},   
+            {"10 sift", {0.0266, 0.2077}}, 
+            {"1 sift", {0.0253,  0.2517}}, 
+            {"50 gist", {0.0133, 0.2445}}, 
+            {"10 gist", { 0.0115, 0.2706}},  
+            {"1 gist", {0.0176, 0.2454}},  
+            {"50 glove", {0.0186, 0.2238}}, 
+            {"10 glove", {0.0185, 0.2263}},  
+            {"1 glove", {0.0184, 0.2287}},  
+            {"50 deep96", {0.0296, 0.1602}},  
+            {"10 deep96", {0.0273, 0.2013}},  
+            {"1 deep96", {0.0176, 0.2811}}  
 
-    };
+        }:  alpha_termination_selection == 0 ? 
+        std::map<std::string, std::pair<float, float>>{ //avg values 
+            {"50 deep", {0.0185, 0.2273}}, 
+            {"10 deep", {0.0169, 0.2548}},  
+            {"1 deep", {0.0151, 0.2857}},
+            {"50 sift", {0.0269f, 0.1754}},
+            {"10 sift", {0.0244, 0.2155}},
+            {"1 sift", {0.0222, 0.2558}},
+            {"50 gist", {0.013f, 0.2454}}, 
+            {"10 gist", {0.0111f, 0.2707}},
+            {"1 gist", {0.0093, 0.2964}},
+            {"50 glove", {0.0191, 0.2111}}, 
+            {"10 glove", {0.0188, 0.216}},
+            {"1 glove", {0.0184, 0.222}},
+            {"50 deep96", {0.0215, 0.2152}}, 
+            {"10 deep96", {0.0199, 0.2438}},
+            {"1 deep96", {0.0184, 0.2759}}
+            }:
+
+        std::map<std::string, std::pair<float, float>> { //distance_question_4
+            {"50 deep", {0.0575, - 0.3909}}, 
+            {"10 deep", {0.0546, - 0.3077}},   
+            {"1 deep", {0.0458, - 0.1471}},   
+
+            {"50 sift", {0.0662, - 0.4298}},   
+            {"10 sift", {0.0713, - 0.4003}},  
+            {"1 sift", {0.0642,  - 0.2204}},  
+
+            //Not ready
+            {"50 gist", {0, 0}}, 
+            {"10 gist", { 0, 0}},  
+            {"1 gist", {0, 0}}, 
+
+            {"50 glove", {0.0429, - 0.2522 }},  
+            {"10 glove", {0.0431, - 0.2458}},  
+            {"1 glove", {0.0461,  - 0.2595}},  
+
+            {"50 deep96", {0.0652, - 0.4205}},   
+            {"10 deep96", {0.0588,  - 0.2973 }},  
+            {"1 deep96", {0.0592, - 0.1973}}   
+
+        };
+
+
     std::string alpha_key = std::to_string(num_return) + " " + dataset;
     float bw_slope = use_hybrid_termination ? bw.at(dataset).first : 0; 
     float bw_intercept = use_hybrid_termination ? bw.at(dataset).second : 0;
@@ -177,12 +202,10 @@ public:
     int initial_benefit = 0;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
-    std::vector<int> grid_num_return = {};
-    // {1 ,10 , 50 };
-    std::vector<std::string> grid_runs_prefix = {};
+    std::vector<int> grid_num_return =  {50,10,1 };
+    std::vector<std::string> grid_runs_prefix = { "./runs_fall_2024/run/"+ dataset+"/latest/k=50_latest_" + std::to_string(alpha_termination_selection), "./runs_fall_2024/run/"+ dataset+"/latest/k=10_latest_" + std::to_string(alpha_termination_selection),"./runs_fall_2024/run/"+ dataset+"/latest/k=1_latest_" + std::to_string(alpha_termination_selection)};
     // {"./runs_fall_2024/run/"+ dataset+"/distance_termination/k=1_distance_termination_3.1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=10_distance_termination_3.1", "./runs_fall_2024/run/"+ dataset+"/distance_termination/k=50_distance_termination_3.1" };
-    std::vector<std::string> grid_graph_file = {};
-    // {loaded_graph_file,loaded_graph_file,loaded_graph_file};
+    std::vector<std::string> grid_graph_file =  {loaded_graph_file,loaded_graph_file,loaded_graph_file};
 
     
     // Benchmark parameters
@@ -191,9 +214,9 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    // std::vector<int> benchmark_ef_search  = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000}; 
-    std::vector<int> benchmark_ef_search = { };
-    std::vector<float> benchmark_termination_alpha ={0.35,0.36,0.37,0.38,0.39,0.40, 0.41, 0.42, 0.43, 0.44, 0.45};
+    std::vector<int> benchmark_ef_search  = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000}; 
+    // std::vector<int> benchmark_ef_search = { };
+    std::vector<float> benchmark_termination_alpha ={};
     // {0.1,0.11, 0.12, 0.13, 0.14, 0.15, 0.16,0.17, 0.18,0.19, 0.2, 0.21, 0.22, 0.23}; 
     // {0.03,0.04,0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.1, 0.11};
     // {0.14, 0.15, 0.16,0.17, 0.18,0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25,0.26, 0.27, 0.28, 0.29, 0.30, 0.32, 0.34, 0.35};
@@ -220,7 +243,7 @@ public:
     const bool export_benchmark = true;
     const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
     const bool export_median_precentiles = false;
-    const bool export_graph = false;
+    const bool export_graph = true;
     const bool export_histograms = false;
     const bool export_candidate_popping_times = false;
     const bool export_weight_updates = false;

@@ -35,11 +35,11 @@ float bw_break = 0;
 
 // void RunSearch();
 
-// int main() {
+int main() {
     
-//     RunSearch();
+    RunSearch();
     
-// }
+}
 
 void RunSearch(){
     // Construct Vamana index

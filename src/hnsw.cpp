@@ -649,6 +649,10 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
 
 
  void HNSW::calculate_termination(Config *config){
+        std::string alpha_key = std::to_string(config->num_return) + " " + config->dataset;
+        config->alpha_coefficient = config->use_hybrid_termination ? config->alpha.at(config->alpha_key).first : 0;
+        config->alpha_intercept = config->use_hybrid_termination ? config->alpha.at(config->alpha_key).second : 0;
+
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
 
