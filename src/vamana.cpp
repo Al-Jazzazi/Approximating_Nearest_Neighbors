@@ -33,13 +33,6 @@ float termination_alpha = 0;
 float termination_alpha2 = 0 ;
 float bw_break = 0;
 
-// void RunSearch();
-
-int main() {
-    
-    RunSearch();
-    
-}
 
 void RunSearch(){
     // Construct Vamana index
@@ -120,7 +113,7 @@ void Vamana::toFiles(Config* config, const string& graph_name) {
         }
     }
     graph_file.close();
-    cout << "Exported graph to " << config->loaded_graph_file; 
+    cout << "Exported graph to " << config->loaded_graph_file << endl; 
     // config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
 
 }
@@ -339,7 +332,7 @@ void runQueries(Config* config, Vamana& graph, float** queries){
         }
     cout << "similar = " << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
-    cout << "Recall of Vamana is " << recall;
+    cout << "Recall of Vamana is " << recall << endl;
 }
 
 
@@ -710,7 +703,7 @@ bool Vamana::should_terminate(Config* config, priority_queue<pair<float, int>>& 
     // Return whether to terminate using config flags
     
     if (config->use_hybrid_termination && config->use_latest) {
-        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 ||  beam_width_2;
+        return (alpha_distance_1 && beam_width_1);
     } else if (config->use_hybrid_termination) {
         return alpha_distance_1 || beam_width_1;
     } else if (config->use_distance_termination) {

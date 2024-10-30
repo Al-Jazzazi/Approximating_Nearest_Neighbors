@@ -597,7 +597,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     // Evaluate beam-width-based criteria
     bool beam_width_original = close_squared > far_squared;
     // Use candidates_popped as a proxy for beam-width
-    bool beam_width_1 = candidates_popped_per_q > config->ef_search;
+    bool beam_width_1 = (config->use_median_earliast && config->use_hybrid_termination &&  !config->use_latest ) ? candidates_popped_per_q > bw_break : candidates_popped_per_q > config->ef_search;
     bool beam_width_2 =  false;
     bool alpha_distance_1 = false;
     bool alpha_distance_2 = false;
@@ -612,7 +612,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         // alpha * (d_k + d_1)  + d_k --> 2 
         // alpha * d_1   + d_k   --> 3 
         // alpha * d_k   + d_k  --> 4 
-        if(top_k.size() >= config->num_return && config->use_distance_termination)
+        if(top_k.size() >= config->num_return && (config->use_distance_termination || config->use_hybrid_termination) )
             alpha_distance_1 =  config->alpha_termination_selection == 0 ? close > termination_alpha * (2 * sqrt(top_k.top().first) + sqrt(top_1.first)): 
                                 config->alpha_termination_selection == 1 ? close > termination_alpha * 2 * sqrt(top_k.top().first) + sqrt(top_1.first): 
                                 config->alpha_termination_selection == 2 ? close > termination_alpha *  (sqrt(top_k.top().first) + sqrt(top_1.first)) + sqrt(top_k.top().first) : 
@@ -635,7 +635,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     if (!is_querying || layer_num > 0) {
         return beam_width_original;
     } else if (config->use_hybrid_termination && config->use_latest) {
-        return (alpha_distance_1 && beam_width_1) || alpha_distance_2 ||  beam_width_2;
+        return (alpha_distance_1 && beam_width_1) ;  //|| alpha_distance_2 ||  beam_width_2
     } else if (config->use_hybrid_termination) {
         return alpha_distance_1 || beam_width_1;
     } else if (config->use_distance_termination) {
@@ -650,19 +650,20 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
 
  void HNSW::calculate_termination(Config *config){
         std::string alpha_key = std::to_string(config->num_return) + " " + config->dataset;
-        config->alpha_coefficient = config->use_hybrid_termination ? config->alpha.at(config->alpha_key).first : 0;
-        config->alpha_intercept = config->use_hybrid_termination ? config->alpha.at(config->alpha_key).second : 0;
-
+        cout << alpha_key << endl;
+        config->alpha_coefficient = config->use_hybrid_termination ? config->alpha.at(alpha_key).first : 0;
+        config->alpha_intercept = config->use_hybrid_termination ? config->alpha.at(alpha_key).second : 0;
+        cout << "alpha_coefficient is " << config->alpha_coefficient << ", alpha_intercept is " << config->alpha_intercept <<endl; 
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-
+        cout << "estimated_distance_calcs is " << estimated_distance_calcs  << ", termination_alpha is " << termination_alpha << endl;
         estimated_distance_calcs *=config->alpha_break;
         termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
 
 
          ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
 
-            if(!histogram.fail() && config->use_median_break){
+            if(!histogram.fail() && (config->use_median_break || config->use_median_earliast) ){
                 string info;
                 int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
                 int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
@@ -680,7 +681,7 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
 
         bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
         histogram.close();
-        // cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
+        cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
     }
 
 

@@ -10,8 +10,10 @@ graphs
 grphs 
 *.sbatch
 myenv
-cash.txt
+cash*.txt
 analysis.txt
 diagrams
 gmon.out
+runs*
+
 

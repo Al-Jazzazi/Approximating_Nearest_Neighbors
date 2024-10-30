@@ -13,7 +13,7 @@ class Config {
 public:
 
     // File Setup
-    std::string dataset = "deep";
+    std::string dataset = "sift";
     int num_return = 1;
     int alpha_termination_selection = 4; 
     // alpha * (2 * d_k + d_1)  --> 0 
@@ -29,7 +29,7 @@ public:
 
     //  "./grphs/vamana/_graph_vamana_1M_sift.bin";
  
-    bool load_graph_file = false;
+    bool load_graph_file = true;
     int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
     int num_nodes = 1000000;
     int num_queries = 10000;
@@ -69,6 +69,7 @@ public:
     const bool use_latest = true;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_median_break = false; // Only used if use_break = true
+    const bool use_median_earliast = true; //used to set earliast based on median 
     const bool use_median_equations = false; //Only used if use_hybrid_termination = true
     const bool use_calculation_termination = false;
     const bool use_groundtruth_termination = false;
@@ -243,7 +244,7 @@ public:
     const bool export_benchmark = true;
     const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
     const bool export_median_precentiles = false;
-    const bool export_graph = true;
+    const bool export_graph = false;
     const bool export_histograms = false;
     const bool export_candidate_popping_times = false;
     const bool export_weight_updates = false;

@@ -17,7 +17,7 @@ run_hnsw: src/run.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-run_vamana: src/vamana.cpp src/vamana.h $(COMMON_SRCS)
+run_vamana: src/run_vamana.cpp src/vamana.cpp src/vamana.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
