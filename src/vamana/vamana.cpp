@@ -716,20 +716,26 @@ bool Vamana::should_terminate(Config* config, priority_queue<pair<float, int>>& 
 }
 
 
-
- void Vamana::calculate_termination(Config *config){
+void Vamana::calculate_termination(Config *config){
+        std::string alpha_key = std::to_string(config->num_return) + " " + config->dataset;
+        cout << alpha_key << endl;
+        config->alpha_coefficient = config->use_hybrid_termination ? config->alpha_vamana_values.at(alpha_key).first : 0;
+        config->alpha_intercept = config->use_hybrid_termination ? config->alpha_vamana_values.at(alpha_key).second : 0;
+        cout << "alpha_coefficient is " << config->alpha_coefficient << ", alpha_intercept is " << config->alpha_intercept <<endl; 
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-
+        cout << "estimated_distance_calcs is " << estimated_distance_calcs  << ", termination_alpha is " << termination_alpha << endl;
         estimated_distance_calcs *=config->alpha_break;
         termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
 
 
          ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+            if(!histogram.fail() && (config->use_median_break || config->use_median_earliast) ){
+                vector<int> ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000,5500, 6000, 6500, 7000, 7500, 8000, 8500}; 
 
-            if(!histogram.fail() && config->use_median_break){
                 string info;
-                int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
+                int line  = find(ef_search.begin(),ef_search.end(), config->ef_search) - ef_search.begin();
+                cout << "line is " << line << endl;
                 int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
                 int distance_termination = 0;
                 while(line != 0 && getline(histogram,info)){
@@ -745,7 +751,7 @@ bool Vamana::should_terminate(Config* config, priority_queue<pair<float, int>>& 
 
         bw_break = static_cast<int>(config->bw_slope  * estimated_distance_calcs + config->bw_intercept);
         histogram.close();
-        // cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
+        cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
     }
 
 

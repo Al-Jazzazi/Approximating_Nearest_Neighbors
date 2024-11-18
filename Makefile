@@ -4,7 +4,9 @@ CXXFLAGS := -O2 -mavx -g
 MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 EPOCH_TIME := $(shell date +%s)
 SRCS := $(wildcard src/*.cpp)
+SRCS_VAMANA := $(wildcard src/vamana/*.cpp)
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
+OBJS_VAMANA := $(patsubst %.cpp, %.o, $(SRCS_VAMANA))
 COMMON_SRCS := config.h src/utils.cpp src/utils.h
 TARGETS := run_hnsw run_vamana dataset_metrics generate_groundtruth benchmark benchmark_slurm
 BUILD_PATH := build
@@ -17,7 +19,7 @@ run_hnsw: src/run.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-run_vamana: src/run_vamana.cpp src/vamana.cpp src/vamana.h $(COMMON_SRCS)
+run_vamana: src/vamana/run_vamana.cpp src/vamana/vamana.cpp src/vamana/vamana.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
@@ -47,9 +49,10 @@ benchmark_slurm_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp s
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-benchmark_slurm_vamana: src/benchmark_vamana.cpp src/vamana.cpp src/vamana.h  $(COMMON_SRCS)
+benchmark_slurm_vamana: src/vamana/benchmark_vamana.cpp src/vamana/vamana.cpp src/vamana/vamana.h  $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
 clean:
 	rm -f $(OBJS) $(TARGETS)
+	rm -f $(OBJS_VAMANA) $(TARGETS)

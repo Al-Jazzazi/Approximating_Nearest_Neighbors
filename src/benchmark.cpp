@@ -399,7 +399,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", current Pruning method = " << config->weight_selection_method 
                 << "\nCurrent Termination Method : "
                 << "\nUse_distance_termination = " << config->use_distance_termination  << ", use_hybrid_termination " << config->use_hybrid_termination <<  ", use_latest: " << config->use_latest  << ", use_median: " << config->use_median_equations
-                << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
+                << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break <<", Use median earlist = " << config->use_median_earliast << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
                 << "Distance Termination alpha = " << config->alpha_termination_selection  << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  <<  ", Median Break value = " << config->breakMedian  << endl;
 
@@ -429,10 +429,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
             histogram.close();
 
         }
-        if(config->export_median_precentiles){
-            ofstream histogram = ofstream(config->metric_prefix + "_median_percentiles.txt");
-            histogram.close();
-        }
+      
     }
 
 

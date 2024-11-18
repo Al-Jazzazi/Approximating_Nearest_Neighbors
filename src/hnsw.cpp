@@ -662,10 +662,12 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
 
 
          ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
-
             if(!histogram.fail() && (config->use_median_break || config->use_median_earliast) ){
+                vector<int> ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000,5500, 6000, 6500, 7000, 7500, 8000, 8500}; 
+
                 string info;
-                int line  = find(config->benchmark_ef_search.begin(),config->benchmark_ef_search.end(), config->ef_search) - config->benchmark_ef_search.begin();
+                int line  = find(ef_search.begin(),ef_search.end(), config->ef_search) - ef_search.begin();
+                cout << "line is " << line << endl;
                 int index = find(config->benchmark_median_percentiles.begin(),config->benchmark_median_percentiles.end(), config->breakMedian) - config->benchmark_median_percentiles.begin()+1; 
                 int distance_termination = 0;
                 while(line != 0 && getline(histogram,info)){
