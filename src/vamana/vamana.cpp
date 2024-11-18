@@ -114,7 +114,6 @@ void Vamana::toFiles(Config* config, const string& graph_name) {
     }
     graph_file.close();
     cout << "Exported graph to " << config->loaded_graph_file << endl; 
-    // config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
 
 }
 
@@ -131,18 +130,14 @@ void Vamana::fromFiles(Config* config, bool is_benchmarking) {
     for (int i = 0; i < num_nodes; ++i) {
         int num_neighbors;
         graph_file.read(reinterpret_cast<char*>(&num_neighbors), sizeof(num_neighbors));
-        // mappings[i].resize()
-        // Load each neighbor
+
         
         for (int j = 0; j < num_neighbors; ++j) {
             int neighbor;
             graph_file.read(reinterpret_cast<char*>(&neighbor), sizeof(neighbor));
             mappings[i].emplace(neighbor);
         }
-        // if(i%10000 == 0){
-        //     cout << i << endl;
-        //     cout << "num n = " << num_neighbors <<endl;
-        // }
+
     }
 
     cout << "done with loading"  <<endl;
@@ -181,11 +176,6 @@ void Vamana:: query(Config* config, int start, vector<vector<int>>& allResults, 
     for (int k = 0; k < config->num_queries; k++) {
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
-        // cout << "flag 1" << endl;
-        // auto startTime = std::chrono::high_resolution_clock::now();
-        // vector<int> result = GreedySearch(*this, start, thisQuery, L_QUERY);
-        // auto endTime = std::chrono::high_resolution_clock::now();
-        // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
         vector<int> result;
         BeamSearch(*this,config, start, thisQuery, config->ef_search, result);
         allResults.push_back(result);
@@ -211,17 +201,14 @@ void runQueries(Config* config, Vamana& graph, float** queries){
                 // Find similar neighbors
                 unordered_set<int> actual_set(actualResults[j].begin(), actualResults[j].end());
                 unordered_set<int> intersection;
-                // float actual_gain = 0;
-                // float ideal_gain = 0;
+
                 
-              
+    
                 for (int k = 0; k < results[j].size(); ++k) {
                     auto n_pair = results[j][k];
-                    // float gain = 1 / log2(k + 2);
-                    // ideal_gain += gain;
+
                     if (actual_set.find(n_pair) != actual_set.end()) {
                         intersection.insert(n_pair);
-                        // actual_gain += gain;
                     }
                 }
                 similar += intersection.size();
