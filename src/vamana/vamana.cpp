@@ -140,6 +140,7 @@ void Vamana::fromFiles(Config* config, bool is_benchmarking) {
 
     }
 
+    graph_file.close();
     cout << "done with loading"  <<endl;
 }
 

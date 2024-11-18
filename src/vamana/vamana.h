@@ -35,7 +35,6 @@ public:
     void randomize(int R);
     float findDistance(int i, float* query) ;
     float findDistance(int i, int j) ; 
-    void setEdge(int i, std::set<int> edges);
     void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
     void queryBruteForce(Config* config, int start);
     void sanityCheck(Config* config, const std::vector<std::vector<int>>& allResults) const;
