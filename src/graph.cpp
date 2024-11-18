@@ -53,7 +53,6 @@ void Graph::load(Config* config) {
         if (graph_file.eof()) break;
 
         std::set<unsigned> tmp;
-        std::set<unsigned> tmp;
         for (unsigned i = 0; i < num_neighbors; ++i) {
             unsigned neighbor;
             graph_file.read((char *)&neighbor, sizeof(unsigned));

@@ -26,21 +26,21 @@ public:
 
     Graph(Config* config);
     ~Graph();
-    void Graph::load(Config* config);
+    void load(Config* config);
 
     float findDistance(int i, float* query) ;
     float findDistance(int i, int j) ; 
-    void Graph::reset_statistics();
+    void reset_statistics();
 
-    bool Graph::should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared,  int candidates_popped_per_q);
-    void Graph::calculate_termination(Config *config);
-    void  Graph::runQueries(Config* config, float** queries);
-    void Graph::query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
+    bool should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared,  int candidates_popped_per_q);
+    void calculate_termination(Config *config);
+    void  runQueries(Config* config, float** queries);
+    void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
 
 
 };
 
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, vector<int>& closest);
+void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, std::vector<int>& closest);
 
 
 

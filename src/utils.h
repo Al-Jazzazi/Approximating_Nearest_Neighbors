@@ -15,6 +15,6 @@ void load_queries(Config* config, float** nodes, float** queries);
 void load_oracle(Config* config, std::vector<std::pair<int, int>>& result);
 void get_actual_neighbors(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
 void find_similar(Config* config,  const std::vector<std::vector<int>> actual_neighbors, const std::vector<std::vector<int>> neighbors,  float** nodes, float** queries, int& similar, float& total_ndcg);
-std::string get_cpu_brand(); 
+// std::string get_cpu_brand(); 
 
 #endif
