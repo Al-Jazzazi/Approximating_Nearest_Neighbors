@@ -27,17 +27,17 @@ int main() {
         }
     }
 
-    mt19937 gen(config->graph_seed);
-    uniform_real_distribution<float> dis(0, 0.9999999);
+    std::mt19937 gen(config->graph_seed);
+    std::uniform_real_distribution<float> dis(0, 0.9999999);
     for (int i = 0; i< config->num_training_generated; i++){
         // Choose a random node out of the source dataset
         generated[i] = new float[config->dimensions];
         int index_first = dis(gen) * config->num_training;
-        pair<int, float*> query = make_pair(index_first, training[index_first]);
+        std::pair<int, float*> query = std::make_pair(index_first, training[index_first]);
 
         // Choose 2 random nearest neighbors out of top 100
-        vector<Edge*> path;
-        vector<pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, true);
+        std::vector<Edge*> path;
+        std::vector<std::pair<float, int>> nearest_neighbors = hnsw->nn_search(config, path, query, config->num_return, true);
         int index_second =  nearest_neighbors[static_cast<int>(dis(gen) * 100)].second;
         int index_third = nearest_neighbors[static_cast<int>(dis(gen) * 100)].second;
             
