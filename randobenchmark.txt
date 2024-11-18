@@ -1,0 +1,24 @@
+Size 1000000
+Benchmarking with Parameters:  L_construct = 125, R = 70, alpha = 2, ef_search = 400, num_return = 1
+Current Termination Method : 
+Use_distance_termination = 0, use_hybrid_termination 0, use_latest: 0, use_median: 0, Use Break = 0, Use median break = 0, use_calculation_termination = 0, use oracle 1 = 0, use_calculation_oracle = 0
+Termination values : Distance Termination alpha = 4, alpha break = 1.5, efs break = 1.5, Median Break value = 0.9
+
+Varying ef_search:
+
+parameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if
+50, 1094, 1094, 0.974600, 0.487500, 0.974600, 
+60, 1248, 1248, 0.981100, 0.550200, 0.981100, 
+70, 1400, 1400, 0.986300, 0.622400, 0.986300, 
+80, 1549, 1549, 0.989600, 0.688700, 0.989600, 
+90, 1695, 1695, 0.991600, 0.744300, 0.991600, 
+100, 1839, 1839, 0.994000, 0.809400, 0.994000, 
+120, 2121, 2121, 0.996300, 0.995600, 0.996300, 
+140, 2395, 2395, 0.997200, 1.350000, 0.997200, 
+160, 2663, 2663, 0.998100, 1.517300, 0.998100, 
+180, 2925, 2925, 0.998500, 1.670500, 0.998500, 
+200, 3182, 3182, 0.998800, 1.821700, 0.998800, 
+225, 3495, 3495, 0.999200, 2.019200, 0.999200, 
+250, 3801, 3801, 0.999500, 2.211900, 0.999500, 
+
+

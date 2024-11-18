@@ -198,12 +198,9 @@ void runQueries(Config* config, Vamana& graph, float** queries){
     cout << "results[0] distance " << graph.findDistance(results[0][0], queries[0]) <<  ", actualResults[0] distance " << graph.findDistance(actualResults[0][0], queries[0]) << endl ; 
 
     for (int j = 0; j < config->num_queries; ++j) {
-                // Find similar neighbors
-                unordered_set<int> actual_set(actualResults[j].begin(), actualResults[j].end());
-                unordered_set<int> intersection;
-
                 
-    
+                unordered_set<int> actual_set(actualResults[j].begin(), actualResults[j].end());
+                unordered_set<int> intersection;    
                 for (int k = 0; k < results[j].size(); ++k) {
                     auto n_pair = results[j][k];
 
@@ -220,25 +217,6 @@ void runQueries(Config* config, Vamana& graph, float** queries){
 }
 
 
-void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
-    bool use_groundtruth = config->groundtruth_file != "";
-    if (use_groundtruth && config->query_file == "") {
-        cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
-        use_groundtruth = false;
-    }
-    if (use_groundtruth) {
-        // Load actual nearest neighbors
-        load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
-    } else {
-        // Calcuate actual nearest neighbors
-        auto start = chrono::high_resolution_clock::now();
-        knn_search(config, actual_neighbors, nodes, queries);
-        auto end = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-        cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;
-    }
- 
-}
 /// L, V, diff between L and V
 /// L -> priority queue with distance and index
 /// V -> vector with inde
@@ -317,7 +295,6 @@ void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, 
     int iteration = 0;
     float far_dist = found.top().first;
     while (!candidates.empty()) {
-        // cout << "flag 3 " << endl;
         far_dist = found.top().first;
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
@@ -342,7 +319,6 @@ void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, 
 
             if(visited.find(neighbor) == visited.end()){
                 visited.insert(neighbor);
-                // cout << "flag 4 " << endl;
                 float far_inner_dist = found.top().first;
                 float neighbor_dist = graph.findDistance(neighbor,query);
                 if (neighbor_dist < far_inner_dist || found.size() < bw) {
@@ -368,7 +344,6 @@ void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, 
         }
 
     }
-    // cout << "flag 5" << endl;
     int idx =using_top_k ? top_k.size() : found.size(); 
     closest.clear();
     closest.resize(idx);
@@ -386,8 +361,6 @@ void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, 
 
 
     closest.resize(min(closest.size(), (size_t)config->num_return));
-    // cout << "flag 6 " << endl;
-
 }
 
 void RobustPrune(Vamana& graph, int point, vector<int>& candidates, long threshold, int R) {
@@ -468,7 +441,6 @@ Vamana VamanaIndexing(Config* config, long alpha, int R) {
     Vamana graph(config);
     if(config->load_graph_file){
         graph.fromFiles(config, config->export_benchmark);
-        // print_100_nodes(graph, config );
         return graph;
     }
 
@@ -476,7 +448,6 @@ Vamana VamanaIndexing(Config* config, long alpha, int R) {
     cout << "Randomizing edges" << endl;
     graph.randomize(R);
     cout << "Randomized edges" << endl;
-    // print_100_mappings(graph, config);
     cout << "Random graph: " << endl;
     int s = findStart(config, graph);
     cout << "The centroid is #" << s << endl;

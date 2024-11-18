@@ -69,8 +69,8 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = false;
-    const bool use_hybrid_termination = true; 
-    const bool use_latest = true;  // Only used if use_hybrid_termination = true
+    const bool use_hybrid_termination = false; 
+    const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
     const bool use_median_break = false; // Only used if use_break = true
     const bool use_median_earliast = false; //used to set earliast based on median 
@@ -251,7 +251,8 @@ public:
     {
     // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=50_latest_" + std::to_string(alpha_termination_selection) + "_",
     // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=10_latest_" + std::to_string(alpha_termination_selection) + "_",
-    "./runs_fall_2024/vamana/"+ dataset + "/latest/k=1_latest_" + std::to_string(alpha_termination_selection) + "_"
+    // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=1_latest_" + std::to_string(alpha_termination_selection) + "_"
+    "rando"
     };
     // { "./runs_fall_2024/run/"+ dataset+"/latest/k=50_latest_" + std::to_string(alpha_termination_selection), "./runs_fall_2024/run/"+ dataset+"/latest/k=10_latest_" + std::to_string(alpha_termination_selection),"./runs_fall_2024/run/"+ dataset+"/latest/k=1_latest_" + std::to_string(alpha_termination_selection)};
     std::vector<std::string> grid_graph_file =  {loaded_graph_file,loaded_graph_file,loaded_graph_file};
@@ -265,7 +266,7 @@ public:
     std::vector<int> benchmark_ef_construction = {};
     // std::vector<int> benchmark_ef_search  = {650,700,800,900,1000,1100,1200,1300,1400,1500};
     //55, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 225, 250, 275, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500,550,600,650
-    std::vector<int> benchmark_ef_search = {10,20,30,40,50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 225, 250, 275, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500};
+    std::vector<int> benchmark_ef_search = {50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 225, 250};
     std::vector<float> benchmark_termination_alpha ={};
     //0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.08,0.09, 0.1, 0.11, 0.12,0.14, 0.15,0.16,0.17, 0.18,0.19, 0.2
     //0.21, 0.22, 0.23, 0.24, 0.25,0.26, 0.27, 0.28, 0.29, 0.30,0.31,0.32,0.33,0.34, 0.35, 0.355, 0.36, 0.365, 0.37, 0.375, 0.38, 0.385,0.39,0.395,0.4, 0.405, 0.41

@@ -55,7 +55,6 @@ Vamana VamanaIndexing(Config* config, long alpha, int R);
 int findStart(Config* config,  Vamana& g);
 void print_100_nodes( Vamana& g, Config* config);
 void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int L, std::vector<int>& closest);
-void get_actual_neighbors(Config* config, std::vector<std::vector<int>>& actual_neighbors, float** nodes, float** queries);
 void runQueries(Config* config, Vamana& graph, float** queries);
 void print_100_mappings(Vamana& graph, Config* config);
 #endif

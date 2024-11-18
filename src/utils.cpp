@@ -1,7 +1,10 @@
 #include <immintrin.h>
 #include <fstream>
 #include <queue>
+#include <cpuid.h>
 #include <random>
+#include <chrono>
+#include <unordered_set>
 #include "utils.h"
 
 using namespace std;
@@ -42,6 +45,38 @@ float calculate_l2_sq(float* a, float* b, int dimensions) {
 
     return sum[0] + remainder;
 }
+
+// Obtain the actual nearest neighbors either using groundtruth file or exact KNN search 
+void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
+    bool use_groundtruth = config->groundtruth_file != "";
+    if (use_groundtruth && config->query_file == "") {
+        cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
+        use_groundtruth = false;
+    }
+    if (use_groundtruth) {
+        // Load actual nearest neighbors
+        load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
+    } else {
+        // Calcuate actual nearest neighbors
+        auto start = chrono::high_resolution_clock::now();
+        knn_search(config, actual_neighbors, nodes, queries);
+        auto end = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+        cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;
+    }
+    if (config->benchmark_print_neighbors) {
+        for (int i = 0; i < config->num_queries; ++i) {
+            cout << "Neighbors in ideal case for query " << i << endl;
+            for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
+                float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
+                cout << actual_neighbors[i][j] << " (" << dist << ") ";
+            }
+            cout << endl;
+        }
+    }
+}
+
+
 
 // Finds the nearest neighbors from nodes to each query using an exact KNN search
 void knn_search(Config* config, vector<vector<int>>& results, float** nodes, float** queries) {
@@ -306,3 +341,76 @@ void load_oracle(Config* config, vector<pair<int, int>>& results) {
     f.close();
     std::sort(results.begin(), results.end());
 }
+
+
+string get_cpu_brand() {
+    char CPUBrand[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+    memset(CPUBrand, 0, sizeof(CPUBrand));
+
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+        if (i == 0x80000002)
+            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
+    }
+    string output(CPUBrand);
+    return output;
+}
+
+
+
+
+void find_similar(Config* config,  const vector<vector<int>> actual_neighbors, const vector<vector<int>> neighbors,  float** nodes, float** queries, int& similar, float& total_ndcg) {
+     for (int j = 0; j < config->num_queries; ++j) {
+                // Find similar neighbors
+                unordered_set<int> actual_set(actual_neighbors[j].begin(), actual_neighbors[j].end());
+                unordered_set<int> intersection;
+                float actual_gain = 0;
+                float ideal_gain = 0;
+
+                for (size_t k = 0; k < neighbors[j].size(); ++k) {
+                    int n = neighbors[j][k];
+                    float gain = 1 / log2(k + 2);
+                    ideal_gain += gain;
+                    if (actual_set.find(n) != actual_set.end()) {
+                        intersection.insert(n);
+                        actual_gain += gain;
+                    }
+                }
+                similar += intersection.size();
+                total_ndcg += actual_gain / ideal_gain;
+
+                // Print out neighbors[i][j]
+                if (config->benchmark_print_neighbors) {
+                    cout << "Neighbors for query " << j << ": ";
+                    for (size_t k = 0; k < neighbors[j].size(); ++k) {
+                        auto n = neighbors[j][k];
+                        cout << n;
+                    }
+                    cout << endl;
+                }
+
+                // Print missing neighbors between intersection and actual_neighbors
+                if (config->benchmark_print_missing) {
+                    cout << "Missing neighbors for query " << j << ": ";
+                    if (intersection.size() == actual_neighbors[j].size()) {
+                        cout << "None" << endl;
+                        continue;
+                    }
+                    for (size_t k = 0; k < actual_neighbors[j].size(); ++k) {
+                        if (intersection.find(actual_neighbors[j][k]) == intersection.end()) {
+                            float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions);
+                            cout << actual_neighbors[j][k] << " (" << dist << ") ";
+                        }
+                    }
+                    cout << endl;
+                }
+            }
+}
+

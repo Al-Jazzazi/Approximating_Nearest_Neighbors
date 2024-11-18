@@ -34,13 +34,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         }
 
         vector<vector<int>> neighbors;
-        double construction_duration;
-        double search_duration;
-        long long search_dist_comp;
-        long long total_dist_comp;
-        long long candidates_popped;
-        long long candidates_size;
-        long long candidates_without_if;
+        double construction_duration, search_duration;
+        long long search_dist_comp, total_dist_comp, candidates_popped, candidates_size, candidates_without_if ;
         Vamana G = VamanaIndexing(config, config->alpha_vamana, config->R);
         vector<vector<int>> actual_neighbors;
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
@@ -155,52 +150,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
                 << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
             
-            for (int j = 0; j < config->num_queries; ++j) {
-                // Find similar neighbors
-                unordered_set<int> actual_set(actual_neighbors[j].begin(), actual_neighbors[j].end());
-                unordered_set<int> intersection;
-                float actual_gain = 0;
-                float ideal_gain = 0;
-
-                for (size_t k = 0; k < neighbors[j].size(); ++k) {
-                    int n = neighbors[j][k];
-                    float gain = 1 / log2(k + 2);
-                    ideal_gain += gain;
-                    if (actual_set.find(n) != actual_set.end()) {
-                        intersection.insert(n);
-                        actual_gain += gain;
-                    }
-                }
-                similar += intersection.size();
-                total_ndcg += actual_gain / ideal_gain;
-
-                // Print out neighbors[i][j]
-                if (config->benchmark_print_neighbors) {
-                    cout << "Neighbors for query " << j << ": ";
-                    for (size_t k = 0; k < neighbors[j].size(); ++k) {
-                        auto n = neighbors[j][k];
-                        cout << n;
-                    }
-                    cout << endl;
-                }
-
-                // Print missing neighbors between intersection and actual_neighbors
-                if (config->benchmark_print_missing) {
-                    cout << "Missing neighbors for query " << j << ": ";
-                    if (intersection.size() == actual_neighbors[j].size()) {
-                        cout << "None" << endl;
-                        continue;
-                    }
-                    for (size_t k = 0; k < actual_neighbors[j].size(); ++k) {
-                        if (intersection.find(actual_neighbors[j][k]) == intersection.end()) {
-                            float dist = calculate_l2_sq(queries[j], nodes[actual_neighbors[j][k]], config->dimensions);
-                            cout << actual_neighbors[j][k] << " (" << dist << ") ";
-                        }
-                    }
-                    cout << endl;
-                }
-            }
-        }
+            find_similar(config, actual_neighbors, neighbors, nodes, queries, similar, total_ndcg);
+       }
 
         // Update benchmark file statistics
         double recall = (double) similar / (config->num_queries * config->num_return);
@@ -228,12 +179,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             lines.push_back(line);
         }
         
-        // Conditionally save graph
-        // if (config->export_graph && !config->load_graph_file) {
-        //     G.toFiles(config, parameter_name + "_" + to_string(parameter_values[i]), construction_duration);
-        // }
 
-        // delete G;
     }
     // Write to benchmark file
     if (config->export_benchmark) {

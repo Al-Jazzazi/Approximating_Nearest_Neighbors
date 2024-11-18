@@ -9,35 +9,6 @@
 
 using namespace std;
 
-// Obtain the actual nearest neighbors either using groundtruth file or exact KNN search 
-void get_actual_neighbors(Config* config, vector<vector<int>>& actual_neighbors, float** nodes, float** queries) {
-    bool use_groundtruth = config->groundtruth_file != "";
-    if (use_groundtruth && config->query_file == "") {
-        cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
-        use_groundtruth = false;
-    }
-    if (use_groundtruth) {
-        // Load actual nearest neighbors
-        load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
-    } else {
-        // Calcuate actual nearest neighbors
-        auto start = chrono::high_resolution_clock::now();
-        knn_search(config, actual_neighbors, nodes, queries);
-        auto end = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-        cout << "Brute force time: " << duration / 1000.0 << " seconds" << endl;
-    }
-    if (config->benchmark_print_neighbors) {
-        for (int i = 0; i < config->num_queries; ++i) {
-            cout << "Neighbors in ideal case for query " << i << endl;
-            for (size_t j = 0; j < actual_neighbors[i].size(); ++j) {
-                float dist = calculate_l2_sq(queries[i], nodes[actual_neighbors[i][j]], config->dimensions);
-                cout << actual_neighbors[i][j] << " (" << dist << ") ";
-            }
-            cout << endl;
-        }
-    }
-}
 
 template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
@@ -469,25 +440,6 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
     }
 }
 
-string get_cpu_brand() {
-    char CPUBrand[0x40];
-    unsigned int CPUInfo[4] = {0,0,0,0};
-    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-    unsigned int nExIds = CPUInfo[0];
-    memset(CPUBrand, 0, sizeof(CPUBrand));
-
-    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
-        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-        if (i == 0x80000002)
-            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000003)
-            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
-        else if (i == 0x80000004)
-            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
-    }
-    string output(CPUBrand);
-    return output;
-}
 
 /**
  * This class is used to run HNSW with different parameters, comparing the recall
