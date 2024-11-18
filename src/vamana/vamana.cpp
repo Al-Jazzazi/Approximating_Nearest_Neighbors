@@ -175,34 +175,6 @@ float Vamana::findDistance(int i, int j) {
 }
 
 
-// void Vamana::sanityCheck(Config* config, const vector<vector<int>>& allResults) const {
-//     // vector<set<int>> gives all NNs
-//     fstream groundTruth;
-//     groundTruth.open(config->groundtruth_file);
-//     if (!groundTruth) {cout << "Ground truth file not open" << endl;}
-//     int each;
-//     float totalCorrect = 0;
-//     float result;
-//     for (int j = 0; j < config->num_queries; j++) {
-//         int correct = 0;
-//         vector<int> allTruths = {};
-//         for (int i = 0; i < K_TRUTH; i++) {
-//             groundTruth >> each;
-//             allTruths.push_back(each);
-//         }
-//         vector<int> eachResult = {};
-//         for (int count = 0; count < K_QUERY; count++) {
-//             for (int ea : allResults[j]) {
-//                 if (allTruths[count] == ea) correct++;
-//             }
-//         }
-//         result = correct * 100 / K_QUERY;
-//         totalCorrect += result;
-//         cout << "Found " << result << "% among " << K_QUERY << " closest neighbors" << endl;
-//     }
-//     result = totalCorrect / config->num_queries;
-//     cout << "Average correctness: " << result << '%' << endl;
-// }
 
 void Vamana:: query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
    
@@ -221,81 +193,6 @@ void Vamana:: query(Config* config, int start, vector<vector<int>>& allResults, 
     cout << "All queries processed" << endl;
 }
 
-
-// void Vamana::queryTest(int start) {
-//     vector<float*> queryNodes = {};
-//     int queryCount = 0;
-//     int correct = 0;
-//     while(queryCount < 100) {
-//         int random = rand() % num_nodes;
-//         queryNodes.push_back(nodes[random]);
-//         queryCount++;
-//     }
-//     for (float* each : queryNodes) {
-//         auto startTime = std::chrono::high_resolution_clock::now();
-//         vector<int> result = GreedySearch(*this, start, each, L_QUERY);
-//         auto endTime = std::chrono::high_resolution_clock::now();
-//         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
-//         int closestNode = 0;
-//         float shortestDistance = findDistance(0, each);
-//         for (int i = 0; i < num_nodes; i++) {
-//             float distance = findDistance(i, each);
-//             if (distance < shortestDistance) {
-//                 closestNode = i;
-//                 shortestDistance = distance;
-//             }
-//         }
-//         for (auto i : result) {
-//             if (i == closestNode) correct++;
-//         }
-//     }
-//     cout << "Total correct number: " << correct << endl;
-// }
-
-// void Vamana::queryBruteForce(Config* config, int start) {
-//     fstream f;
-//     f.open(config->query_file);
-//     if (!f) {cout << "Query file not open" << endl;}
-//     float** queries = new float*[config->num_queries];
-//     float each;
-//     for (int i = 0; i < config->num_queries; i++) {
-//         queries[i] = new float[DIMENSION];
-//         for (int j = 0; j < DIMENSION; j++) {
-//             f >> each;
-//             queries[i][j] = each;
-//         }
-//     }
-//     cout << "All queries read" << endl;   
-//     fstream groundTruth;
-//     groundTruth.open(config->groundtruth_file);
-//     if (!groundTruth) {cout << "Ground truth file not open" << endl;}
-//     int totalCorrect = 0;
-//     float result;
-//     for (int j = 0; j < config->num_queries; j++) {
-//         vector<int> allTruths = {};
-//         for (int i = 0; i < K_TRUTH; i++) {
-//             groundTruth >> each;
-//             allTruths.push_back(each);
-//         }
-//         float* query = queries[j];
-//         int closest = 0;
-//         double closestDist = findDistance(closest, query);
-//         for (int k = 0; k < num_nodes; k++) {
-//             double newDist = findDistance(k, query);
-//             if (newDist < closestDist) {
-//                 closest = k;
-//                 closestDist = newDist;
-//             }
-//         }
-//         if (allTruths[0] == closest) {
-//             totalCorrect++;
-//         } else {
-//             cout << allTruths[0] << ' ' << closest << endl;
-//         }
-//     }
-//     result = totalCorrect;
-//     cout << "Average correctness: " << result << '%' << endl;
-// }
 
 
 void runQueries(Config* config, Vamana& graph, float** queries){
@@ -755,4 +652,4 @@ void Vamana::calculate_termination(Config *config){
     }
 
 
-// void benchmark()
+
