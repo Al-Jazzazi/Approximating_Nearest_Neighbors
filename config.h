@@ -14,7 +14,7 @@ public:
 
     // File Setup
     std::string dataset = "sift";
-    int num_return = 50;
+    int num_return = 1;
     int alpha_termination_selection =4; 
     // alpha * (2 * d_k + d_1)  --> 0 
     // alpha * 2 * d_k + d_1  --> 1 
@@ -25,7 +25,8 @@ public:
     //"./runs_fall_2024/vamana/"+ dataset + "/k=" +std::to_string(num_return) + "_" ;
 
     std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file = "./grphs/"+ dataset+"/_graph_vamana.bin";
+    std::string loaded_graph_file ="/home/ya2225/nsg/build/tests/sift.nsg";
+    //  "./grphs/"+ dataset+"/_graph_vamana.bin";
     // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
 
     //  "./grphs/vamana/_graph_vamana_1M_sift.bin";
@@ -63,7 +64,7 @@ public:
     const bool single_ep_training = true;
     // int ef_construction = 500;
     int ef_construction = 125;
-    int ef_search = 400;
+    int ef_search = 300;
     int ef_search_upper = 1;
     int k_upper = 1;
 

@@ -53,7 +53,7 @@ void Graph::load(Config* config) {
         if (graph_file.eof()) break;
 
         std::set<unsigned> tmp;
-        for (unsigned i = 0; i < num_neighbors; ++i) {
+        for (unsigned j = 0; j < num_neighbors; ++j) {
             unsigned neighbor;
             graph_file.read((char *)&neighbor, sizeof(unsigned));
             mappings[i].emplace(neighbor);
@@ -328,6 +328,16 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
 }
 
 
+void Graph::print_100_mappings(Config* config){
+    for(int i = 0; i<mappings.size(); i++){
+        if(i ==100 ) break;
+        cout << "i: " <<mappings[i].size() <<endl;
+       
+        
+        
+    }
+}
+
 
 int main() {
     Config* config = new Config();
@@ -342,6 +352,7 @@ int main() {
     load_queries(config, G.nodes, queries);
 
     G.runQueries(config, queries);
+    // G.print_100_mappings(config);
 
     return 0;
 }

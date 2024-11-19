@@ -36,7 +36,7 @@ public:
     void calculate_termination(Config *config);
     void  runQueries(Config* config, float** queries);
     void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
-
+    void print_100_mappings(Config* config);
 
 };
 
