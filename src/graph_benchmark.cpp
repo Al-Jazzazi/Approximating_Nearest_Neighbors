@@ -1,14 +1,10 @@
-#include <iostream>
-#include <algorithm>
-#include <chrono>
-#include <unordered_set>
-#include <vector>
-#include <cpuid.h>
 #include <fstream>
-#include <string.h>
-#include "vamana.h"
+#include <fstream>
+#include <chrono> 
+#include "graph.h"
+#include "utils.h"
+using namespace std; 
 
-using namespace std;
 
 
 template <typename T>
@@ -36,10 +32,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         vector<vector<int>> neighbors;
         double construction_duration, search_duration;
         long long search_dist_comp, total_dist_comp, candidates_popped, candidates_size, candidates_without_if ;
-        Vamana G = VamanaIndexing(config, config->alpha_vamana, config->R);
+        Graph G(config);
+        G.load(config);
+
         vector<vector<int>> actual_neighbors;
+
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
-        int startNode = findStart(config, G);
+
+        int startNode = G.start;
 
         // Re-initialize statistics for query search
         if (config->ef_search < config->num_return) {
@@ -52,8 +52,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_without_if = 0;
             break;
         }
+
         G.reset_statistics();
-    
+
         int median_comps_layer0 = 0;
         int similar = 0;
         float total_ndcg = 0;
@@ -76,19 +77,34 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_size = 0 ;
             candidates_without_if = 0;
         // Run query search
+
         } else {
+
             vector<int> counts_calcs;
             for (int j = 0; j < 20; j++) {
                 counts_calcs.push_back(0);
             }
+
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
             vector<long long int> dist_comps_per_q_vec;
+
             if(config->use_hybrid_termination || config->use_distance_termination ) 
                 G.calculate_termination(config);
-            for (int j = 0; j < config->num_queries; ++j) {
-                G.cur_groundtruth = actual_neighbors[j];
         
+
+            for (int j = 0; j < config->num_queries; ++j) {
+
+             try {
+                if (j >= actual_neighbors.size()) 
+                    throw std::out_of_range("Index out of bounds in actual_neighbors");
+
+                G.cur_groundtruth = actual_neighbors[j];
+                } 
+                catch (const std::out_of_range& e) {
+                std::cerr << "Error: " << e.what() << std::endl;
+                }
+
                 vector<int> result;
                 BeamSearch(G,config, startNode, queries[j], config->ef_search, result);
                 neighbors.emplace_back(result);
@@ -100,7 +116,10 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 if (config->export_median_calcs || config->export_median_precentiles) {
                     dist_comps_per_q_vec.push_back(G.distanceCalculationCount);
                 }
+
             }
+
+
 
             // Log search statistics
             auto end = chrono::high_resolution_clock::now();
@@ -204,6 +223,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
 
 
+
 void run_benchmarks(Config* config, float** nodes, float** queries, float** training) {
     // Initialize output files
     ofstream* results_file = NULL;
@@ -271,7 +291,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
 
 
 
-//  * This class is used to run Vamana with different parameters, comparing the recall
+//  * This class is used to run HNSW with different parameters, comparing the recall
 //  * versus ideal for each set of parameters.
 // */
 int main() {
@@ -327,4 +347,5 @@ int main() {
     now = time(0);
     cout << "Benchmark run ended at " << ctime(&now);
 }
+
 
