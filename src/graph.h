@@ -21,6 +21,9 @@ public:
     long long int distanceCalculationCount;
     long long int num_original_termination;
     long long int num_distance_termination;
+    long long int num_set_checks;
+    long long int size_of_c;
+    
 
     std::vector<int> cur_groundtruth;
 

@@ -182,10 +182,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             std::string dist_comp_layer0_string = config->export_median_calcs ? std::to_string(median_comps_layer0) : std::to_string(search_dist_comp / config->num_queries);
             std::string line = std::to_string(parameter) + ", " 
                      + dist_comp_layer0_string + ", "
-                     + std::to_string(total_dist_comp / config->num_queries) + ", " 
+                    //  + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
-                     + std::to_string(search_duration / config->num_queries) + ", "
-                     + std::to_string(average_ndcg) + ", ";
+                     + std::to_string(G.num_set_checks) + ", "
+                     + std::to_string(G.size_of_c) + ", "
+                     + std::to_string(search_duration / config->num_queries) + ", ";
+                    
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
                      //+ std::to_string(candidates_size / static_cast<float>(candidates_without_if)) + ", ";
        
@@ -194,6 +196,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
                 line += std::to_string(G.num_distance_termination ) + "---" + std::to_string(G.num_original_termination) + ", ";
                 line += std::to_string(termination_alpha) + ", ";
+
             }
             lines.push_back(line);
         }
@@ -204,7 +207,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
     if (config->export_benchmark) {
         if( config->export_median_calcs)
             *results_file << "note that distance at layer 0 here is median" << endl;
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks,  size of c, runtime/query, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;

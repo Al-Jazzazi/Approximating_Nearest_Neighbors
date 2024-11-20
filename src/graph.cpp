@@ -24,6 +24,8 @@ Graph::Graph(Config* config) {
     distanceCalculationCount = 0;
     num_original_termination = 0; 
     num_distance_termination = 0;
+    num_set_checks= 0;
+    size_of_c = 0;
 }
 
 Graph::~Graph() {
@@ -82,6 +84,9 @@ void Graph::reset_statistics(){
     distanceCalculationCount = 0;
     num_original_termination = 0; 
     num_distance_termination = 0;
+    num_set_checks = 0; 
+    size_of_c = 0;
+
  }
 
 
@@ -275,17 +280,20 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                 else 
                     graph.num_distance_termination++;
             }
+            graph.size_of_c = candidates.size(); 
             break;
         }
 
         set<unsigned int>& neighbors = graph.mappings[closest];
         for (int neighbor : neighbors) {
-
+            graph.num_set_checks++;
             if(visited.find(neighbor) == visited.end()){
                 visited.insert(neighbor);
-                float far_inner_dist = found.top().first;
+                float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
                 float neighbor_dist = graph.findDistance(neighbor,query);
-                if (neighbor_dist < far_inner_dist || found.size() < bw) {
+                if ( (neighbor_dist < far_inner_dist || found.size() < bw)
+                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * sqrt(top_k.top().first)   ) ) ) {
+                
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
     
                     if (using_top_k) {
