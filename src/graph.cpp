@@ -280,7 +280,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                 else 
                     graph.num_distance_termination++;
             }
-            graph.size_of_c = candidates.size(); 
+            graph.size_of_c += candidates.size(); 
             break;
         }
 

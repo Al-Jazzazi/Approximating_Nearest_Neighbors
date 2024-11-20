@@ -184,8 +184,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + dist_comp_layer0_string + ", "
                     //  + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
-                     + std::to_string(G.num_set_checks) + ", "
-                     + std::to_string(G.size_of_c) + ", "
+                     + std::to_string(G.num_set_checks/ config->num_queries) + ", "
+                     + std::to_string(G.size_of_c / config->num_queries) + ", "
                      + std::to_string(search_duration / config->num_queries) + ", ";
                     
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
