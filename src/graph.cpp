@@ -26,6 +26,9 @@ Graph::Graph(Config* config) {
     num_distance_termination = 0;
     num_set_checks= 0;
     size_of_c = 0;
+    num_insertion_to_c = 0;
+    num_deletion_from_c = 0;
+    size_of_visited = 0;
 }
 
 Graph::~Graph() {
@@ -86,6 +89,10 @@ void Graph::reset_statistics(){
     num_distance_termination = 0;
     num_set_checks = 0; 
     size_of_c = 0;
+    num_insertion_to_c = 0;
+    num_deletion_from_c = 0;
+    size_of_visited = 0;
+    
 
  }
 
@@ -255,9 +262,12 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
     }
 
     float distance = graph.findDistance(start, query);
-    candidates.emplace(make_pair(distance,start));
+    candidates.emplace(make_pair(distance,start));      
     visited.emplace(start);
     found.emplace(make_pair(distance,start));
+
+    graph.num_insertion_to_c++;  
+
     if (using_top_k) {
         top_k.emplace(make_pair(distance,start));
         top_1 = make_pair(distance,start);
@@ -271,6 +281,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         candidates.pop();
+        
         ++candidates_popped_per_q;
 
         if (graph.should_terminate(config, top_k, top_1, close_dist, far_dist, candidates_popped_per_q)) {
@@ -280,7 +291,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                 else 
                     graph.num_distance_termination++;
             }
-            graph.size_of_c += candidates.size(); 
+           
             break;
         }
 
@@ -295,6 +306,8 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                         (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * sqrt(top_k.top().first)   ) ) ) {
                 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
+
+                    graph.num_insertion_to_c++;  
     
                     if (using_top_k) {
                         top_k.emplace(neighbor_dist, neighbor);
@@ -316,6 +329,13 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         }
 
     }
+    
+    //Could've been added inside termination method
+    graph.size_of_c += candidates.size(); 
+    graph.num_deletion_from_c += candidates_popped_per_q; 
+    graph.size_of_visited += visited.size();
+
+    
     int idx =using_top_k ? top_k.size() : found.size(); 
     closest.clear();
     closest.resize(idx);

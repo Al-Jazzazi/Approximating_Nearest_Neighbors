@@ -23,6 +23,9 @@ public:
     long long int num_distance_termination;
     long long int num_set_checks;
     long long int size_of_c;
+    long long int num_insertion_to_c;
+    long long int num_deletion_from_c;
+    long long int size_of_visited;
     
 
     std::vector<int> cur_groundtruth;

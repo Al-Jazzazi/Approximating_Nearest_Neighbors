@@ -186,6 +186,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                      + std::to_string(recall) + ", " 
                      + std::to_string(G.num_set_checks/ config->num_queries) + ", "
                      + std::to_string(G.size_of_c / config->num_queries) + ", "
+                     + std::to_string(G.num_insertion_to_c / config->num_queries) + ", "
+                     + std::to_string(G.num_deletion_from_c / config->num_queries) + ", "
+                     + std::to_string(G.size_of_visited / config->num_queries) + ", "           
                      + std::to_string(search_duration / config->num_queries) + ", ";
                     
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
@@ -207,7 +210,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
     if (config->export_benchmark) {
         if( config->export_median_calcs)
             *results_file << "note that distance at layer 0 here is median" << endl;
-        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks,  size of c, runtime/query, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks/query,  size of c/query, num_insertion_to_c/query, num_deletion_from_c/query,size_of_visited/query,  runtime/query,  ratio termination (distance based/original), alpha" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
