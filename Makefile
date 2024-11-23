@@ -23,7 +23,7 @@ run_vamana: src/vamana/run_vamana.cpp src/vamana/vamana.cpp src/vamana/vamana.h 
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-run_graph: src/graph.cpp src/graph.h $(COMMON_SRCS) 
+run_graph: src/run_graph.cpp src/graph.cpp src/graph.h $(COMMON_SRCS) 
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
