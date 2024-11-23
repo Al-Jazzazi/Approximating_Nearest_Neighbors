@@ -34,6 +34,7 @@ public:
     ~Graph();
     void load(Config* config);
 
+
     float findDistance(int i, float* query) ;
     float findDistance(int i, int j) ; 
     void reset_statistics();
@@ -43,7 +44,8 @@ public:
     void  runQueries(Config* config, float** queries);
     void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
     void print_100_mappings(Config* config);
-
+    void print_k_nodes( Config* config, int k = 100);
+    void print_k_neigbours(Config* config, int k = 100);
 };
 
 void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, std::vector<int>& closest);

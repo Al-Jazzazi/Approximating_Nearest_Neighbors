@@ -210,7 +210,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
     if (config->export_benchmark) {
         if( config->export_median_calcs)
             *results_file << "note that distance at layer 0 here is median" << endl;
-        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks/query,  size of c/query, num_insertion_to_c/query, num_deletion_from_c/query,size_of_visited/query,  runtime/query,  ratio termination (distance based/original), alpha" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks/query,  size_of_c/query, num_insertion_to_c/query, num_deletion_from_c/query,size_of_visited/query,  runtime/query,  ratio termination (distance based/original), alpha" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;

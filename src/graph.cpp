@@ -20,7 +20,7 @@ Graph::Graph(Config* config) {
     for (int i = 0; i < mappings.size(); i++) {
         mappings[i] = {};
     }
-    int start = -1;
+    start = 0;
     distanceCalculationCount = 0;
     num_original_termination = 0; 
     num_distance_termination = 0;
@@ -48,8 +48,10 @@ void Graph::load(Config* config) {
         return;
     }
 
-    graph_file.read((char *)&width, sizeof(unsigned));
-    graph_file.read((char *)&start, sizeof(unsigned));
+    // if(  (config->loaded_graph_file.size() > 3) &&   config->loaded_graph_file.substr(config->loaded_graph_file.size() - 3) == "nsg"){
+        graph_file.read((char *)&width, sizeof(unsigned));
+        graph_file.read((char *)&start, sizeof(unsigned));
+    // }
 
     for (int i = 0; i < num_nodes; ++i) {
         unsigned num_neighbors;
@@ -57,7 +59,6 @@ void Graph::load(Config* config) {
 
         if (graph_file.eof()) break;
 
-        std::set<unsigned> tmp;
         for (unsigned j = 0; j < num_neighbors; ++j) {
             unsigned neighbor;
             graph_file.read((char *)&neighbor, sizeof(unsigned));
@@ -67,7 +68,6 @@ void Graph::load(Config* config) {
     }
     graph_file.close();
 }
-
 
 
 float Graph::findDistance(int i, float* query)  {
@@ -302,7 +302,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
                 visited.insert(neighbor);
                 float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
                 float neighbor_dist = graph.findDistance(neighbor,query);
-                if ( (neighbor_dist < far_inner_dist || found.size() < bw) && 
+                if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
                         (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * sqrt(top_k.top().first)   ) ) ) {
                 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
@@ -366,6 +366,32 @@ void Graph::print_100_mappings(Config* config){
     }
 }
 
+void Graph::print_k_neigbours(Config* config, int k){
+    for(int i = 0; i<mappings.size(); i++){
+        if(i ==k) break;
+        cout << "i: " << i  << ", size of k is " << mappings[i].size() <<endl;
+        for(auto n: mappings[i]){
+            cout << n << " ";
+        } 
+
+       cout << endl; 
+        
+        
+    }
+}
+
+void Graph::print_k_nodes( Config* config, int k){
+    for(int i=0; i<config->num_nodes; i++){
+        if(i ==k ) break;
+        cout << "i: " << i << endl;
+        for(int j =0; j< DIMENSION; j++){
+            cout << ", " << nodes[i][j]; 
+        }
+        cout <<endl;
+    }
+}
+
+
 
 // int main() {
 //     Config* config = new Config();
@@ -381,6 +407,7 @@ void Graph::print_100_mappings(Config* config){
 
 //     G.runQueries(config, queries);
 //     // G.print_100_mappings(config);
-
+//     // G.print_k_nodes(config);
+//     G.print_k_neigbours(config, 10);
 //     return 0;
 // }
