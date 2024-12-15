@@ -48,7 +48,7 @@ void Graph::load(Config* config) {
         return;
     }
 
-    if(  (config->loaded_graph_file.size() > 3) &&   config->loaded_graph_file.substr(config->loaded_graph_file.size() - 3) == "nsg"){
+    if( config->graph == "nsg"){
         graph_file.read((char *)&width, sizeof(unsigned));
         graph_file.read((char *)&start, sizeof(unsigned));
     }
@@ -365,6 +365,18 @@ void Graph::print_100_mappings(Config* config){
         
     }
 }
+
+
+void Graph::print_avg_neigbor(Config* config){
+    long long int sum  =0 ;
+    for(int i = 0; i<mappings.size(); i++){
+        sum += mappings[i].size();
+        
+        
+    }
+    std::cout << "Avg # of neighbors  is = " << sum/mappings.size() << std::endl;
+}
+
 
 void Graph::print_k_neigbours(Config* config, int k){
     for(int i = 0; i<mappings.size(); i++){

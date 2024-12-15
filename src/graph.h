@@ -46,6 +46,7 @@ public:
     void print_100_mappings(Config* config);
     void print_k_nodes( Config* config, int k = 100);
     void print_k_neigbours(Config* config, int k = 100);
+    void print_avg_neigbor(Config* config);
 };
 
 void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, std::vector<int>& closest);

@@ -51,6 +51,8 @@ void RunSearch(){
         G.toFiles(config,"vamana_1M_sift");
 
     // Search queries
+    G.calculate_termination(config);
+
     runQueries(config, G, queries);
 
 
