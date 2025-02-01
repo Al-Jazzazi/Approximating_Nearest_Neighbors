@@ -127,7 +127,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             cout << "Query time: " << duration / 1000.0 << " seconds, ";
             cout << "Distance computations (layer 0): " << G.distanceCalculationCount << ", ";
 
-            if (config->export_median_calcs) {
+            if (config->export_median_calcs || config->use_distance_termination) {
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 median_comps_layer0 = dist_comps_per_q_vec[dist_comps_per_q_vec.size() / 2];
             }
@@ -145,6 +145,21 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram << endl;
 
             }
+            if(config->export_median_precentiles_alpha && config->use_distance_termination){
+                std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
+                ofstream histogram = ofstream("./alpha_median_percentiles/" +config->graph + "/_" +  config->dataset + "_median_percentiles_k=" +  std::to_string(config->num_return)+ "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".txt", std::ios::app);
+                histogram << config->termination_alpha << ", ";
+                 for (int j = 0; j < config->benchmark_median_percentiles.size(); ++j) {
+                    
+                    int k = static_cast<int>(dist_comps_per_q_vec.size()* config->benchmark_median_percentiles[j]);
+                    cout << "k is " << k <<  " " << dist_comps_per_q_vec.size() << endl;
+                    if(k < dist_comps_per_q_vec.size())
+                        histogram << dist_comps_per_q_vec[k] << ", ";
+                }
+                histogram << endl;
+
+            }
+
             if (config->export_calcs_per_query) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
                 for (int j = 0; j < 20; ++j) {

@@ -13,31 +13,29 @@ class Config {
 public:
 
     // File Setup
-    std::string dataset = "sift";
-    int num_return = 1;
-    int alpha_termination_selection =4; 
-    // alpha * (2 * d_k + d_1)  --> 0 
-    // alpha * 2 * d_k + d_1  --> 1 
-    // alpha * (d_k + d_1)  + d_k --> 2 
-    // alpha * d_1   + d_k   --> 3 
-    // alpha * d_k   + d_k  --> 4 
+    std::string dataset = "deep96";
+    int num_return = 50;
+    int alpha_termination_selection =0; 
+    /*
+        alpha * (2 * d_k + d_1)  --> 0 
+        alpha * 2 * d_k + d_1  --> 1 
+        alpha * (d_k + d_1)  + d_k --> 2 
+        alpha * d_1   + d_k   --> 3 
+        alpha * d_k   + d_k  --> 4 
+    */
     std::string runs_prefix =   "rando";
-    //"./runs_fall_2024/vamana/"+ dataset + "/k=" +std::to_string(num_return) + "_" ;
+    std::string graph = "hnsw_heuristic";
+    std::string metric_prefix = "./runs/" + graph+ "/"+ dataset+"/k=1_distance_term_" + std::to_string(alpha_termination_selection) + "_" ;
+    std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_"+graph+".bin";
 
-    std::string metric_prefix = "./runs_fall_2024/data_metrics/"+ dataset+"/k=1__full_";
-    std::string loaded_graph_file ="/home/ya2225/efanna_graph/tests/sift_200nn.graph";
-    // "/home/ya2225/nsg/build/tests/sift.nsg";
-    //  "./grphs/"+ dataset+"/_graph_vamana.bin";
-    // "./grphs/"+ dataset+"/graph_hnsw_heuristic.bin";
 
-    //  "./grphs/vamana/_graph_vamana_1M_sift.bin";
  
     bool load_graph_file = true;
 
-    bool use_vamana = true;
+    bool use_vamana = graph == "vamana";
     
-    int dimensions = dataset == "sift" ? 128 : dataset == "deep" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
-    int num_nodes = 1000000;
+    int dimensions = dataset == "mnist" ? 784: dataset == "sift" ? 128 : dataset == "deep" || dataset == "nytimes" ? 256 : dataset == "deep96" ? 96 : dataset == "glove" ? 200 : 960;
+    int num_nodes =  dataset == "nytimes" ? 290000 : dataset == "mnist" ? 60000: 1000000;
     int num_queries = 10000;
     int num_training = 100000;
     int num_training_generated = 1000000;  // Used in generate_training.cpp
@@ -63,14 +61,14 @@ public:
     const bool single_ep_construction = true;
     const bool single_ep_query = true;
     const bool single_ep_training = true;
-    // int ef_construction = 500;
-    int ef_construction = 125;
-    int ef_search = 10;
+    int ef_construction = 500;
+    // int ef_construction = 125;
+    int ef_search = 100;
     int ef_search_upper = 1;
     int k_upper = 1;
 
     // Termination Parameters
-    const bool use_distance_termination = false;
+    const bool use_distance_termination = true;
     const bool use_hybrid_termination = false; 
     const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
@@ -222,10 +220,10 @@ public:
 
 
     std::string alpha_key = std::to_string(num_return) + " " + dataset;
-    float bw_slope = use_vamana ? bw_vamana.at(dataset).first : use_hybrid_termination ? bw.at(dataset).first : 0; 
-    float bw_intercept = use_vamana ? bw_vamana.at(dataset).second :  use_hybrid_termination ? bw.at(dataset).second : 0;
-    float alpha_coefficient = use_vamana ? alpha_vamana_values.at(alpha_key).first : use_hybrid_termination ? alpha.at(alpha_key).first : 0;
-    float alpha_intercept = use_vamana ? alpha_vamana_values.at(alpha_key).second : use_hybrid_termination ? alpha.at(alpha_key).second : 0;
+    float bw_slope = !use_hybrid_termination? 0 : use_vamana ?  bw_vamana.at(dataset).first : bw.at(dataset).first; 
+    float bw_intercept = !use_hybrid_termination ? 0 : use_vamana  ? bw_vamana.at(dataset).second :  bw.at(dataset).second;
+    float alpha_coefficient = !use_hybrid_termination? 0 : use_vamana ? alpha_vamana_values.at(alpha_key).first : alpha.at(alpha_key).first;
+    float alpha_intercept = !use_hybrid_termination? 0 : use_vamana ? alpha_vamana_values.at(alpha_key).second : alpha.at(alpha_key).second;
 
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
@@ -248,13 +246,13 @@ public:
     int initial_benefit = 0;
     
     // Grid parameters: repeat all benchmarks for each set of grid values
-    std::vector<int> grid_num_return =   {1};
+    std::vector<int> grid_num_return =   {50,10,1};
     std::vector<std::string> grid_runs_prefix = 
     {
-    // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=50_latest_" + std::to_string(alpha_termination_selection) + "_",
-    // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=10_latest_" + std::to_string(alpha_termination_selection) + "_",
-    // "./runs_fall_2024/vamana/"+ dataset + "/latest/k=1_latest_" + std::to_string(alpha_termination_selection) + "_"
-    "rando"
+        "./runs/" + graph+ "/"+ dataset+"/k=50_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
+        "./runs/" + graph+ "/"+ dataset+"/k=10_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
+        "./runs/" + graph+ "/"+ dataset+"/k=1_distance_term_" + std::to_string(alpha_termination_selection) + "_" 
+
     };
     // { "./runs_fall_2024/run/"+ dataset+"/latest/k=50_latest_" + std::to_string(alpha_termination_selection), "./runs_fall_2024/run/"+ dataset+"/latest/k=10_latest_" + std::to_string(alpha_termination_selection),"./runs_fall_2024/run/"+ dataset+"/latest/k=1_latest_" + std::to_string(alpha_termination_selection)};
     std::vector<std::string> grid_graph_file =  {loaded_graph_file,loaded_graph_file,loaded_graph_file};
@@ -266,13 +264,11 @@ public:
     std::vector<int> benchmark_max_connections = {};
     std::vector<int> benchmark_max_connections_0 = {};
     std::vector<int> benchmark_ef_construction = {};
-    // std::vector<int> benchmark_ef_search  = {650,700,800,900,1000,1100,1200,1300,1400,1500};
+    std::vector<int> benchmark_ef_search = {};
     //55, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 225, 250, 275, 300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500,550,600,650
-    std::vector<int> benchmark_ef_search = {10, 20};
-    std::vector<float> benchmark_termination_alpha ={};
+    std::vector<float> benchmark_termination_alpha ={0.35, 0.355, 0.36, 0.365, 0.37, 0.375, 0.38, 0.385,0.39,0.395,0.4, 0.405, 0.41};
     //0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.08,0.09, 0.1, 0.11, 0.12,0.14, 0.15,0.16,0.17, 0.18,0.19, 0.2
     //0.21, 0.22, 0.23, 0.24, 0.25,0.26, 0.27, 0.28, 0.29, 0.30,0.31,0.32,0.33,0.34, 0.35, 0.355, 0.36, 0.365, 0.37, 0.375, 0.38, 0.385,0.39,0.395,0.4, 0.405, 0.41
-    
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
@@ -288,8 +284,9 @@ public:
    
     // Debugging Flags
     const bool export_benchmark = true;
-    const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
+    const bool export_median_calcs = true;  // Replaces mean with median in benchmark file
     const bool export_median_precentiles = false;
+    const bool export_median_precentiles_alpha = false; 
     const bool export_graph = false;
     const bool export_histograms = false;
     const bool export_candidate_popping_times = false;
