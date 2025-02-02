@@ -108,6 +108,14 @@ public:
     float calculate_distance(float* a, float* b, int size, int layer);
     void  calculate_termination(Config* config);
 
+
+    //logging datatypes algorithms
+    void find_entry_layer_0(Config* config, std::pair<int, float*>& query, std::vector<std::pair<float, int>>& entry_points,std::vector<Edge*>& path,  int num_to_return, bool is_training=false, bool is_querying = true);
+    void search_layer_logging_datatypes(Config* config, float* query, int query_id,std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int* total_cost = nullptr);
+    void search_queries_logging_datatypes(Config* config, float** queries, float percent);
+
+
+
     // Main algorithms
     void insert(Config* config, int query);
     void search_layer(Config* config, float* query, std::vector<Edge*>& path, std::vector<std::pair<float, int>>& entry_points, int num_to_return, int layer_num, bool is_querying = false, bool is_training = false, bool is_ignoring = false, int* total_cost = nullptr);

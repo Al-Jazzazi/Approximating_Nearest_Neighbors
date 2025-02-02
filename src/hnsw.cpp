@@ -296,7 +296,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
         }
 
         // If terminating, log statistics and break
-        if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num, candidates_popped_per_q)) {
+        if (should_terminate(config, top_k, top_1, close_dist, far_dist, is_querying, layer_num, 0)) {
             if (is_querying && layer_num == 0 && config->use_hybrid_termination){
                 if (candidates_popped_per_q > config->ef_search)
                     num_original_termination++;
@@ -505,6 +505,8 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
     }
 }
 
+
+
 /**
  * Alg 5
  * K-NN-SEARCH(hnsw, q, K, ef)
@@ -513,6 +515,9 @@ void HNSW::select_neighbors_heuristic(Config* config, float* query, vector<Edge>
 vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pair<int, float*>& query, int num_to_return, bool is_querying, bool is_training, bool is_ignoring, int* total_cost) {
     // Begin search at the top layer entry point
     vector<pair<float, int>> entry_points;
+    
+    // find_entry_layer_0(config, query, entry_points, path, is_training, is_querying, num_to_return); 
+   
     entry_points.reserve(config->ef_search);
     int top = num_layers - 1;
     float dist = calculate_distance(query.second, nodes[entry_point], num_dimensions, top);
@@ -685,6 +690,35 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
         histogram.close();
         cout << "bw break is: " << bw_break << ", for estimated calc = " << estimated_distance_calcs; 
     }
+
+
+// void HNSW::run_data_metric(Config* config, float** queries) {
+//     bool use_groundtruth = config->groundtruth_file != "";
+//     if (use_groundtruth && config->query_file == "") {
+//         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
+//         use_groundtruth = false;
+//     }
+//     vector<vector<int>> actual_neighbors;
+//     if (use_groundtruth) {
+//         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
+//     } else {
+//         knn_search(config, actual_neighbors, nodes, queries);
+//     }
+
+//     for (int i = 0; i < config->num_queries; ++i) {
+//         // Obtain the query and optionally check if it's too expensive according to the oracle
+//         float* query = config->use_calculation_oracle ? queries[nn_calculations[i].second] : queries[i];
+        
+//         pair<int, float*> query_pair = make_pair(i, query);
+
+//         vector<Edge*> path;
+//         vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
+
+
+
+
+// }
+
 
 
 // Searches for each query using the HNSW graph
@@ -1089,4 +1123,266 @@ void HNSW::to_files(Config* config, const string& graph_name, long int construct
     info_file << construction_duration << endl;
 
     cout << "Exported graph to " << config->runs_prefix + "graph_" + graph_name + ".bin" << endl;
+}
+
+
+/*
+Functions related to data_type metrics 
+
+
+*/
+
+void HNSW::find_entry_layer_0(Config* config, pair<int, float*>& query, vector<pair<float, int>>& entry_points,vector<Edge*>& path, int num_to_return, bool is_training, bool is_querying){
+
+    entry_points.reserve(config->ef_search);
+    int top = num_layers - 1;
+    float dist = calculate_distance(query.second, nodes[entry_point], num_dimensions, top);
+    entry_points.push_back(make_pair(dist, entry_point));
+
+    if(config->debug_search)
+        cout << "Searching for " << num_to_return << " nearest neighbors of node " << query.first << endl;
+
+
+    for (int layer = top; layer >= 1; layer--) {
+         if ((config->single_ep_query && !is_training) || (config->single_ep_training && is_training)) {
+            search_layer(config, query.second, path, entry_points, 1, layer, is_querying);
+        } else {
+            search_layer(config, query.second, path, entry_points, config->ef_search_upper, layer, is_querying);
+        }
+        if (config->debug_search)
+            cout << "Closest point at layer " << layer << " is " << entry_points[0].second << " (" << entry_points[0].first << ")" << endl;
+    }
+
+}
+
+
+// Searches for each query using the HNSW graph
+void HNSW::search_queries_logging_datatypes(Config* config, float** queries, float percent) {
+    
+    // Initialize log files
+    ofstream* export_file = NULL;
+    if (config->export_queries)
+        export_file = new ofstream(config->runs_prefix + "queries.txt");
+    
+    int step_size = config->num_queries * percent;
+    cout << "step size is " << step_size << "\n";
+    for (int i = 0; i < config->num_queries; i+= step_size) {
+        // Obtain the query and optionally check if it's too expensive according to the oracle
+        float* query = queries[i];
+ 
+        pair<int, float*> query_pair = make_pair(i, query);
+
+        vector<Edge*> path;
+        vector<pair<float, int>> entry_points;
+
+        find_entry_layer_0(config, query_pair, entry_points, path,config->num_return, false, true);
+
+        search_layer_logging_datatypes(config, queries[i], i, path, entry_points, config->num_return);
+
+
+
+        // Export the query used
+        // if (config->export_queries) {
+        //     *export_file << "Query " << i+1 << endl << query_pair.second[0] << endl;
+        //     if (config->num_return == 1) {
+        //         for (int j =0; j< found.size(); j++) {
+        //             *export_file << found[j].second << "," << found[j].first << endl;
+        //             *export_file << cur_groundtruth[j];
+        //             if(found[j].second != cur_groundtruth[j]){ 
+        //                 *export_file << "," << queries[i];
+        //             }
+        //             *export_file<< endl;
+        //         }
+        //     } else {
+        //         for (int dim = 1; dim < num_dimensions; ++dim)
+        //             *export_file << "," << query_pair.second[dim];
+        //         *export_file << endl;
+        //         for (auto n_pair : found)
+        //             *export_file << n_pair.second << ",";
+        //         *export_file << endl;
+        //         for (int index : cur_groundtruth)
+        //             *export_file << index << " ";
+        //         *export_file << endl;          
+        //         for (Edge* edge : path) {
+        //             *export_file << edge->target << ",";
+        //         }
+            // }
+            // *export_file << endl;
+        // }
+    }
+
+
+
+    if (export_file != NULL) {
+        export_file->close();
+        delete export_file;
+        cout << "Exported queries to " << config->runs_prefix << "queries.txt" << endl;
+    }
+  
+
+  
+}
+
+
+void HNSW::search_layer_logging_datatypes(Config* config, float* query, int query_id,vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int* total_cost) {
+    // Open a file to write
+    ofstream candidates_file("./data_eval/candidates/" + config->graph +"/_" +config->dataset + "_k=" + std::to_string(config->num_return) + "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".csv", ios::app);
+    ofstream found_file("./data_eval/found/" + config->graph +"/_" +config->dataset + "_k=" + std::to_string(config->num_return) + "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".csv", ios::app);
+    ofstream visited_file("./data_eval/visited/" + config->graph +"/_" +config->dataset + "_k=" + std::to_string(config->num_return) + "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".csv", ios::app);
+
+    // Write the header
+    candidates_file << "QueryID,Operation,Element,Distance\n";
+    found_file << "QueryID,Operation,Element,Distance\n";
+    visited_file << "QueryID,Operation,Element,Distance\n";
+
+    // Initialize search structures
+    auto compare = [](Edge* lhs, Edge* rhs) { return lhs->distance > rhs->distance || (lhs->distance == rhs->distance && lhs->target > rhs->target); };
+    unordered_set<int> visited;
+    // The two candidates will be mapped such that if node x is at top of candidates queue, then edge pointing to x will be at the top of candidates_edges 
+    // This way when we explore node x's neighbors and want to add parent edge to those newly explored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
+    priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
+    // PairingHeap<pair<float, int>> candidates;
+
+    priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
+    vector<Edge*> entry_point_edges;
+    priority_queue<pair<float, int>> found;
+    priority_queue<pair<float, int>> top_k;
+    bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination);
+    pair<float, int> top_1;
+
+    //checking time popping of elements in candidates queue
+    int candidate_insertion_times[1000000];
+    int current_popping_time = 0; 
+
+ 
+    if ((config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination)){
+        num_to_return = 100000;
+    }
+    if ( config->print_neighbor_percent) {
+        processed_neighbors = 0;
+        total_neighbors = 0;
+    }
+    path.clear();
+
+
+    // Add entry points to search structures 
+    for (const auto& entry : entry_points) {
+        
+        visited.insert(entry.second);
+        candidates.emplace(entry);
+        found.emplace(entry);
+
+        candidates_file << query_id << "," << "push" << ","
+            << entry.second << "," << entry.first << "\n";
+        
+        found_file << query_id << "," << "push" << ","
+            << entry.second << "," << entry.first << "\n";
+        
+
+        visited_file << query_id << "," << "push" << ","
+            << entry.second << "," << entry.first << "\n";
+
+        if (using_top_k) {
+            top_k.emplace(entry);
+            top_1 = entry;
+        }
+        // Check if entry point is in groundtruth and update statistics accordingly
+    
+    }
+    
+
+
+
+
+    float far_dist = found.top().first;
+    int candidates_popped_per_q = 0; 
+    while (!candidates.empty()) {
+       
+        // Get the furthest distance element in found and closest element in candidates
+        far_dist =  found.top().first;
+        int closest = candidates.top().second;
+        float close_dist = candidates.top().first;
+        
+        
+
+
+        candidates.pop();
+        candidates_file << query_id << "," << "pop" << ","
+            << " " << "," << " " << "\n";
+
+
+        candidates_popped_per_q++;
+        Edge* closest_edge;
+
+  
+    
+        // If terminating, log statistics and break
+        if (should_terminate(config, top_k, top_1, close_dist, far_dist, true, 0, candidates_popped_per_q)) {
+            break;
+        }
+
+        // Explore neighbors of closest discovered element in the layer
+        vector<Edge>& neighbors = mappings[closest][0];
+        for (auto& neighbor_edge : neighbors) {
+            int neighbor = neighbor_edge.target;
+         
+
+
+            if (visited.find(neighbor) == visited.end()) {
+                visited.insert(neighbor);
+                float neighbor_dist = calculate_distance(query, nodes[neighbor], num_dimensions, 0);
+
+                visited_file << query_id << "," << "push" << ","
+                        << neighbor << "," << neighbor_dist << "\n";
+
+
+                // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
+                float far_inner_dist = found.top().first;
+                if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
+                    
+                    candidates.emplace(make_pair(neighbor_dist, neighbor));
+                    candidates_file << query_id << "," << "push" << ","
+                        << neighbor << "," << neighbor_dist << "\n";
+
+
+                    if(config->export_candidate_popping_times){
+                        candidate_insertion_times[neighbor] = current_popping_time;
+                    }
+
+
+                    candidates_size++;
+                    if (using_top_k) {
+                        top_k.emplace(neighbor_dist, neighbor);
+                        if (neighbor_dist < top_1.first) {
+                            top_1 = make_pair(neighbor_dist, neighbor);
+                        }
+                        if (top_k.size() > config->num_return)
+                            top_k.pop();
+                    }
+                    else{
+                        found.emplace(neighbor_dist, neighbor);
+                        found_file << query_id << "," << "push" << ","
+                            << neighbor << "," << neighbor_dist << "\n";
+
+                        if (found.size() > num_to_return){
+                            found.pop();
+                            found_file << query_id << "," << "pop" << ","
+                                << " " << "," << " " << "\n";
+                        }
+                    }
+
+            }
+
+                
+            }
+        }
+    }
+   
+
+     
+        visited_file.close();
+        candidates_file.close();
+        found_file.close();
+
+
 }
