@@ -93,8 +93,8 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 G.calculate_termination(config);
         
 
-            for (int j = 0; j < config->num_queries; ++j) {
-
+            for (int j = 9640; j < config->num_queries; ++j) {
+                cout << "#query " << j << "\n";
              try {
                 if (j >= actual_neighbors.size()) 
                     throw std::out_of_range("Index out of bounds in actual_neighbors");
@@ -106,10 +106,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 }
 
                 vector<int> result;
-                BeamSearch(G,config, startNode, queries[j], config->ef_search, result);
+                // cout << "is beam search\n";
+                beam_search(G,config, startNode, queries[j], config->ef_search, result);
+                // cout << "not beam search\n";
                 neighbors.emplace_back(result);
                 // neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
-
+                cout << "G.distanceCalculationCount  is "  << G.distanceCalculationCount  << "\n";
                 if (config->export_calcs_per_query) {
                     ++counts_calcs[std::min(19, (int)G.distanceCalculationCount / config->interval_for_calcs_histogram)];
                 }
@@ -120,6 +122,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             }
 
 
+            cout << "first check\n"; 
 
             // Log search statistics
             auto end = chrono::high_resolution_clock::now();
@@ -131,6 +134,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 median_comps_layer0 = dist_comps_per_q_vec[dist_comps_per_q_vec.size() / 2];
             }
+            cout << "second check\n"; 
             if(config->export_median_precentiles){
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 ofstream histogram = ofstream(config->metric_prefix + "_median_percentiles.txt", std::ios::app);
@@ -145,6 +149,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram << endl;
 
             }
+            cout << "third check\n"; 
             if(config->export_median_precentiles_alpha && config->use_distance_termination){
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 ofstream histogram = ofstream("./alpha_median_percentiles/" +config->graph + "/_" +  config->dataset + "_median_percentiles_k=" +  std::to_string(config->num_return)+ "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".txt", std::ios::app);
@@ -159,6 +164,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram << endl;
 
             }
+            cout << "forth check\n"; 
 
             if (config->export_calcs_per_query) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
@@ -169,7 +175,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram.close();
             }
 
-         
+         cout << "fifth check\n"; 
             
             search_duration = duration;
             search_dist_comp = G.distanceCalculationCount;
@@ -183,10 +189,12 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
             cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
                 << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
-            
+            cout << "sixth check\n"; 
             find_similar(config, actual_neighbors, neighbors, nodes, queries, similar, total_ndcg);
        }
 
+
+        cout << "sixth check\n"; 
         // Update benchmark file statistics
         double recall = (double) similar / (config->num_queries * config->num_return);
         cout << "Correctly found neighbors: " << similar << " ("
@@ -208,7 +216,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                     
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
                      //+ std::to_string(candidates_size / static_cast<float>(candidates_without_if)) + ", ";
-       
+       cout << "seventh check\n"; 
             if (config->use_hybrid_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;

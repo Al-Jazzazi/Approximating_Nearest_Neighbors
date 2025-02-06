@@ -15,7 +15,7 @@ BUILD_PATH := build
 
 all: $(TARGETS)
 
-run_hnsw: src/run.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+run_hnsw: src/run.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
@@ -37,21 +37,21 @@ generate_groundtruth: src/generate_groundtruth.cpp src/hnsw.cpp src/hnsw.h $(COM
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+benchmark_slurm: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
-benchmark_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+benchmark_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
-benchmark_slurm_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+benchmark_slurm_grasp: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
@@ -62,7 +62,10 @@ benchmark_slurm_graph: src/graph_benchmark.cpp  src/graph.cpp src/graph.h  $(COM
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 	
-run_data_type: src/data_type_metrics.cpp src/hnsw.cpp src/hnsw.h src/grasp.cpp src/grasp.h $(COMMON_SRCS)
+run_data_type: src/data_type_metrics.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
+run_data_benchmark: src/benchmark_data_types.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 

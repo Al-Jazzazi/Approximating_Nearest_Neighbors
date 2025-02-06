@@ -20,13 +20,9 @@ int main() {
     load_queries(config, G.nodes, queries);
 
     vector<vector<int>> actualResults;
-    // get_actual_neighbors(config, actualResults, G.nodes, queries);
     G.calculate_termination(config);
-    G.runQueries(config, queries);
-    // G.print_100_mappings(config);
-    // G.print_avg_neigbor(config);
-    // G.print_k_nodes(config);
-    // G.print_k_neigbours(config, 10);
+    G.run_queries(config, queries);
+
 
 
     std::cout << "\nDistance Calc " << G.distanceCalculationCount/config->num_queries << std::endl; 

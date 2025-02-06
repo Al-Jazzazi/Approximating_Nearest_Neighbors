@@ -21,15 +21,9 @@ Graph::Graph(Config* config) {
         mappings[i] = {};
     }
     start = 0;
-    distanceCalculationCount = 0;
-    num_original_termination = 0; 
-    num_distance_termination = 0;
-    num_set_checks= 0;
-    size_of_c = 0;
-    num_insertion_to_c = 0;
-    num_deletion_from_c = 0;
-    size_of_visited = 0;
+    reset_statistics();
 }
+
 
 Graph::~Graph() {
     for (int i = 0; i < num_nodes; i++) {
@@ -39,15 +33,16 @@ Graph::~Graph() {
 }
 
 
+//load saved graph 
 void Graph::load(Config* config) {
-    // Open files
+    
     ifstream graph_file(config->loaded_graph_file, std::ios::binary);
     cout << "Loading saved graph from " << config->loaded_graph_file << endl;
     if (!graph_file) {
         cout << "File " << config->loaded_graph_file << " not found!" << endl;
         return;
     }
-
+    //Different import in case of nsg vs efanna 
     if( config->graph == "nsg"){
         graph_file.read((char *)&width, sizeof(unsigned));
         graph_file.read((char *)&start, sizeof(unsigned));
@@ -68,15 +63,15 @@ void Graph::load(Config* config) {
     }
     graph_file.close();
 }
+ 
 
 
-float Graph::findDistance(int i, float* query)  {
+float Graph::find_distance(int i, float* query)  {
     ++distanceCalculationCount;
     return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
-
-float Graph::findDistance(int i, int j) {
+float Graph::find_distance(int i, int j) {
     ++distanceCalculationCount;
     return calculate_l2_sq(nodes[i], nodes[j], DIMENSION);
 }
@@ -92,12 +87,7 @@ void Graph::reset_statistics(){
     num_insertion_to_c = 0;
     num_deletion_from_c = 0;
     size_of_visited = 0;
-    
-
  }
-
-
-
 
 
 
@@ -159,21 +149,29 @@ bool Graph::should_terminate(Config* config, priority_queue<pair<float, int>>& t
 
 
 
-
+/*used to calculate percentiles in the cases where we want to 
+1. run with a hybrid termination (we pass one termiantion and calculate the other through alrdy made graphs mapping alpha and beamWidthValue through the avg or median search distance calculations )
+2. in case we want to have a break point based on the median values   
+*/
 void Graph::calculate_termination(Config *config){
         std::string alpha_key = std::to_string(config->num_return) + " " + config->dataset;
         cout << alpha_key << endl;
+
         config->alpha_coefficient = config->use_hybrid_termination ? config->alpha_vamana_values.at(alpha_key).first : 0;
         config->alpha_intercept = config->use_hybrid_termination ? config->alpha_vamana_values.at(alpha_key).second : 0;
+        
         cout << "alpha_coefficient is " << config->alpha_coefficient << ", alpha_intercept is " << config->alpha_intercept <<endl; 
+        
         float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
         termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
+        
         cout << "estimated_distance_calcs is " << estimated_distance_calcs  << ", termination_alpha is " << termination_alpha << endl;
         estimated_distance_calcs *=config->alpha_break;
         termination_alpha2 = config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
-
-
+        
+        
          ifstream histogram = ifstream(config->metric_prefix + "_median_percentiles.txt");
+            //The part 
             if(!histogram.fail() && (config->use_median_break || config->use_median_earliast) ){
                 vector<int> ef_search = {200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000,4500, 5000,5500, 6000, 6500, 7000, 7500, 8000, 8500}; 
 
@@ -201,7 +199,7 @@ void Graph::calculate_termination(Config *config){
 
 
 
-void Graph::runQueries(Config* config, float** queries){
+void Graph::run_queries(Config* config, float** queries){
     vector<vector<int>> results;
     query(config, start, results, queries);
     vector<vector<int>> actualResults;
@@ -210,7 +208,7 @@ void Graph::runQueries(Config* config, float** queries){
     cout << "results.size() " << results.size() <<  ", actualResults.size() " << actualResults.size() << endl ; 
     cout << "results[0].size() " << results[0].size() <<  ", actualResults[0].size() " << actualResults[0].size() << endl ; 
     cout << "results[0] " << results[0][0] <<  ", actualResults[0] " << actualResults[0][0] << endl ; 
-    cout << "results[0] distance " << findDistance(results[0][0], queries[0]) <<  ", actualResults[0] distance " << findDistance(actualResults[0][0], queries[0]) << endl ; 
+    cout << "results[0] distance " << find_distance(results[0][0], queries[0]) <<  ", actualResults[0] distance " << find_distance(actualResults[0][0], queries[0]) << endl ; 
 
     for (int j = 0; j < config->num_queries; ++j) {
                 
@@ -239,16 +237,17 @@ void Graph::query(Config* config, int start, vector<vector<int>>& allResults, fl
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
         vector<int> result;
-        BeamSearch(*this,config, start, thisQuery, config->ef_search, result);
+        beam_search(*this,config, start, thisQuery, config->ef_search, result);
         allResults.push_back(result);
     }
     cout << "All queries processed" << endl;
 }
 
 
-
-
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, vector<int>& closest){
+/*
+Beam Search function that supports both beam width termination and distane based termination
+*/
+void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, vector<int>& closest){
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
     unordered_set<int> visited;
     priority_queue<pair<float, int>> found;
@@ -257,17 +256,18 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
 
     bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination);
 
+    //set bw to infinity (or a relatively large number)
     if (config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination){
         bw = 100000;
     }
 
-    float distance = graph.findDistance(start, query);
+    float distance = graph.find_distance(start, query);
     candidates.emplace(make_pair(distance,start));      
     visited.emplace(start);
     found.emplace(make_pair(distance,start));
 
     graph.num_insertion_to_c++;  
-
+    
     if (using_top_k) {
         top_k.emplace(make_pair(distance,start));
         top_1 = make_pair(distance,start);
@@ -276,6 +276,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
     int candidates_popped_per_q = 0;
     int iteration = 0;
     float far_dist = found.top().first;
+    // cout << "first stop\n";
     while (!candidates.empty()) {
         far_dist = found.top().first;
         int closest = candidates.top().second;
@@ -283,8 +284,9 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         candidates.pop();
         
         ++candidates_popped_per_q;
-
+        
         if (graph.should_terminate(config, top_k, top_1, close_dist, far_dist, candidates_popped_per_q)) {
+            if(top_k.size() != config->num_return) cerr << "!!!!! top_k size does not matching number return!!!\n"; 
             if (config->use_hybrid_termination){
                 if (candidates_popped_per_q > config->ef_search)
                     graph.num_original_termination++;
@@ -301,7 +303,7 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
             if(visited.find(neighbor) == visited.end()){
                 visited.insert(neighbor);
                 float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
-                float neighbor_dist = graph.findDistance(neighbor,query);
+                float neighbor_dist = graph.find_distance(neighbor,query);
                 if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
                         (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * sqrt(top_k.top().first)   ) ) ) {
                 
@@ -329,13 +331,13 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         }
 
     }
-    
+    // cout << "second stop\n";
     //Could've been added inside termination method
     graph.size_of_c += candidates.size(); 
     graph.num_deletion_from_c += candidates_popped_per_q; 
     graph.size_of_visited += visited.size();
 
-    
+    // cout << "thrid stop\n";
     int idx =using_top_k ? top_k.size() : found.size(); 
     closest.clear();
     closest.resize(idx);
@@ -350,33 +352,28 @@ void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, v
         found.pop();
         }
     }
-
-
+    // cout << "forth stop\n";
     closest.resize(min(closest.size(), (size_t)config->num_return));
+    // cout << "fifth stop\n";
 }
 
-
+/*
+Debugging functions below
+*/
 void Graph::print_100_mappings(Config* config){
     for(int i = 0; i<mappings.size(); i++){
         if(i ==100 ) break;
-        cout << "i: " <<mappings[i].size() <<endl;
-       
-        
-        
+        cout << "i: " <<mappings[i].size() <<endl; 
     }
 }
-
 
 void Graph::print_avg_neigbor(Config* config){
     long long int sum  =0 ;
     for(int i = 0; i<mappings.size(); i++){
-        sum += mappings[i].size();
-        
-        
+        sum += mappings[i].size();   
     }
     std::cout << "Avg # of neighbors  is = " << sum/mappings.size() << std::endl;
 }
-
 
 void Graph::print_k_neigbours(Config* config, int k){
     for(int i = 0; i<mappings.size(); i++){
@@ -385,10 +382,7 @@ void Graph::print_k_neigbours(Config* config, int k){
         for(auto n: mappings[i]){
             cout << n << " ";
         } 
-
-       cout << endl; 
-        
-        
+       cout << endl;     
     }
 }
 

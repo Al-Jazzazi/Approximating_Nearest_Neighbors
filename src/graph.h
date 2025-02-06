@@ -5,17 +5,26 @@
 #include "../config.h"
 #include <queue>
 #include<unordered_set>
+/*
+Graph files are used to run Efanna and NSG graphs (and hopefully any other graphs added later)
+They're an abstraction from many of the functions that are used in HNSW where I removed
+the segments of code related to multilayers graph, grasp pruning, and other test materials we scrapped 
+
+The graph files contain: 
+graph.h // graph.cpp 
+run_graph.cpp to run the the graph through the variables set in config.h and outputting to terminal 
+grraph_benchmark.cpp to run the graph through multiple changing variable and outputting to a .txt file
+*/
+
 
 class Graph {
 public:
-    // Node* allNodes;
     float** nodes;
     std::vector<std::set<unsigned>> mappings;
     int num_nodes;
     int DIMENSION;
     unsigned start;
     unsigned width;
-    unsigned ep_;
 
 
     long long int distanceCalculationCount;
@@ -35,21 +44,23 @@ public:
     void load(Config* config);
 
 
-    float findDistance(int i, float* query) ;
-    float findDistance(int i, int j) ; 
+    float find_distance(int i, float* query) ;
+    float find_distance(int i, int j) ; 
     void reset_statistics();
 
     bool should_terminate(Config* config, std::priority_queue<std::pair<float, int>>& top_k, std::pair<float, int>& top_1, float close_squared, float far_squared,  int candidates_popped_per_q);
     void calculate_termination(Config *config);
-    void  runQueries(Config* config, float** queries);
+    void run_queries(Config* config, float** queries);
     void query(Config* config, int start, std::vector<std::vector<int>>& allResults, float** queries);
+   
+    //Debugging functions 
     void print_100_mappings(Config* config);
     void print_k_nodes( Config* config, int k = 100);
     void print_k_neigbours(Config* config, int k = 100);
     void print_avg_neigbor(Config* config);
 };
 
-void BeamSearch(Graph& graph, Config* config,int start,  float* query, int bw, std::vector<int>& closest);
+void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, std::vector<int>& closest);
 
 
 

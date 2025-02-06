@@ -2,7 +2,7 @@
 #include <chrono>
 #include <cpuid.h>
 #include <string.h>
-#include "grasp.h"
+#include "./grasp/grasp.h" 
 #include "hnsw.h"
 
 using namespace std;

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "hnsw.h"
-#include "grasp.h"
+#include "./grasp/grasp.h" 
 
 int main() {
     // Load config
