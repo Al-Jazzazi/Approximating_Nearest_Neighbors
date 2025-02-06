@@ -345,6 +345,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
         --idx;
         if(using_top_k){
             closest[idx] = top_k.top().second;
+            if(top_k.size() == 0) cerr << "errooor\n";
             top_k.pop();
         }
         else{
