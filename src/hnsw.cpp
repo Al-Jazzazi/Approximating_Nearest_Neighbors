@@ -744,6 +744,7 @@ void HNSW::search_queries(Config* config, float** queries) {
 
     // Initialize calculations per query and oracle calculations
     vector<int> counts_calcs;
+    vector<int> calcs_per_query;
     for (int i = 0; i < 20; i++) {
         counts_calcs.push_back(0);
     }
@@ -774,6 +775,7 @@ void HNSW::search_queries(Config* config, float** queries) {
         // Update log files
         if (config->export_calcs_per_query) {
             ++counts_calcs[std::min(19, layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
+            calcs_per_query.push_back(layer0_dist_comps_per_q);
         }
         if (config->export_oracle)
             *when_neigh_found_file << endl;
@@ -854,8 +856,13 @@ void HNSW::search_queries(Config* config, float** queries) {
     // Finalize log files
     if (config->export_calcs_per_query) {
         ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
+        ofstream histogram = ofstream(config->runs_prefix + "calcs_per_query.txt", std::ios::app);
+
         for (int i = 0; i < 20; ++i) {
             histogram << counts_calcs[i] << ",";
+        }
+        for(int i = 0; i<calcs_per_query.size(); i++){
+            histogram << calcs_per_query[i] << "\n";
         }
         histogram << endl;
         histogram.close();
@@ -1381,3 +1388,12 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
 
 
 }
+
+
+
+
+/*
+Run Histogram
+*/
+
+

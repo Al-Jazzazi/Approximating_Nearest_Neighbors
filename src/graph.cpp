@@ -305,7 +305,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
                 float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
                 float neighbor_dist = graph.find_distance(neighbor,query);
                 if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
-                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * sqrt(top_k.top().first)   ) ) ) {
+                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * 2*sqrt(top_k.top().first)   ) ) ) {
                 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
 
