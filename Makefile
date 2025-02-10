@@ -41,6 +41,9 @@ generate_training: src/generate_training.cpp src/hnsw.cpp src/hnsw.h src/grasp/g
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 
+run_similarity: src/compare_similarity.cpp  $(COMMON_SRCS)
+	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
+	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 benchmark: src/benchmark.cpp src/hnsw.cpp src/hnsw.h src/grasp/grasp.cpp src/grasp/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@.out $^
 
