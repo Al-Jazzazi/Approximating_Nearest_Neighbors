@@ -56,7 +56,7 @@ int main() {
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = new HNSW(config, nodes);
     if (config->load_graph_file) {
-        hnsw->from_files(config, nodes);
+        hnsw->from_files(config, false);
     } else {
         for (int i = 1; i < config->num_nodes; i++) {
             hnsw->insert(config, i);
@@ -111,6 +111,9 @@ int main() {
         if (config->print_path_size) {
             hnsw->total_path_size = 0;
         }
+        if(config->use_hybrid_termination || config->use_distance_termination ) 
+                hnsw->calculate_termination(config);
+                
         auto search_start = chrono::high_resolution_clock::now();
         cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
         cout << "Beginning search" << endl;

@@ -728,7 +728,9 @@ void HNSW::search_queries(Config* config, float** queries) {
         indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
     if (config->export_oracle)
         when_neigh_found_file = new ofstream(config->oracle_file);
-
+    ofstream* d1_dk_ratio_file = NULL;
+    if(config->export_d1_dk_ratio)
+        d1_dk_ratio_file = new ofstream(config->runs_prefix +  "d1_dk_ratio.csv");
     // Load actual nearest neighbors
     bool use_groundtruth = config->groundtruth_file != "";
     if (use_groundtruth && config->query_file == "") {
@@ -772,6 +774,9 @@ void HNSW::search_queries(Config* config, float** queries) {
         vector<Edge*> path;
         vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
 
+
+        
+
         // Update log files
         if (config->export_calcs_per_query) {
             ++counts_calcs[std::min(19, layer0_dist_comps_per_q / config->interval_for_calcs_histogram)];
@@ -807,19 +812,36 @@ void HNSW::search_queries(Config* config, float** queries) {
         }
 
         // Print accuracy thus far
-        if (config->print_indiv_found || config->print_total_found || config->export_indiv) {
+        if (config->print_indiv_found || config->print_total_found || config->export_indiv || config->export_d1_dk_ratio) {
             unordered_set<int> actual_set(actual_neighbors[i].begin(), actual_neighbors[i].end());
             int matching = 0;
             for (auto n_pair : found) {
                 if (actual_set.find(n_pair.second) != actual_set.end())
                     ++matching;
             }
+
             if (config->print_indiv_found)
                 cout << "Found " << matching << " (" << matching /  (double)config->num_return * 100 << "%) for query " << i << endl;
             if (config->print_total_found)
                 total_found += matching;
             if (config->export_indiv)
                 *indiv_file << matching / (double)config->num_return << " " << layer0_dist_comps << " " << upper_dist_comps << endl;
+            if(config->export_d1_dk_ratio){
+                double recall = matching /  (double)config->num_return;
+                sort(found.begin(), found.end()); 
+                float ratio = 0; 
+
+                if( found.size() >= 0 && found.size() == config->num_return){
+                float d_1 = found[0].first;
+                float d_k= found[found.size()-1].first;
+                ratio = d_k != 0 ? d_1 /d_k: 0 ;
+                }
+
+                else 
+                    cout << "sth smells fishy\n";
+
+                *d1_dk_ratio_file << std::to_string(ratio) << ", " << recall<< "," << layer0_dist_comps_per_q << "\n";
+        }
         }
 
         // Export the query used
@@ -856,22 +878,32 @@ void HNSW::search_queries(Config* config, float** queries) {
     // Finalize log files
     if (config->export_calcs_per_query) {
         ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
-        ofstream histogram = ofstream(config->runs_prefix + "calcs_per_query.txt", std::ios::app);
+        ofstream histogram2 = ofstream(config->runs_prefix + "calcs_per_query.txt", std::ios::app);
 
         for (int i = 0; i < 20; ++i) {
             histogram << counts_calcs[i] << ",";
         }
+        long long int total_dist = 0;
         for(int i = 0; i<calcs_per_query.size(); i++){
-            histogram << calcs_per_query[i] << "\n";
+            histogram2 << calcs_per_query[i] << "\n";
+            total_dist += calcs_per_query[i];
         }
+
+        cout << "dist per q " << (double)total_dist/config->num_queries << "\n";
         histogram << endl;
         histogram.close();
+
+        histogram2 << endl;
+        histogram2.close();
+
     }
     if (config->export_oracle) {
         cout << "Total neighbors found (groundtruth comparison): " << correct_nn_found << " (" << correct_nn_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
     }
     if (config->print_total_found) {
+        cout << "alpha is " << config->termination_alpha << "\n"; 
         cout << "Total neighbors found: " << total_found << " (" << total_found / (double)(config->num_queries * config->num_return) * 100 << "%)" << endl;
+        
     }
     cout << "Finished search" << endl;
     if (export_file != NULL) {
@@ -883,6 +915,11 @@ void HNSW::search_queries(Config* config, float** queries) {
         indiv_file->close();
         delete indiv_file;
         cout << "Exported individual query results to " << config->runs_prefix << "indiv.txt" << endl;
+    }
+    if(d1_dk_ratio_file != NULL){
+        d1_dk_ratio_file->close();
+        delete d1_dk_ratio_file;
+        cout << "Exported d_1 _dk ratio results to " << config->runs_prefix << "d1_dk_ratio.txt" << endl;
     }
     if (config->export_oracle) {
         when_neigh_found_file->close();
@@ -1245,8 +1282,8 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
     // This way when we explore node x's neighbors and want to add parent edge to those newly explored edges, we use candidates_edges to access node x's edge and assign it as parent edge. 
     priority_queue<pair<float, int>, vector<pair<float, int>>, greater<pair<float, int>>> candidates;
 
-    priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
-    vector<Edge*> entry_point_edges;
+    // priority_queue<Edge*, vector<Edge*>, decltype(compare)> candidates_edges(compare);
+    // vector<Edge*> entry_point_edges;
     priority_queue<pair<float, int>> found;
     priority_queue<pair<float, int>> top_k;
     bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination);
