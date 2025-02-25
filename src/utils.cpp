@@ -237,13 +237,45 @@ void load_nodes(Config* config, float** nodes) {
             exit(1);
         }
         cout << "Loading " << config->num_nodes << " nodes from file " << config->load_file << endl;
-        for (int i = 0; i < config->num_nodes; i++) {
-            nodes[i] = new float[config->dimensions];
-            for (int j = 0; j < config->dimensions; j++) {
-                f >> nodes[i][j];
+        
+        if(config->load_file.substr(config->load_file.size() - 8) == "6226.txt"){
+            string line; 
+            for (int i = 0; i < config->num_nodes; i++) {
+                getline(f, line);  // Read full line
+        
+                size_t colonPos = line.find(':');
+                if (colonPos == string::npos) {
+                    cerr << "Error: Invalid format in line " << i+1  << endl;
+                    exit(1);
+                }
+        
+                string nodeID = line.substr(0, colonPos);  
+                
+                string coordString = line.substr(colonPos + 1);  
+        
+                stringstream ss(coordString);
+                // if(id > config->num_nodes) 
+                //     cout << "id is greater than size at " << id << "\n";
+                nodes[i] = new float[config->dimensions];
+
+                for (int j = 0; j < config->dimensions; j++) {
+                    if (!(ss >> nodes[i][j])) {
+                        cerr << "Error: Not enough coordinates for node " << nodeID << endl;
+                        exit(1);
+                    }
+                }
+            } 
+
+        }else{
+            for (int i = 0; i < config->num_nodes; i++) {
+                nodes[i] = new float[config->dimensions];
+                for (int j = 0; j < config->dimensions; j++) {
+                    f >> nodes[i][j];
+                }
             }
         }
         f.close();
+        cout << "loaded nodes\n";
         return;
     }
 
@@ -275,14 +307,43 @@ void load_queries(Config* config, float** nodes, float** queries) {
             cout << "File " << config->query_file << " not found!" << endl;
             exit(1);
         }
-        cout << "Loading " << config->num_queries << " queries from file " << config->query_file << endl;
-        for (int i = 0; i < config->num_queries; i++) {
-            queries[i] = new float[config->dimensions];
-            for (int j = 0; j < config->dimensions; j++) {
-                f >> queries[i][j];
+        if( config->load_file.substr(config->load_file.size() - 8) == "6226.txt"){
+            string line; 
+
+            for (int i = 0; i < config->num_queries; i++) {
+                getline(f, line);  // Read full line
+        
+                size_t colonPos = line.find(':');
+                if (colonPos == string::npos) {
+                    cerr << "Error: Invalid format in line " << i + 1 << endl;
+                    exit(1);
+                }
+        
+                string nodeID = line.substr(0, colonPos);  
+                string coordString = line.substr(colonPos + 1);  
+    
+                stringstream ss(coordString);
+                queries[i] = new float[config->dimensions];
+                for (int j = 0; j < config->dimensions; j++) {
+                    if (!(ss >> queries[i][j])) {
+                        cerr << "Error: Not enough coordinates for node " << nodeID << endl;
+                        exit(1);
+                    }
+                }
+            }
+        }
+
+        else{
+            cout << "Loading " << config->num_queries << " queries from file " << config->query_file << endl;
+            for (int i = 0; i < config->num_queries; i++) {
+                queries[i] = new float[config->dimensions];
+                for (int j = 0; j < config->dimensions; j++) {
+                    f >> queries[i][j];
+                }
             }
         }
         f.close();
+
         return;
     }
     

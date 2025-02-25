@@ -1,5 +1,6 @@
 #include "graph.h"
 #include "utils.h"
+#include <unordered_map>
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -36,32 +37,85 @@ Graph::~Graph() {
 //load saved graph 
 void Graph::load(Config* config) {
     
-    ifstream graph_file(config->loaded_graph_file, std::ios::binary);
-    cout << "Loading saved graph from " << config->loaded_graph_file << endl;
-    if (!graph_file) {
-        cout << "File " << config->loaded_graph_file << " not found!" << endl;
-        return;
-    }
-    //Different import in case of nsg vs efanna 
-    if( config->graph == "nsg"){
-        graph_file.read((char *)&width, sizeof(unsigned));
-        graph_file.read((char *)&start, sizeof(unsigned));
-    }
-
-    for (int i = 0; i < num_nodes; ++i) {
-        unsigned num_neighbors;
-        graph_file.read((char *)&num_neighbors, sizeof(unsigned));
-
-        if (graph_file.eof()) break;
-
-        for (unsigned j = 0; j < num_neighbors; ++j) {
-            unsigned neighbor;
-            graph_file.read((char *)&neighbor, sizeof(unsigned));
-            mappings[i].emplace(neighbor);
+    if(config->loaded_graph_file.substr(config->loaded_graph_file.size() - 8) != "6226.txt"){
+        ifstream graph_file(config->loaded_graph_file, std::ios::binary);
+        cout << "Loading saved graph from " << config->loaded_graph_file << endl;
+        if (!graph_file) {
+            cout << "File " << config->loaded_graph_file << " not found!" << endl;
+            return;
         }
-       
+        //Different import in case of nsg vs efanna 
+        if( config->graph == "nsg"){
+            graph_file.read((char *)&width, sizeof(unsigned));
+            graph_file.read((char *)&start, sizeof(unsigned));
+        }
+
+        for (int i = 0; i < num_nodes; ++i) {
+            unsigned num_neighbors;
+            graph_file.read((char *)&num_neighbors, sizeof(unsigned));
+
+            if (graph_file.eof()) break;
+
+            for (unsigned j = 0; j < num_neighbors; ++j) {
+                unsigned neighbor;
+                graph_file.read((char *)&neighbor, sizeof(unsigned));
+                mappings[i].emplace(neighbor);
+            }
+        
+        }
+        graph_file.close();
     }
-    graph_file.close();
+    else{
+        ifstream graph_file(config->loaded_graph_file, ios::in);
+        cout << "Loading .txt saved graph from " << config->loaded_graph_file << endl;
+        string line; 
+        unordered_map<int,int> map;
+        for (int i = 0; i < config->num_nodes; i++) {
+            getline(graph_file, line);  // Read full line
+
+            size_t colonPos = line.find(':');
+            if (colonPos == string::npos) {
+                cerr << "Error: Invalid format in line " << i + 1 << endl;
+                exit(1);
+            }
+    
+            string nodeID = line.substr(0, colonPos);  
+            int id;
+                try {
+                    id = std::stoi(nodeID);
+                } catch (const std::invalid_argument& e) {
+                    std::cerr << "Invalid argument: " << e.what() << std::endl;
+                } catch (const std::out_of_range& e) {
+                     std::cerr << "Out of range: " << e.what() << std::endl;
+                }
+            map[id] = i;
+        }
+        graph_file.close();
+
+        ifstream graph_file_2(config->loaded_graph_file, ios::in);
+        cout << "loading.txt file again\n";
+        for (int i = 0; i < config->num_nodes; i++) {
+            getline(graph_file_2, line);  // Read full line
+    
+            size_t colonPos = line.find(':');
+            if (colonPos == string::npos) {
+                cerr << "Error: Invalid format in line " << i + 1 << endl;
+                exit(1);
+            }
+    
+            string nodeID = line.substr(0, colonPos);  
+
+            string coordString = line.substr(colonPos + 1);  
+    
+            stringstream ss(coordString);
+            int neighbor; 
+            while(ss >> neighbor){
+                mappings[i].emplace(map[neighbor]);
+            }
+        }
+        graph_file_2.close();
+    }
+
 }
  
 
@@ -237,6 +291,7 @@ void Graph::query(Config* config, int start, vector<vector<int>>& allResults, fl
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
         vector<int> result;
+        // cout << "beam search\n";
         beam_search(*this,config, start, thisQuery, config->ef_search, result);
         allResults.push_back(result);
     }

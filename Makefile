@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O2 -mavx -g  
+CXXFLAGS := -mavx -g  
 
 MAKE_DIRECTORIES := $(shell mkdir -p build runs)
 EPOCH_TIME := $(shell date +%s)
