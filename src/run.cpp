@@ -103,7 +103,7 @@ int main() {
         cout << hnsw;
     }
     if (config->export_graph && !config->load_graph_file) {
-        hnsw->to_files(config, "run");
+        hnsw->to_files(config, config->graph);
     }
 
     // Run queries

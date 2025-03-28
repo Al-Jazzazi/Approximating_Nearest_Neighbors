@@ -11,6 +11,8 @@ float termination_alpha2 = 0 ;
 float bw_break = 0;
 
 
+ofstream* when_neigh_found_file;
+
 
 Graph::Graph(Config* config) {
     num_nodes = config->num_nodes;
@@ -122,11 +124,13 @@ void Graph::load(Config* config) {
 
 float Graph::find_distance(int i, float* query)  {
     ++distanceCalculationCount;
+    ++distanceCalculationCount_per_q;
     return calculate_l2_sq(nodes[i], query, DIMENSION);
 }
 
 float Graph::find_distance(int i, int j) {
     ++distanceCalculationCount;
+    ++distanceCalculationCount_per_q;
     return calculate_l2_sq(nodes[i], nodes[j], DIMENSION);
 }
 
@@ -254,6 +258,10 @@ void Graph::calculate_termination(Config *config){
 
 
 void Graph::run_queries(Config* config, float** queries){
+
+    // if (config->export_oracle)
+    //     when_neigh_found_file = new ofstream(config->oracle_file);
+
     vector<vector<int>> results;
     query(config, start, results, queries);
     vector<vector<int>> actualResults;
@@ -276,26 +284,49 @@ void Graph::run_queries(Config* config, float** queries){
                     }
                 }
                 similar += intersection.size();
+
+
+  
     
         }
     cout << "similar = " << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
     cout << "Recall of Graph is " << recall << endl;
+
+
+  
 }
 
 
 
 void Graph::query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
-   
+       
+    ofstream* indiv_file = NULL;
+    if (config->export_indiv)
+        indiv_file = new ofstream(config->runs_prefix + "indiv.csv");
+
     for (int k = 0; k < config->num_queries; k++) {
+        distanceCalculationCount_per_q = 0;
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
         vector<int> result;
         // cout << "beam search\n";
         beam_search(*this,config, start, thisQuery, config->ef_search, result);
         allResults.push_back(result);
+
+
+        if(config->export_indiv){
+            *indiv_file << distanceCalculationCount_per_q << "\n";
+    }
     }
     cout << "All queries processed" << endl;
+
+
+    if(indiv_file != NULL){
+        indiv_file->close();
+        delete indiv_file;
+        cout << "Exported individual query results to " << config->runs_prefix << "indiv.csv" << endl;
+    }
 }
 
 

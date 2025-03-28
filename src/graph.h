@@ -26,7 +26,7 @@ public:
     unsigned start;
     unsigned width;
 
-
+    long long int distanceCalculationCount_per_q;
     long long int distanceCalculationCount;
     long long int num_original_termination;
     long long int num_distance_termination;

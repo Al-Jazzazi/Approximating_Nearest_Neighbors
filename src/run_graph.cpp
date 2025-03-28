@@ -19,6 +19,7 @@ int main() {
     float** queries = new float*[config->num_queries];
     load_queries(config, G.nodes, queries);
 
+    cout << "distance is " << G.find_distance(0,queries[0]);
     vector<vector<int>> actualResults;
     G.calculate_termination(config);
     G.run_queries(config, queries);
