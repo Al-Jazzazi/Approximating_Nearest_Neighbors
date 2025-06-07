@@ -2,18 +2,22 @@
 #define GRAPH_H
 #include<vector> 
 #include<set> 
-#include "../config.h"
 #include <queue>
 #include<unordered_set>
+
+#include "config.h"
+#include "utils.h"
+
 /*
-Graph files are used to run Efanna and NSG graphs (and hopefully any other graphs added later)
+Graph files are used to run Efanna, NSG, and navigable graphs (and hopefully any other graphs added later)
 They're an abstraction from many of the functions that are used in HNSW where I removed
 the segments of code related to multilayers graph, grasp pruning, and other test materials we scrapped 
 
 The graph files contain: 
-graph.h // graph.cpp 
-run_graph.cpp to run the the graph through the variables set in config.h and outputting to terminal 
-grraph_benchmark.cpp to run the graph through multiple changing variable and outputting to a .txt file
+1. graph.h
+2. graph.cpp 
+3. run_graph.cpp:  to run the the graph through the variables set in config.h and outputting to terminal 
+4. grraph_benchmark.cpp:  to run the graph through multiple changing variable and outputting to a .txt file
 */
 
 

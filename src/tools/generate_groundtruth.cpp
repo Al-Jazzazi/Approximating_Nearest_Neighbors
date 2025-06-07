@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
-#include "hnsw.h"
+
+#include "../include/hnsw.h"
 
 using namespace std;
 

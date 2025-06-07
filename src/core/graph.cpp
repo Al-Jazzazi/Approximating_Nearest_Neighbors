@@ -1,9 +1,12 @@
-#include "graph.h"
-#include "utils.h"
+
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
 #include <chrono>
+
+
+#include "../include/graph.h"
+
 using namespace std; 
 
 float termination_alpha = 0;

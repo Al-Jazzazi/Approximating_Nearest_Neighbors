@@ -5,7 +5,8 @@
 #include <random>
 #include <chrono>
 #include <unordered_set>
-#include "utils.h"
+
+#include "../include/utils.h"
 
 using namespace std;
 
@@ -404,25 +405,25 @@ void load_oracle(Config* config, vector<pair<int, int>>& results) {
 }
 
 
-// string get_cpu_brand() {
-//     char CPUBrand[0x40];
-//     unsigned int CPUInfo[4] = {0,0,0,0};
-//     __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-//     unsigned int nExIds = CPUInfo[0];
-//     memset(CPUBrand, 0, sizeof(CPUBrand));
+string get_cpu_brand() {
+    char CPUBrand[0x40];
+    unsigned int CPUInfo[4] = {0,0,0,0};
+    __cpuid(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+    unsigned int nExIds = CPUInfo[0];
+    memset(CPUBrand, 0, sizeof(CPUBrand));
 
-//     for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
-//         __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
-//         if (i == 0x80000002)
-//             memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
-//         else if (i == 0x80000003)
-//             memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
-//         else if (i == 0x80000004)
-//             memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
-//     }
-//     string output(CPUBrand);
-//     return output;
-// }
+    for (unsigned int i = 0x80000000; i <= nExIds; ++i) {
+        __cpuid(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+        if (i == 0x80000002)
+            memcpy(CPUBrand, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000003)
+            memcpy(CPUBrand + 16, CPUInfo, sizeof(CPUInfo));
+        else if (i == 0x80000004)
+            memcpy(CPUBrand + 32, CPUInfo, sizeof(CPUInfo));
+    }
+    string output(CPUBrand);
+    return output;
+}
 
 
 

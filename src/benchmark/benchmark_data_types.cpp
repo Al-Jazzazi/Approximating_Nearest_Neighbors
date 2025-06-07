@@ -6,7 +6,8 @@
 #include <string>
 #include <sstream>
 #include <chrono>
-#include "../config.h"
+
+#include "../include/config.h"
 
 using namespace std;
 using namespace std::chrono;

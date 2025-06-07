@@ -6,7 +6,8 @@
 #include <float.h>
 #include <set>
 #include <limits>
-#include "hnsw.h"
+
+#include "../include/hnsw.h"
 
 using namespace std;
 

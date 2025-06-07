@@ -9,7 +9,8 @@
 #include <queue>
 #include <unordered_set>
 #include <immintrin.h>
-#include "vamana.h"
+
+#include "../include/vamana.h"
 
 
 /// reduce K_QUERY to 1, 50, etc -> find out what's the issue

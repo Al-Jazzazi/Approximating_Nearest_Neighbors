@@ -1,7 +1,7 @@
 #ifndef GRASP_H
 #define GRASP_H
 
-#include "../hnsw.h"
+#include "hnsw.h"
 
 // Main algorithms
 void learn_edge_importance(Config* config, HNSW* hnsw, std::vector<Edge*>& edges, float** queries, std::ofstream* results_file = nullptr);

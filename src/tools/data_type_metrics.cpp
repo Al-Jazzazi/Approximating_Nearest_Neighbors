@@ -2,8 +2,9 @@
 #include <chrono>
 #include <cpuid.h>
 #include <string.h>
-#include "./grasp/grasp.h" 
-#include "hnsw.h"
+
+#include "../include/grasp.h"
+#include "../include/hnsw.h"
 
 using namespace std;
 
@@ -56,74 +57,22 @@ int main() {
     cout << "Beginning HNSW construction" << endl;
     HNSW* hnsw = new HNSW(config, nodes);
     if (config->load_graph_file) {
-        hnsw->from_files(config, false);
+        hnsw->from_files(config, nodes);
     } else {
         for (int i = 1; i < config->num_nodes; i++) {
             hnsw->insert(config, i);
         }
-        // Optimize HNSW using GraSP
-        if (config->use_grasp) {
-            float** training = new float*[config->num_training];
-            load_training(config, nodes, training, config->num_training);
-            if (config->export_training_queries) {
-                ofstream histogram = ofstream(config->training_set, std::ios::app);
-                for (int i = 0; i < config->num_training; i++) {
-                    for (int j = 0; j < config->dimensions; j++) {
-                        histogram  << training[i][j] << ", "; 
-                    }
-                    if  (!config->training_set.empty()) 
-                        histogram  << endl; 
-                }
-                histogram << "endddd with itration \n\n\n";
-                histogram.close();
-            }
-            remove_duplicates(config, training, queries, config->num_queries);
 
-            vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            learn_edge_importance(config, hnsw, edges, training);
-            prune_edges(config, hnsw, edges, config->final_keep_ratio * edges.size());
-            for (int i = 0; i < config->num_training; i++)
-                delete[] training[i];
-            delete[] training;
-        }
-        if (config->use_cost_benefit) {
-            float** training = new float*[config->num_training];
-            vector<Edge*> edges = hnsw->get_layer_edges(config, 0);
-            load_training(config, nodes, training, config->num_training);
-            remove_duplicates(config, training, queries, config->num_queries);
-            learn_cost_benefit(config, hnsw, edges, training, config->final_keep_ratio * edges.size());
-            for (int i = 0; i < config->num_training; i++)
-                delete[] training[i];
-            delete[] training;   
-        }
-    }
-
-    // Print and export HNSW graph
-    if (config->print_graph) {
-        cout << hnsw;
-    }
-    if (config->export_graph && !config->load_graph_file) {
-        hnsw->to_files(config, config->graph);
     }
 
     // Run queries
     if (config->run_search) {
-        if (config->print_path_size) {
-            hnsw->total_path_size = 0;
-        }
-        if(config->use_hybrid_termination || config->use_distance_termination ) 
-                hnsw->calculate_termination(config);
-                
-        auto search_start = chrono::high_resolution_clock::now();
-        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_start - begin_time).count() << " ms" << endl;
-        cout << "Beginning search" << endl;
-
+   
+ 
         // Run query search and print results
-        hnsw->search_queries(config, queries);
+        hnsw->search_queries_logging_datatypes(config, queries, 0.05);
 
-        auto search_end = chrono::high_resolution_clock::now();
-        cout << "Time passed: " << chrono::duration_cast<chrono::milliseconds>(search_end - search_start).count() << " ms" << endl;
-
+  
         if (config->print_path_size) {
             cout << "Average Path Size: " << static_cast<double>(hnsw->total_path_size) / config->num_queries << endl;
             hnsw->total_path_size = 0;
@@ -144,7 +93,7 @@ int main() {
 
     // Print time elapsed
     now = time(NULL);
-    cout << "GraSP run ended at " << ctime(&now);
+    cout << "run ended at " << ctime(&now);
     auto end_time = chrono::high_resolution_clock::now();
     cout << "Total time taken: " << chrono::duration_cast<chrono::milliseconds>(end_time - begin_time).count() << " ms" << endl;
 

@@ -4,8 +4,9 @@
 #include <unordered_set>
 #include <cpuid.h>
 #include <string.h>
-#include "./grasp/grasp.h"
-#include "hnsw.h"
+
+#include "../include/hnsw.h"
+#include "../include/grasp.h"
 
 using namespace std;
 

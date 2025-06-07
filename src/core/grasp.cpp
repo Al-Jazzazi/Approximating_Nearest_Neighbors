@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include "grasp.h"
 #include <math.h>
 #include <utility>
 #include <random>
@@ -9,7 +8,8 @@
 #include <iomanip>
 #include <unordered_set>
 
-#include "grasp.h"
+#include "../include/grasp.h"
+
 
 using namespace std;
 

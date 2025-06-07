@@ -8,7 +8,8 @@
 #include <random>
 #include <functional>
 #include <immintrin.h>
-#include "../config.h"
+
+#include "config.h"
 #include "utils.h"
 
 extern std::ofstream* debug_file;

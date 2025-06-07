@@ -1,14 +1,11 @@
-#include <iostream>
-#include <algorithm>
-#include <chrono>
-#include <unordered_set>
-#include <vector>
-#include <cpuid.h>
 #include <fstream>
-#include <string.h>
-#include "vamana.h"
+#include <fstream>
+#include <chrono> 
 
-using namespace std;
+#include "../include/graph.h"
+
+using namespace std; 
+
 
 
 template <typename T>
@@ -36,10 +33,14 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
         vector<vector<int>> neighbors;
         double construction_duration, search_duration;
         long long search_dist_comp, total_dist_comp, candidates_popped, candidates_size, candidates_without_if ;
-        Vamana G = VamanaIndexing(config, config->alpha_vamana, config->R);
+        Graph G(config);
+        G.load(config);
+
         vector<vector<int>> actual_neighbors;
+
         get_actual_neighbors(config, actual_neighbors, nodes, queries);
-        int startNode = findStart(config, G);
+
+        int startNode = G.start;
 
         // Re-initialize statistics for query search
         if (config->ef_search < config->num_return) {
@@ -52,8 +53,9 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_without_if = 0;
             break;
         }
+
         G.reset_statistics();
-    
+
         int median_comps_layer0 = 0;
         int similar = 0;
         float total_ndcg = 0;
@@ -76,31 +78,52 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             candidates_size = 0 ;
             candidates_without_if = 0;
         // Run query search
+
         } else {
+
             vector<int> counts_calcs;
             for (int j = 0; j < 20; j++) {
                 counts_calcs.push_back(0);
             }
+
             auto start = chrono::high_resolution_clock::now();
             neighbors.reserve(config->num_queries);
             vector<long long int> dist_comps_per_q_vec;
+
             if(config->use_hybrid_termination || config->use_distance_termination ) 
                 G.calculate_termination(config);
-            for (int j = 0; j < config->num_queries; ++j) {
-                G.cur_groundtruth = actual_neighbors[j];
         
+
+            for (int j = 0; j < config->num_queries; ++j) {
+                // cout << "#query " << j << "\n";
+             try {
+                if (j >= actual_neighbors.size()) 
+                    throw std::out_of_range("Index out of bounds in actual_neighbors");
+
+                G.cur_groundtruth = actual_neighbors[j];
+                } 
+                catch (const std::out_of_range& e) {
+                std::cerr << "Error: " << e.what() << std::endl;
+                }
+
                 vector<int> result;
-                BeamSearch(G,config, startNode, queries[j], config->ef_search, result);
+                // cout << "is beam search\n";
+                beam_search(G,config, startNode, queries[j], config->ef_search, result);
+                // cout << "not beam search\n";
                 neighbors.emplace_back(result);
                 // neighbors.emplace_back(hnsw->nn_search(config, path, query_pair, config->num_return));
-
+                // cout << "G.distanceCalculationCount  is "  << G.distanceCalculationCount  << "\n";
                 if (config->export_calcs_per_query) {
                     ++counts_calcs[std::min(19, (int)G.distanceCalculationCount / config->interval_for_calcs_histogram)];
                 }
-                if (config->export_median_calcs || config->export_median_precentiles) {
+                if (config->export_median_calcs || config->export_median_precentiles || config->use_distance_termination) {
                     dist_comps_per_q_vec.push_back(G.distanceCalculationCount);
                 }
+
             }
+
+
+ 
 
             // Log search statistics
             auto end = chrono::high_resolution_clock::now();
@@ -108,10 +131,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             cout << "Query time: " << duration / 1000.0 << " seconds, ";
             cout << "Distance computations (layer 0): " << G.distanceCalculationCount << ", ";
 
-            if (config->export_median_calcs) {
+            if (config->export_median_calcs || config->use_distance_termination) {
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 median_comps_layer0 = dist_comps_per_q_vec[dist_comps_per_q_vec.size() / 2];
             }
+
             if(config->export_median_precentiles){
                 std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
                 ofstream histogram = ofstream(config->metric_prefix + "_median_percentiles.txt", std::ios::app);
@@ -126,6 +150,23 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram << endl;
 
             }
+
+            if(config->export_median_precentiles_alpha && config->use_distance_termination){
+                std::sort(dist_comps_per_q_vec.begin(), dist_comps_per_q_vec.end());
+                ofstream histogram = ofstream("./alpha_median_percentiles/" +config->graph + "/_" +  config->dataset + "_median_percentiles_k=" +  std::to_string(config->num_return)+ "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".txt", std::ios::app);
+                histogram << config->termination_alpha << ", ";
+                 for (int j = 0; j < config->benchmark_median_percentiles.size(); ++j) {
+                    
+                    int k = static_cast<int>(dist_comps_per_q_vec.size()* config->benchmark_median_percentiles[j]);
+                    cout << "k is " << k <<  " " << dist_comps_per_q_vec.size() << endl;
+                    if(k < dist_comps_per_q_vec.size())
+                        histogram << dist_comps_per_q_vec[k] << ", ";
+                }
+                histogram << endl;
+
+            }
+
+
             if (config->export_calcs_per_query) {
                 ofstream histogram = ofstream(config->runs_prefix + "histogram_calcs_per_query.txt", std::ios::app);
                 for (int j = 0; j < 20; ++j) {
@@ -135,7 +176,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                 histogram.close();
             }
 
-         
+
             
             search_duration = duration;
             search_dist_comp = G.distanceCalculationCount;
@@ -149,9 +190,11 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
             cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
                 << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
-            
+            cout << "sixth check\n"; 
             find_similar(config, actual_neighbors, neighbors, nodes, queries, similar, total_ndcg);
        }
+
+
 
         // Update benchmark file statistics
         double recall = (double) similar / (config->num_queries * config->num_return);
@@ -163,18 +206,24 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
             std::string dist_comp_layer0_string = config->export_median_calcs ? std::to_string(median_comps_layer0) : std::to_string(search_dist_comp / config->num_queries);
             std::string line = std::to_string(parameter) + ", " 
                      + dist_comp_layer0_string + ", "
-                     + std::to_string(total_dist_comp / config->num_queries) + ", " 
+                    //  + std::to_string(total_dist_comp / config->num_queries) + ", " 
                      + std::to_string(recall) + ", " 
-                     + std::to_string(search_duration / config->num_queries) + ", "
-                     + std::to_string(average_ndcg) + ", ";
+                     + std::to_string(G.num_set_checks/ config->num_queries) + ", "
+                     + std::to_string(G.size_of_c / config->num_queries) + ", "
+                     + std::to_string(G.num_insertion_to_c / config->num_queries) + ", "
+                     + std::to_string(G.num_deletion_from_c / config->num_queries) + ", "
+                     + std::to_string(G.size_of_visited / config->num_queries) + ", "           
+                     + std::to_string(search_duration / config->num_queries) + ", ";
+                    
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
                      //+ std::to_string(candidates_size / static_cast<float>(candidates_without_if)) + ", ";
-       
+       cout << "seventh check\n"; 
             if (config->use_hybrid_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;
                 line += std::to_string(G.num_distance_termination ) + "---" + std::to_string(G.num_original_termination) + ", ";
                 line += std::to_string(termination_alpha) + ", ";
+
             }
             lines.push_back(line);
         }
@@ -185,7 +234,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
     if (config->export_benchmark) {
         if( config->export_median_calcs)
             *results_file << "note that distance at layer 0 here is median" << endl;
-        *results_file << "\nparameter, dist_comps/query, total_dist_comp/query, recall, runtime/query, Avg NDCG, alpha, ratio termination (distance based/original), candidates_popped/query, candidates_size/candidates_without_if" << endl;
+        *results_file << "\nparameter, dist_comps/query, recall, num_set_checks/query,  size_of_c/query, num_insertion_to_c/query, num_deletion_from_c/query,size_of_visited/query,  runtime/query,  ratio termination (distance based/original), alpha" << endl;
         for(auto& line: lines)
             *results_file << line <<endl;
         *results_file << endl << endl;
@@ -204,6 +253,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
 
 
+
 void run_benchmarks(Config* config, float** nodes, float** queries, float** training) {
     // Initialize output files
     ofstream* results_file = NULL;
@@ -216,7 +266,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
                 << "Distance Termination alpha = " << config->alpha_termination_selection  << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  <<  ", Median Break value = " << config->breakMedian  << endl;
-
+        if(config->use_distance_termination_w_beta) *results_file  << "Distance Termination beta = " << config->termination_beta << endl; 
 
         if (config->export_histograms && !config->load_graph_file) {
             if (config->use_grasp) {
@@ -271,7 +321,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
 
 
 
-//  * This class is used to run Vamana with different parameters, comparing the recall
+//  * This class is used to run HNSW with different parameters, comparing the recall
 //  * versus ideal for each set of parameters.
 // */
 int main() {
@@ -327,4 +377,5 @@ int main() {
     now = time(0);
     cout << "Benchmark run ended at " << ctime(&now);
 }
+
 

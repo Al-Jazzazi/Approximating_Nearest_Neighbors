@@ -2,7 +2,8 @@
 #define UTILS_H
 
 #include <vector>
-#include "../config.h"
+
+#include "config.h"
  
 float calculate_l2_sq(float* a, float* b, int size);
 void knn_search(Config* config, std::vector<std::vector<int>>& results, float** nodes, float** queries);

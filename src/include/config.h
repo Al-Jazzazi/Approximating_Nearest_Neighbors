@@ -230,7 +230,7 @@ public:
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     const bool use_cost_benefit = false;
-    const bool export_queries = false;
+    const bool use_direct_path = false;
     const bool use_dynamic_sampling = false;
     const bool use_stinky_points = false;
     float stinky_value = 0.00005;

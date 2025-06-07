@@ -6,7 +6,8 @@
 #include <cpuid.h>
 #include <fstream>
 #include <string.h>
-#include "vamana.h"
+
+#include "../include/vamana.h"
 
 using namespace std;
 
