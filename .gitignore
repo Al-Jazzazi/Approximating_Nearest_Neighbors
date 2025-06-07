@@ -20,3 +20,7 @@ alpha_median_percentiles
 data_eval
 graphing
 data_historgram
+historgram_data/
+*csv
+
+

@@ -38,3 +38,16 @@ mv deep1b_gt/deep1b/deep1M_learn.fvecs deep_learn.fvecs
 mv deep1b_gt/deep1b/deep1B_queries.fvecs deep_query.fvecs
 rm -rf ./deep1b_gt
 cd ../..
+
+
+# Download Deep (1000000 x 256)
+wget --no-check-certificate https://www.cse.cuhk.edu.hk/systems/hash/gqr/dataset/deep1M.tar.gz
+tar -xzvf deep1M.tar.gz
+rm deep1M.tar.gz deep1M/*.lshbox
+mv deep1M deep
+cd deep
+mv deep1M_base.fvecs deep_base.fvecs
+mv deep1M_groundtruth.ivecs deep_groundtruth.ivecs
+mv deep1M_learn.fvecs deep_learn.fvecs
+mv deep1M_query.fvecs deep_query.fvecs
+cd ../..

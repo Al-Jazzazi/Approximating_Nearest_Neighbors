@@ -354,7 +354,7 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
                         }
-                        if (top_k.size() > config->num_return)
+                        if ((top_k.size() > config->num_return) && !(config->use_distance_termination_w_beta && top_k.size() < config->num_return *config->termination_beta))
                             top_k.pop();
                     }
                     else{
@@ -724,8 +724,13 @@ void HNSW::search_queries(Config* config, float** queries) {
     if (config->export_queries)
         export_file = new ofstream(config->runs_prefix + "queries.txt");
     ofstream* indiv_file = NULL;
-    if (config->export_indiv)
-        indiv_file = new ofstream(config->runs_prefix + "indiv.txt");
+    if (config->export_indiv){
+        std::string dir = "/scratch/ya2225/Summer2024_Research/Summer2024-Research/histogram_data/";
+        if(config->use_distance_termination)
+            indiv_file = new ofstream(dir+ config->graph + "_"+ config->dataset+"_alpha_" + std::to_string(config->alpha_termination_selection)  + "_"+ std::to_string(config->termination_alpha)  + "_term_k_10.csv");
+        else 
+        indiv_file = new ofstream(dir+ config->graph + "_" +config->dataset +"_bw_"+ std::to_string(config->ef_search) +"_term_k_10.csv");
+    }   
     if (config->export_oracle)
         when_neigh_found_file = new ofstream(config->oracle_file);
     ofstream* d1_dk_ratio_file = NULL;
@@ -825,7 +830,8 @@ void HNSW::search_queries(Config* config, float** queries) {
             if (config->print_total_found)
                 total_found += matching;
             if (config->export_indiv)
-                *indiv_file << matching / (double)config->num_return << " " << layer0_dist_comps << " " << upper_dist_comps << endl;
+                // *indiv_file << matching / (double)config->num_return << " " << layer0_dist_comps << " " << upper_dist_comps << endl;
+                *indiv_file << layer0_dist_comps_per_q << "\n";
             if(config->export_d1_dk_ratio){
                 double recall = matching /  (double)config->num_return;
                 sort(found.begin(), found.end()); 
@@ -1395,7 +1401,7 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
                         }
-                        if (top_k.size() > config->num_return)
+                        if ((top_k.size() > config->num_return) && !(config->use_distance_termination_w_beta && top_k.size() < config->num_return *config->termination_beta))
                             top_k.pop();
                     }
                     else{

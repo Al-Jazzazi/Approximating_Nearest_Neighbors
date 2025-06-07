@@ -1,9 +1,0 @@
-Size 1000000
-Benchmarking with Parameters: opt_con = 24, max_con = 24, max_con_0 = 24, ef_con = 500, scaling_factor = 0.314658, ef_search = 100
-num_return = 1, learning_rate = 0.1, initial_temperature = 1, decay_factor = 0.8, initial_keep_ratio = 0.9, final_keep_ratio = 0.7, grasp_loops = 20, Single training = 1
-Current Run Properties: Stinky Values = false [5e-05], use_heuristic = true, use_grasp = false, use_dynamic_sampling = false, use_cost_benefit = false, use_direct_path = false, Single construction point = true, Single Search Point =  true, ef_search_upper = 1, k_upper = 1, current Pruning method = 0
-Current Termination Method : 
-Use_distance_termination = true, use_hybrid_termination false, use_latest: false, use_median: false, Use Break = false, Use median break = false, Use median earlist = false, use_calculation_termination = false, use oracle 1 = false, use_calculation_oracle = false
-Termination values : Distance Termination alpha = 0, alpha break = 1.5, efs break = 1.5, Median Break value = 0.9
-
-Varying termination_alpha:

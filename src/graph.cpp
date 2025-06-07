@@ -163,7 +163,7 @@ bool Graph::should_terminate(Config* config, priority_queue<pair<float, int>>& t
     bool num_of_dist_1 = false;
 
     // Evaluate distance-based criteria
-    if (config->use_hybrid_termination || config->use_distance_termination) {
+    if (config->use_hybrid_termination || config->use_distance_termination || config->use_distance_termination_w_beta) {
         float close = sqrt(close_squared);
         float threshold = 2 * sqrt(top_k.top().first) + sqrt(top_1.first);
         // alpha * (2 * d_k + d_1)  --> 0 
@@ -302,8 +302,13 @@ void Graph::run_queries(Config* config, float** queries){
 void Graph::query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
        
     ofstream* indiv_file = NULL;
-    if (config->export_indiv)
-        indiv_file = new ofstream(config->runs_prefix + "indiv.csv");
+    if (config->export_indiv){
+        std::string dir = "/scratch/ya2225/Summer2024_Research/Summer2024-Research/histogram_data/";
+        if(config->use_distance_termination)
+            indiv_file = new ofstream(dir+ config->graph + "_"+ config->dataset+"_alpha_" + std::to_string(config->alpha_termination_selection)  + "_"+ std::to_string(config->termination_alpha)  + "_term_k_10.csv");
+        else 
+        indiv_file = new ofstream(dir+ config->graph + "_" +config->dataset +"_bw_"+ std::to_string(config->ef_search) +"_term_k_10.csv");
+    }   
 
     for (int k = 0; k < config->num_queries; k++) {
         distanceCalculationCount_per_q = 0;
@@ -340,7 +345,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
     priority_queue<pair<float, int>> top_k;
     pair<float, int> top_1;
 
-    bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination);
+    bool using_top_k = (config->use_hybrid_termination || config->use_distance_termination || config->use_distance_termination_w_beta);
 
     //set bw to infinity (or a relatively large number)
     if (config->use_distance_termination || config->use_calculation_termination || config->use_hybrid_termination){
@@ -372,7 +377,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
         ++candidates_popped_per_q;
         
         if (graph.should_terminate(config, top_k, top_1, close_dist, far_dist, candidates_popped_per_q)) {
-            if(top_k.size() != config->num_return) cerr << "!!!!! top_k size does not matching number return!!!\n"; 
+            if(using_top_k && top_k.size() != config->num_return) cerr << "!!!!! top_k size does not matching number return, top_k = " << top_k.size() << ", config->num_return = " << config->num_return << "\n"; 
             if (config->use_hybrid_termination){
                 if (candidates_popped_per_q > config->ef_search)
                     graph.num_original_termination++;
@@ -391,7 +396,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
                 float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
                 float neighbor_dist = graph.find_distance(neighbor,query);
                 if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
-                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * 2*sqrt(top_k.top().first)   ) ) ) {
+                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * 2*sqrt(top_k.top().first)   ) ) ) { //update this 
                 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
 
@@ -402,7 +407,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
                         if (neighbor_dist < top_1.first) {
                             top_1 = make_pair(neighbor_dist, neighbor);
                         }
-                        if (top_k.size() > config->num_return)
+                        if ((top_k.size() > config->num_return) && !(config->use_distance_termination_w_beta && top_k.size() < config->num_return *config->termination_beta))
                             top_k.pop();
                     }
                     else{

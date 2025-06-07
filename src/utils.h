@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "../config.h"
-
+ 
 float calculate_l2_sq(float* a, float* b, int size);
 void knn_search(Config* config, std::vector<std::vector<int>>& results, float** nodes, float** queries);
 void load_fvecs(const std::string& file, float** results, int num, int dim, bool check_groundtruth = false);
