@@ -24,7 +24,7 @@ public:
         alpha * d_k   + d_k  --> 4 
     */
     std::string runs_prefix =   "rando";
-    std::string graph = "efanna";
+    std::string graph = "hnsw_heuristic";
     std::string metric_prefix = "./runs/" + graph+ "/"+ dataset+"/k=1_distance_term_" + std::to_string(alpha_termination_selection) + "_" ;
     std::string loaded_graph_file = "./grphs/"+ dataset+"/graph_"+graph+".bin";
 
@@ -69,6 +69,7 @@ public:
 
     // Termination Parameters
     const bool use_distance_termination = true;
+    const bool use_distance_termination_w_beta = false; 
     const bool use_hybrid_termination = false; 
     const bool use_latest = false;  // Only used if use_hybrid_termination = true
     const bool use_break = false;  // Only used if use_hybrid_termination = true
@@ -81,6 +82,7 @@ public:
     int calculations_per_query = 100000;  // Only used if use_calculation_termination = true
     int oracle_termination_total = 10000;  // Only used if use_calculation_oracle = true
     float termination_alpha = 0.4;  // Only used if use_distance_termination = true
+    float termination_beta = 0.5; 
     float alpha_break = 1.5;  // Only used if use_break = true
     float efs_break = 1.5;  // Only used if use_break = true
 
@@ -228,7 +230,7 @@ public:
     // HNSW Training
     const bool use_grasp = false;  // Make sure use_grasp and use_cost_benefit are not both on at the same time
     const bool use_cost_benefit = false;
-    const bool use_direct_path = false;
+    const bool export_queries = false;
     const bool use_dynamic_sampling = false;
     const bool use_stinky_points = false;
     float stinky_value = 0.00005;
@@ -249,10 +251,10 @@ public:
     std::vector<int> grid_num_return =   {50,10,1};
     std::vector<std::string> grid_runs_prefix = graph == "hnsw_heuristic" ?
     std::vector<std::string>{
-        "./runs/" + graph+ "/"+ dataset+"/k=50_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
-        "./runs/" + graph+ "/"+ dataset+"/k=10_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
-        "./runs/" + graph+ "/"+ dataset+"/k=1_distance_term_" + std::to_string(alpha_termination_selection) + "_" 
-
+        // "./runs/" + graph+ "/"+ dataset+"/k=50_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
+        // "./runs/" + graph+ "/"+ dataset+"/k=10_distance_term_" + std::to_string(alpha_termination_selection) + "_" ,
+        // "./runs/" + graph+ "/"+ dataset+"/k=1_distance_term_" + std::to_string(alpha_termination_selection) + "_" 
+        "test"
     }:
     std::vector<std::string>{ 
       "./runs_fall_2024/" + graph + "/" + dataset+"/distance_term/k=50_distance_term_" + std::to_string(alpha_termination_selection),
@@ -273,6 +275,7 @@ public:
     std::vector<float> benchmark_termination_alpha ={0.001, 0.005, 0.01, 0.015, 0.02};
     //0.001, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.08,0.09, 0.1, 0.11, 0.12,0.14, 0.15,0.16,0.17, 0.18,0.19, 0.2
     //0.21, 0.22, 0.23, 0.24, 0.25,0.26, 0.27, 0.28, 0.29, 0.30,0.31,0.32,0.33,0.34, 0.35, 0.355, 0.36, 0.365, 0.37, 0.375, 0.38, 0.385,0.39,0.395,0.4, 0.405, 0.41
+    std::vector<float> benchmark_termination_beta ={};
     std::vector<float> benchmark_learning_rate = {};
     std::vector<float> benchmark_initial_temperature = {};
     std::vector<float> benchmark_decay_factor = {};
@@ -287,6 +290,7 @@ public:
 
    
     // Debugging Flags
+    const bool export_d1_dk_ratio = false; 
     const bool export_benchmark = true;
     const bool export_median_calcs = false;  // Replaces mean with median in benchmark file
     const bool export_median_precentiles = false;

@@ -31,7 +31,6 @@ HNSW::HNSW(Config* config, float** nodes) : nodes(nodes), num_layers(1), num_nod
 
 //static 
 std::map<int,std::vector<int>> HNSW::candidate_popping_times;  
-
 float termination_alpha = 0;
 float termination_alpha2 = 0 ;
 float bw_break = 0;
@@ -562,6 +561,8 @@ vector<pair<float, int>> HNSW::nn_search(Config* config, vector<Edge*>& path, pa
  * Finds the direct path to each nearest neighbor stored in entry_points by
  * backtracking along the beam searched path until a nullptr is reached. This
  * sets the path to the newly found path and deallocates the entry points.
+ * Note: used for pruning HNSW 
+ * 
  */
 void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry_points) {
     set<Edge*> direct_path;
@@ -592,6 +593,7 @@ void HNSW::find_direct_path(vector<Edge*>& path, vector<pair<float, int>>& entry
     vector<Edge*> direct_path_vector(direct_path.begin(), direct_path.end());
     path = direct_path_vector;
 }
+
 
 // Returns whether or not to terminate from search_layer
 bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& top_k, pair<float, int>& top_1, float close_squared, float far_squared,  bool is_querying, int layer_num,int candidates_popped_per_q) {
@@ -649,6 +651,12 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
 }
 
 
+
+/*
+* 
+*
+*
+*/
  void HNSW::calculate_termination(Config *config){
         std::string alpha_key = std::to_string(config->num_return) + " " + config->dataset;
         cout << alpha_key << endl;
@@ -688,32 +696,6 @@ bool HNSW::should_terminate(Config* config, priority_queue<pair<float, int>>& to
     }
 
 
-// void HNSW::run_data_metric(Config* config, float** queries) {
-//     bool use_groundtruth = config->groundtruth_file != "";
-//     if (use_groundtruth && config->query_file == "") {
-//         cout << "Warning: Groundtruth file will not be used because queries were generated" << endl;
-//         use_groundtruth = false;
-//     }
-//     vector<vector<int>> actual_neighbors;
-//     if (use_groundtruth) {
-//         load_ivecs(config->groundtruth_file, actual_neighbors, config->num_queries, config->num_return);
-//     } else {
-//         knn_search(config, actual_neighbors, nodes, queries);
-//     }
-
-//     for (int i = 0; i < config->num_queries; ++i) {
-//         // Obtain the query and optionally check if it's too expensive according to the oracle
-//         float* query = config->use_calculation_oracle ? queries[nn_calculations[i].second] : queries[i];
-        
-//         pair<int, float*> query_pair = make_pair(i, query);
-
-//         vector<Edge*> path;
-//         vector<pair<float, int>> found = nn_search(config, path, query_pair, config->num_return);
-
-
-
-
-// }
 
 
 
@@ -1203,6 +1185,7 @@ void HNSW::find_entry_layer_0(Config* config, pair<int, float*>& query, vector<p
 
 
 // Searches for each query using the HNSW graph
+// Function used when running one search in hnsw -- ie not in benchmark
 void HNSW::search_queries_logging_datatypes(Config* config, float** queries, float percent) {
     
     // Initialize log files
@@ -1227,34 +1210,7 @@ void HNSW::search_queries_logging_datatypes(Config* config, float** queries, flo
 
 
 
-        // Export the query used
-        // if (config->export_queries) {
-        //     *export_file << "Query " << i+1 << endl << query_pair.second[0] << endl;
-        //     if (config->num_return == 1) {
-        //         for (int j =0; j< found.size(); j++) {
-        //             *export_file << found[j].second << "," << found[j].first << endl;
-        //             *export_file << cur_groundtruth[j];
-        //             if(found[j].second != cur_groundtruth[j]){ 
-        //                 *export_file << "," << queries[i];
-        //             }
-        //             *export_file<< endl;
-        //         }
-        //     } else {
-        //         for (int dim = 1; dim < num_dimensions; ++dim)
-        //             *export_file << "," << query_pair.second[dim];
-        //         *export_file << endl;
-        //         for (auto n_pair : found)
-        //             *export_file << n_pair.second << ",";
-        //         *export_file << endl;
-        //         for (int index : cur_groundtruth)
-        //             *export_file << index << " ";
-        //         *export_file << endl;          
-        //         for (Edge* edge : path) {
-        //             *export_file << edge->target << ",";
-        //         }
-            // }
-            // *export_file << endl;
-        // }
+
     }
 
 
@@ -1269,7 +1225,10 @@ void HNSW::search_queries_logging_datatypes(Config* config, float** queries, flo
   
 }
 
-
+/**
+ * An Alternative Search Function that logs all push/pop from candidate, found, and visisted datasets 
+ * 
+ */
 void HNSW::search_layer_logging_datatypes(Config* config, float* query, int query_id,vector<Edge*>& path, vector<pair<float, int>>& entry_points, int num_to_return, int* total_cost) {
     // Open a file to write
     ofstream candidates_file("./data_eval/candidates/" + config->graph +"/_" +config->dataset + "_k=" + std::to_string(config->num_return) + "_distance_term_" + std::to_string(config->alpha_termination_selection)  + ".csv", ios::app);
@@ -1336,9 +1295,6 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
     }
     
 
-
-
-
     float far_dist = found.top().first;
     int candidates_popped_per_q = 0; 
     while (!candidates.empty()) {
@@ -1348,8 +1304,6 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
         int closest = candidates.top().second;
         float close_dist = candidates.top().first;
         
-        
-
 
         candidates.pop();
         candidates_file << query_id << "," << "pop" << ","
@@ -1417,14 +1371,10 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
                     }
 
             }
-
                 
             }
         }
-    }
-   
-
-     
+    }     
         visited_file.close();
         candidates_file.close();
         found_file.close();
