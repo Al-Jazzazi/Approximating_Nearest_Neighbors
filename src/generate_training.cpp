@@ -7,7 +7,7 @@ int main() {
     // Load config
     Config* config = new Config();
     config->num_return = 100;
-
+ 
     // Load nodes
     float** nodes = new float*[config->num_nodes];
     load_nodes(config, nodes);

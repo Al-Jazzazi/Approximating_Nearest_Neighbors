@@ -265,7 +265,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << ", Use Break = " << config->use_break << ", Use median break = " << config->use_median_break << ", use_calculation_termination = " << config->use_calculation_termination  << ", use oracle 1 = "  << config->use_groundtruth_termination << ", use_calculation_oracle = " << config->use_calculation_oracle 
                 << "\nTermination values : "
                 << "Distance Termination alpha = " << config->alpha_termination_selection  << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  <<  ", Median Break value = " << config->breakMedian  << endl;
-
+        if(config->use_distance_termination_w_beta) *results_file  << "Distance Termination beta = " << config->termination_beta << endl; 
 
         if (config->export_histograms && !config->load_graph_file) {
             if (config->use_grasp) {

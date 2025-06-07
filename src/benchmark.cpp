@@ -388,6 +388,7 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
                 << "\nTermination values : "
                 << "Distance Termination alpha = " << config->alpha_termination_selection  << ", alpha break = " << config->alpha_break << ", efs break = " << config->efs_break  <<  ", Median Break value = " << config->breakMedian  << endl;
 
+                if(config->use_distance_termination_w_beta) *results_file  << "Distance Termination beta = " << config->termination_beta << endl; 
 
         if (config->export_histograms && !config->load_graph_file) {
             if (config->use_grasp) {
@@ -431,12 +432,15 @@ void run_benchmarks(Config* config, float** nodes, float** queries, float** trai
         nodes, queries, training, results_file);
     run_benchmark(config, config->termination_alpha, config->benchmark_termination_alpha, "termination_alpha", nodes,
         queries, training, results_file);
+    run_benchmark(config, config->termination_beta, config->benchmark_termination_beta, "termination_beta", nodes,
+        queries, training, results_file);
     run_benchmark(config, config->ef_search, config->benchmark_ef_search, "ef_search", nodes,
         queries, training, results_file);
     run_benchmark(config, config->calculations_per_query, config->benchmark_calculations_per_query, "calculations_per_query", nodes,
         queries, training, results_file);
     run_benchmark(config, config->oracle_termination_total, config->benchmark_oracle_termination_total, "oracle_termination_total", nodes,
         queries, training, results_file);
+
 
     if (config->use_grasp) {
         run_benchmark(config, config->learning_rate, config->benchmark_learning_rate, "learning_rate",
