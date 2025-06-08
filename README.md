@@ -55,7 +55,7 @@ These executables run a graph search instance using parameters from `config.h`.
 | `run_hnsw`      | Runs HNSW or Grasp-based search                 |
 | `run_vamana`    | Runs Vamana search                              |
 | `run_graph`     | Runs the abstract graph (for Efanna, NSG, etc.) |
-|  | Runs HNSW while logging every pop/push from datasets   |
+| `run_data_type`  | Runs HNSW while logging every pop/push from datasets   |
 
 ### Benchmarks
 
