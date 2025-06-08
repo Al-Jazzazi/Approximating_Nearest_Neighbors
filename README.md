@@ -80,8 +80,9 @@ These evaluate performance by varying a parameter (e.g. `k`) set in `config.h`. 
 | `dataset_metrics`      | Outputs basic statistics about the dataset                |
 | `run_similarity`       | Compares the similiarty of nodes and queries set             |
 
+### Note
+`run_data_benchmark` and `run_data_benchmark` are no longer used and were replaced by measuring real time accross an entire search when running any other benchmark. 
 
-Note: run_data_benchmark and run_data_benchmark are no longer used and were replaced by measuring real time accross an entire search when running any other benchmark. 
 ---
 
 ##  Build Details
