@@ -1,4 +1,4 @@
-# Graph-Based Nearest Neighbor Framework
+# Approximating_Nearest_Neighbors
 
 This project provides a flexible framework for building, running, and benchmarking graph-based approximate nearest neighbor (ANN) search algorithms. It supports:
 
