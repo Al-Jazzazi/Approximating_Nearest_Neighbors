@@ -16,6 +16,17 @@ float bw_break = 0;
 
 ofstream* when_neigh_found_file;
 
+/**
+ * graph.cpp: core file for NSG, Efanan, and Navigable graphs  
+ * 
+ * Graph files are used to run Efanna, NSG, and navigable graphs (and hopefully any other graphs added later) 
+ * They're an abstraction from many of the functions that are used in HNSW where I remove. 
+ * the segments of code related to multilayers graph, grasp pruning, and other test materials we scrapped 
+ * 
+ * Note: Change load function based on your naming schemes. For every newly added graphs the load function should be modified to be able to import that kind of graph 
+ * if graph is single dimensional "Graph files" should be able to handle it without need for much modification. 
+ */
+
 
 Graph::Graph(Config* config) {
     num_nodes = config->num_nodes;
@@ -42,6 +53,8 @@ Graph::~Graph() {
 //load saved graph 
 void Graph::load(Config* config) {
     
+
+    //If either nsg or effanna
     if(config->loaded_graph_file.substr(config->loaded_graph_file.size() - 8) != "6226.txt"){
         ifstream graph_file(config->loaded_graph_file, std::ios::binary);
         cout << "Loading saved graph from " << config->loaded_graph_file << endl;
@@ -70,6 +83,8 @@ void Graph::load(Config* config) {
         }
         graph_file.close();
     }
+
+    //loading navigable graphs
     else{
         ifstream graph_file(config->loaded_graph_file, ios::in);
         cout << "Loading .txt saved graph from " << config->loaded_graph_file << endl;
@@ -259,12 +274,12 @@ void Graph::calculate_termination(Config *config){
 
 
 
+/**
+ * Function used in run_vamana. it runs all queires on a graph and it returns results.
+ * The search parameters are controlled inside config.h 
+ */
 
 void Graph::run_queries(Config* config, float** queries){
-
-    // if (config->export_oracle)
-    //     when_neigh_found_file = new ofstream(config->oracle_file);
-
     vector<vector<int>> results;
     query(config, start, results, queries);
     vector<vector<int>> actualResults;
@@ -287,26 +302,24 @@ void Graph::run_queries(Config* config, float** queries){
                     }
                 }
                 similar += intersection.size();
-
-
   
     
         }
     cout << "similar = " << similar << endl; 
     double recall = (double) similar / (config->num_queries * config->num_return);
     cout << "Recall of Graph is " << recall << endl;
-
-
-  
 }
 
 
-
+/**
+ * query function is where the loop over all queries is done 
+ */
 void Graph::query(Config* config, int start, vector<vector<int>>& allResults, float** queries) {
        
     ofstream* indiv_file = NULL;
+
     if (config->export_indiv){
-        std::string dir = "/scratch/ya2225/Summer2024_Research/Summer2024-Research/histogram_data/";
+        std::string dir = ".histogram_data/";    
         if(config->use_distance_termination)
             indiv_file = new ofstream(dir+ config->graph + "_"+ config->dataset+"_alpha_" + std::to_string(config->alpha_termination_selection)  + "_"+ std::to_string(config->termination_alpha)  + "_term_k_10.csv");
         else 
@@ -318,7 +331,6 @@ void Graph::query(Config* config, int start, vector<vector<int>>& allResults, fl
         if (k % 1000 == 0) cout << "Processing " << k << endl;
         float* thisQuery = queries[k];
         vector<int> result;
-        // cout << "beam search\n";
         beam_search(*this,config, start, thisQuery, config->ef_search, result);
         allResults.push_back(result);
 
@@ -399,8 +411,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
                 float far_inner_dist = using_top_k? top_k.top().first : found.top().first;
                 float neighbor_dist = graph.find_distance(neighbor,query);
                 if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
-                        (using_top_k && (sqrt(neighbor_dist) <=  (1+ termination_alpha) * 2*sqrt(top_k.top().first)   ) ) ) { //update this 
-                
+                        (using_top_k && !(graph.should_terminate(config, top_k, top_1, neighbor_dist, far_dist, candidates_popped_per_q))  ) ) { //update this 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
 
                     graph.num_insertion_to_c++;  
@@ -425,13 +436,11 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
         }
 
     }
-    // cout << "second stop\n";
     //Could've been added inside termination method
     graph.size_of_c += candidates.size(); 
     graph.num_deletion_from_c += candidates_popped_per_q; 
     graph.size_of_visited += visited.size();
 
-    // cout << "thrid stop\n";
     int idx =using_top_k ? top_k.size() : found.size(); 
     closest.clear();
     closest.resize(idx);
@@ -447,9 +456,7 @@ void beam_search(Graph& graph, Config* config,int start,  float* query, int bw, 
         found.pop();
         }
     }
-    // cout << "forth stop\n";
     closest.resize(min(closest.size(), (size_t)config->num_return));
-    // cout << "fifth stop\n";
 }
 
 /*

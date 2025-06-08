@@ -11,6 +11,11 @@
 using namespace std;
 
 
+/**
+ * benchmark.cpp: benchmark on hnsw graphs and pruned hnsw graphs 
+ */
+
+
 template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,
         float** nodes, float** queries, float** training, ofstream* results_file) {

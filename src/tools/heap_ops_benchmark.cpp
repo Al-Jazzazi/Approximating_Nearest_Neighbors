@@ -12,6 +12,13 @@
 using namespace std;
 using namespace std::chrono;
 
+/**
+ * benchmark_data_types.cpp: used to measure the maximum time needed for every push pop happening on candidate, visited, and found heaps.
+ * You would need to run and pop/push into .csv file (Look under main for naming structure used). 
+ * 
+ * Note: logging was only implemented on hnsw.  
+ */
+
 template<typename T> 
 void load_container(T& container, string file_name) {
     ifstream file(file_name);
@@ -109,9 +116,6 @@ int main(){
     load_container(visited, visited_file);
     auto end = high_resolution_clock::now();
     cout << "Time to load :" << duration_cast<milliseconds>(end - start).count() << " ms\n";
-
-
-
 
 
 }

@@ -340,7 +340,8 @@ void HNSW::search_layer(Config* config, float* query, vector<Edge*>& path, vecto
                 // Add neighbor to structures if its distance to query is less than furthest found distance or beam structure isn't full
                 float far_inner_dist = found.top().first;
                 float neighbor_dist = calculate_distance(query, nodes[neighbor], num_dimensions, layer_num);
-                if (neighbor_dist < far_inner_dist || found.size() < num_to_return) {
+                if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < num_to_return)) ||
+                    (using_top_k && !(should_terminate(config, top_k, top_1, neighbor_dist, far_dist, is_querying, layer_num, 0)) ) ) { 
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
                     
                     if(config->export_candidate_popping_times){
@@ -1383,11 +1384,5 @@ void HNSW::search_layer_logging_datatypes(Config* config, float* query, int quer
 
 }
 
-
-
-
-/*
-Run Histogram
-*/
 
 

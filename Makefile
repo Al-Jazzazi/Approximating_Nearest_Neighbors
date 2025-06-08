@@ -58,14 +58,14 @@ benchmark_slurm_grasp: src/benchmark/benchmark.cpp src/core/hnsw.cpp src/include
 benchmark_slurm_vamana: src/benchmark/benchmark_vamana.cpp src/core/vamana.cpp src/include/vamana.h  $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
-benchmark_slurm_graph: src/benchmark/graph_benchmark.cpp  src/core/graph.cpp src/include/graph.h  $(COMMON_SRCS) 
+benchmark_slurm_graph: src/benchmark/benchmark_graph.cpp  src/core/graph.cpp src/include/graph.h  $(COMMON_SRCS) 
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 	
-run_data_type: src/tools/data_type_metrics.cpp src/core/hnsw.cpp src/include/hnsw.h src/core/grasp.cpp src/include/grasp.h $(COMMON_SRCS)
+run_data_type: src/tools/heap_activity_logger.cpp src/core/hnsw.cpp src/include/hnsw.h src/core/grasp.cpp src/include/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
-run_data_benchmark: src/benchmark/benchmark_data_types.cpp src/core/hnsw.cpp src/include/hnsw.h src/core/grasp.cpp src/include/grasp.h $(COMMON_SRCS)
+run_data_benchmark: src/tools/heap_ops_benchmark.cpp src/core/hnsw.cpp src/include/hnsw.h src/core/grasp.cpp src/include/grasp.h $(COMMON_SRCS)
 	$(CXX) $(CXXFLAGS) -o ${BUILD_PATH}/$@_$(EPOCH_TIME).out $^
 	ln -sf $@_$(EPOCH_TIME).out  ${BUILD_PATH}/$@
 

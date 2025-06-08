@@ -11,6 +11,10 @@
 
 using namespace std; 
 
+/**
+ * benchmark_vamana.cpp: benchmark on vamana graphs 
+ */
+
 
 template <typename T>
 void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_values, const string& parameter_name,

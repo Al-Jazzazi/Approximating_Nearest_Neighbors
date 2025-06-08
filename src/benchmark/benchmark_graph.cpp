@@ -6,6 +6,13 @@
 
 using namespace std; 
 
+/**
+ * benchmark_graph.cpp: benchmark on NSG, Efanan, and Navigable graphs  
+ * 
+ * Graph files are used to run Efanna, NSG, and navigable graphs (and hopefully any other graphs added later) 
+ * They're an abstraction from many of the functions that are used in HNSW where I remove. 
+ * the segments of code related to multilayers graph, grasp pruning, and other test materials we scrapped 
+ */
 
 
 template <typename T>
@@ -190,7 +197,6 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
 
             cout << "Results for construction parameters: " << config->optimal_connections << ", " << config->max_connections << ", "
                 << config->max_connections_0 << ", " << config->ef_construction << " and search parameters: " << config->ef_search << endl;
-            cout << "sixth check\n"; 
             find_similar(config, actual_neighbors, neighbors, nodes, queries, similar, total_ndcg);
        }
 
@@ -217,7 +223,7 @@ void run_benchmark(Config* config, T& parameter, const vector<T>& parameter_valu
                     
                    //  + std::to_string(candidates_popped / config->num_queries) + ", "
                      //+ std::to_string(candidates_size / static_cast<float>(candidates_without_if)) + ", ";
-       cout << "seventh check\n"; 
+
             if (config->use_hybrid_termination) {
                 float estimated_distance_calcs = config->bw_slope != 0 ? (config->ef_search - config->bw_intercept) / config->bw_slope : 1;
                 float termination_alpha = config->use_distance_termination ? config->termination_alpha : config->alpha_coefficient * log(estimated_distance_calcs) + config->alpha_intercept;

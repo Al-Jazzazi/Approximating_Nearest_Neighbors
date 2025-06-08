@@ -13,21 +13,11 @@
 #include "../include/vamana.h"
 
 
-/// reduce K_QUERY to 1, 50, etc -> find out what's the issue
-/// construction L and query L are different -> try diff vals
-/// L should not be related to K -> try to find a good number (for both L)
-/// first fix construction L to a good number and then for query L
-/// try max outedge != K -> check what they do in paper
-/// 2 round vamana
-/// try different / larger dataset
+
 
 using namespace std;
 
 
-// int K = 30; // Num of NNs when building Vamana graph
-// int K_QUERY = 100; // Num of NNs found for each query
-// int K_TRUTH = 100; // Num of NNs provided by ground truth for each query
- // Max outedge
 
 
 float termination_alpha = 0;
@@ -325,7 +315,8 @@ void BeamSearch(Vamana& graph, Config* config,int start,  float* query, int bw, 
                 visited.insert(neighbor);
                 float far_inner_dist = found.top().first;
                 float neighbor_dist = graph.findDistance(neighbor,query);
-                if (neighbor_dist < far_inner_dist || found.size() < bw) {
+                if ( (!using_top_k && (neighbor_dist < far_inner_dist || found.size() < bw)) ||
+                    (using_top_k && !(graph.should_terminate(config, top_k, top_1, neighbor_dist, far_dist, candidates_popped_per_q))  ) ) {     
                     candidates.emplace(make_pair(neighbor_dist, neighbor));
     
                     if (using_top_k) {
