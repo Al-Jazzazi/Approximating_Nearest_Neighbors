@@ -1,5 +1,8 @@
 # Approximating_Nearest_Neighbors
 
+This repository builds off the HNSW/Vamana research project conducted by Kenny Heung and Silvia Wei in summer 2023: https://github.com/t-h24/Summer2023-Research
+---
+
 This project provides a flexible framework for building, running, and benchmarking graph-based approximate nearest neighbor (ANN) search algorithms. It supports:
 
 * Building and benchmarking **HNSW** graphs
